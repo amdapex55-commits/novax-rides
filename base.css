@@ -1,0 +1,120 @@
+/* Nova X Rides — base reset + layout scaffold. Mobile-first by construction
+   (this is the #1 thing that was wrong before: Stitch screens had no fluid
+   layout rules, so a fixed mobile mock stretched badly on real viewports). */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+button, input, textarea, select {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a { color: inherit; text-decoration: none; }
+
+img { max-width: 100%; display: block; }
+
+::-webkit-scrollbar { width: 0; height: 0; }
+
+/* App shell: a phone-width column that fills the viewport, works full-bleed
+   on an actual phone and centers gracefully on desktop for testing. */
+#app-root {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  min-height: 100dvh;
+  min-height: 100vh;
+  position: relative;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+#view-container {
+  flex: 1;
+  padding-bottom: calc(76px + var(--safe-bottom)); /* clears bottom nav */
+  min-height: 0;
+}
+
+.page {
+  padding: var(--sp-5) var(--sp-5) var(--sp-8);
+  padding-top: calc(var(--sp-5) + var(--safe-top));
+}
+
+.page-no-pad-top { padding-top: 0; }
+
+.container-tight { max-width: 440px; margin: 0 auto; }
+
+.hidden { display: none !important; }
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-1 { gap: var(--sp-1); }
+.gap-2 { gap: var(--sp-2); }
+.gap-3 { gap: var(--sp-3); }
+.gap-4 { gap: var(--sp-4); }
+.w-full { width: 100%; }
+.text-center { text-align: center; }
+.mt-2 { margin-top: var(--sp-2); }
+.mt-4 { margin-top: var(--sp-4); }
+.mt-6 { margin-top: var(--sp-6); }
+.mb-2 { margin-bottom: var(--sp-2); }
+.mb-4 { margin-bottom: var(--sp-4); }
+.mb-6 { margin-bottom: var(--sp-6); }
+
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-accent { color: var(--accent); }
+.text-sm { font-size: 13px; }
+.text-xs { font-size: 11px; }
+.text-lg { font-size: 20px; }
+.text-xl { font-size: 26px; }
+.font-bold { font-weight: 700; }
+
+/* Responsive: below 380px (small phones) tighten spacing a touch */
+@media (max-width: 380px) {
+  .page { padding-left: var(--sp-4); padding-right: var(--sp-4); }
+}
+
+/* Above phone width (desktop testing): give the column a frame so it reads
+   intentionally, not just a stranded strip of content. */
+@media (min-width: 640px) {
+  body {
+    background: radial-gradient(ellipse at top, #0d1326 0%, #030509 70%);
+  }
+  #app-root {
+    margin-top: 24px;
+    margin-bottom: 24px;
+    min-height: calc(100vh - 48px);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-lg), 0 0 0 1px var(--surface-border);
+    overflow: hidden;
+  }
+}

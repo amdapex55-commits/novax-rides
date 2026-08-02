@@ -1,0 +1,175 @@
+// Nova X Rides — wallet, trip history, profile, settings.
+import { api, Token } from "./api.js";
+import { icon } from "./icons.js";
+import { toast, fmtMoney, fmtDate, countUp, skeletonRows } from "./ui.js";
+import { navigate } from "./router.js";
+
+export function renderWallet(root) {
+  root.innerHTML = `
+    <div class="page">
+      <h1 class="text-xl mb-6">Wallet</h1>
+      <div class="glow-card mb-6 text-center" style="padding:32px 20px;">
+        <p class="text-secondary text-sm mb-2">Available Balance</p>
+        <h1 class="text-xl" id="balanceText" style="font-size:34px;">Rs. 0.00</h1>
+      </div>
+      <h3 class="text-sm text-secondary mb-3" style="text-transform:uppercase; letter-spacing:0.04em;">Recent Activity</h3>
+      <div id="historyList">${skeletonRows(4)}</div>
+    </div>
+  `;
+  const balanceText = root.querySelector("#balanceText");
+  const historyList = root.querySelector("#historyList");
+
+  api.getWalletBalance()
+    .then((data) => countUp(balanceText, Number(data.balance || 0), { prefix: "Rs. ", decimals: 2 }))
+    .catch((e) => { balanceText.textContent = "Rs. 0.00"; console.warn(e); });
+
+  api.getWalletHistory()
+    .then((entries) => {
+      if (!Array.isArray(entries) || entries.length === 0) {
+        historyList.innerHTML = `<div class="empty-state"><div class="icon">${icon("wallet", 32)}</div><p>No transactions yet</p></div>`;
+        return;
+      }
+      historyList.innerHTML = entries
+        .slice(0, 25)
+        .map((e, i) => {
+          const isCredit = (e.type || "").includes("PAYOUT");
+          return `
+          <div class="list-row stagger-item" style="animation-delay:${i * 40}ms;">
+            <div class="list-row-icon">${icon("wallet", 18)}</div>
+            <div class="flex-col" style="flex:1;">
+              <p class="font-bold text-sm">${(e.type || "Transaction").replace(/_/g, " ")}</p>
+              <p class="text-xs text-muted">${fmtDate(e.createdAt || Date.now())}</p>
+            </div>
+            <p class="font-bold" style="color:${isCredit ? "var(--success)" : "var(--error)"};">${isCredit ? "+" : "-"} ${fmtMoney(e.netAmount || e.grossAmount || 0)}</p>
+          </div>`;
+        })
+        .join("");
+    })
+    .catch(() => { historyList.innerHTML = `<div class="empty-state"><p>Couldn't load history</p></div>`; });
+}
+
+const TRIP_STATUS_BADGE = {
+  COMPLETED: "badge-success",
+  CANCELLED: "badge-error",
+  IN_PROGRESS: "badge-accent",
+  MATCHED: "badge-accent",
+  REQUESTED: "badge-warning",
+  MATCHING: "badge-warning",
+};
+
+export function renderTripHistory(root) {
+  root.innerHTML = `
+    <div class="page">
+      <h1 class="text-xl mb-6">Trip History</h1>
+      <div id="list">${skeletonRows(4)}</div>
+    </div>
+  `;
+  const list = root.querySelector("#list");
+  api.listMyTrips()
+    .then((trips) => {
+      if (!Array.isArray(trips) || trips.length === 0) {
+        list.innerHTML = `<div class="empty-state"><div class="icon">${icon("history", 32)}</div><p>No trips yet — your first ride will show up here</p></div>`;
+        return;
+      }
+      list.innerHTML = trips
+        .slice(0, 30)
+        .map(
+          (t, i) => `
+        <div class="card mb-3 stagger-item" style="animation-delay:${i * 40}ms;">
+          <div class="flex justify-between items-center mb-2">
+            <span class="badge ${TRIP_STATUS_BADGE[t.status] || "badge-accent"}">${t.status}</span>
+            <span class="text-xs text-muted">${fmtDate(t.createdAt)}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <p class="text-sm text-secondary">${t.vehicleType || ""}</p>
+            <p class="font-bold">${t.fare ? fmtMoney(t.fare) : "—"}</p>
+          </div>
+        </div>`
+        )
+        .join("");
+    })
+    .catch(() => { list.innerHTML = `<div class="empty-state"><p>Couldn't load trip history</p></div>`; });
+}
+
+export function renderProfile(root) {
+  const cached = Token.user || {};
+  root.innerHTML = `
+    <div class="page">
+      <h1 class="text-xl mb-6">Profile</h1>
+      <div class="card-elevated text-center mb-6" style="padding:28px 20px;">
+        <div class="avatar" style="width:80px;height:80px;font-size:28px;margin:0 auto 12px;">${(cached.name || "N").charAt(0)}</div>
+        <h2 id="nameText">${cached.name || "Nova X Rider"}</h2>
+        <div class="flex items-center justify-center gap-1 mt-2">
+          ${icon("star", 16)}<span id="ratingText" class="font-bold">${cached.rating || "5.0"}</span>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <label class="field-label">Full Name</label>
+        <div class="flex gap-2">
+          <input id="nameInput" class="input" value="${cached.name || ""}" placeholder="Your name"/>
+          <button id="saveNameBtn" class="btn btn-secondary">Save</button>
+        </div>
+      </div>
+
+      <div class="flex-col gap-1">
+        <div class="list-row" style="cursor:pointer;" data-nav="/settings">
+          <div class="list-row-icon">${icon("settings", 18)}</div>
+          <p style="flex:1;" class="font-bold text-sm">Settings</p>${icon("chevronRight", 18)}
+        </div>
+        <div class="list-row" style="cursor:pointer;" data-nav="/support">
+          <div class="list-row-icon">${icon("help", 18)}</div>
+          <p style="flex:1;" class="font-bold text-sm">Help & Support</p>${icon("chevronRight", 18)}
+        </div>
+      </div>
+    </div>
+  `;
+
+  api.getMe().then((u) => {
+    root.querySelector("#nameText").textContent = u.name || "Nova X Rider";
+    root.querySelector("#ratingText").textContent = u.rating ?? "5.0";
+    root.querySelector("#nameInput").value = u.name || "";
+  }).catch(() => {});
+
+  root.querySelector("#saveNameBtn").addEventListener("click", async () => {
+    const name = root.querySelector("#nameInput").value.trim();
+    if (!name) return;
+    try {
+      await api.updateMe(name);
+      const u = Token.user || {};
+      Token.user = { ...u, name };
+      root.querySelector("#nameText").textContent = name;
+      toast("Profile updated");
+    } catch (err) { toast(err.message || "Couldn't update profile", true); }
+  });
+
+  root.querySelectorAll("[data-nav]").forEach((r) => r.addEventListener("click", () => navigate(r.dataset.nav)));
+}
+
+export function renderSettings(root) {
+  root.innerHTML = `
+    <div class="page">
+      <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
+      <h1 class="text-xl mb-6">Settings</h1>
+      <div class="flex-col gap-1 mb-6">
+        ${settingsRow("bell", "Notifications")}
+        ${settingsRow("shield", "Privacy & Security")}
+        ${settingsRow("phone", "Payment Methods")}
+        ${settingsRow("document", "Terms & Policies")}
+      </div>
+      <button id="logoutBtn" class="btn btn-danger btn-block">${icon("logout", 18)} Log Out</button>
+    </div>
+  `;
+  root.querySelector("#backBtn").addEventListener("click", () => history.back());
+  root.querySelector("#logoutBtn").addEventListener("click", () => {
+    api.logout();
+    navigate("/phone");
+  });
+}
+
+function settingsRow(iconName, label) {
+  return `<div class="list-row" style="cursor:pointer;">
+    <div class="list-row-icon">${icon(iconName, 18)}</div>
+    <p style="flex:1;" class="font-bold text-sm">${label}</p>${icon("chevronRight", 18)}
+  </div>`;
+}

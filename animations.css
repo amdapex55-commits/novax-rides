@@ -1,0 +1,109 @@
+/* Nova X Rides — motion system. */
+
+/* Page transition: views fade+rise in as the router swaps them. */
+@keyframes nx-view-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.view-enter { animation: nx-view-in var(--dur-med) var(--ease-spring) forwards; }
+
+/* Staggered list items */
+@keyframes nx-stagger-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger-item { opacity: 0; animation: nx-stagger-in 0.45s var(--ease-spring) forwards; }
+
+/* Skeleton shimmer */
+@keyframes nx-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  border-radius: var(--r-md);
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%, var(--surface) 63%);
+  background-size: 400% 100%;
+  animation: nx-shimmer 1.4s ease-in-out infinite;
+}
+
+/* Count-up pulse (applied for one beat when a number finishes animating) */
+@keyframes nx-count-pulse {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.05); color: var(--accent); }
+  100% { transform: scale(1); }
+}
+.count-pulse { display: inline-block; animation: nx-count-pulse 0.35s var(--ease-out); }
+
+/* Glow pulse — used on the live-tracking driver dot / active states */
+@keyframes nx-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.5); }
+  50% { box-shadow: 0 0 0 14px rgba(0, 229, 255, 0); }
+}
+.pulse-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent);
+  animation: nx-glow-pulse 1.8s ease-out infinite;
+}
+
+/* Success ring — trip/delivery completed, KYC approved, etc. */
+@keyframes nx-success-ring {
+  0% { box-shadow: 0 0 0 0 rgba(46, 230, 166, 0.5); }
+  70% { box-shadow: 0 0 0 20px rgba(46, 230, 166, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 230, 166, 0); }
+}
+.success-pulse { animation: nx-success-ring 0.9s var(--ease-out); }
+
+/* Spinner */
+@keyframes nx-spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 20px; height: 20px;
+  border: 2.5px solid rgba(255,255,255,0.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: nx-spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* Confetti — DOM particles, no canvas needed */
+.confetti-piece {
+  position: fixed; top: 0; left: 0; width: 8px; height: 8px;
+  border-radius: 2px; pointer-events: none; z-index: 300; opacity: 0;
+}
+@keyframes nx-confetti-fall {
+  0%   { opacity: 1; transform: translate(var(--x0), var(--y0)) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--x1), var(--y1)) rotate(var(--rot)); }
+}
+.confetti-piece.fall {
+  animation: nx-confetti-fall var(--dur, 900ms) cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+}
+
+/* Map placeholder grid — futuristic radar-style background used behind
+   trip-tracking screens in place of a real map SDK (no Maps API key yet). */
+.radar-field {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(0,229,255,0.12), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 32px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 32px),
+    var(--bg-elevated);
+}
+@keyframes nx-radar-sweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.radar-sweep {
+  position: absolute; inset: -20%;
+  background: conic-gradient(from 0deg, rgba(0,229,255,0.18), transparent 25%);
+  animation: nx-radar-sweep 4s linear infinite;
+  opacity: 0.5;
+}
+
+/* Reduced motion respect */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

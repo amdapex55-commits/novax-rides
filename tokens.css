@@ -1,0 +1,70 @@
+/* Nova X Rides — design tokens.
+   Futuristic dark system: deep space-navy base, electric cyan + violet
+   accents (distinct from any of Careem/Uber/InDrive/Bykea's palettes —
+   they all use white/yellow/green/black; nobody in this category owns
+   cyan-violet neon-on-navy). */
+:root {
+  /* Surfaces */
+  --bg: #060912;
+  --bg-elevated: #0b1020;
+  --surface: #10162a;
+  --surface-2: #161d36;
+  --surface-3: #1d2542;
+  --surface-border: #2a3357;
+
+  /* Text */
+  --text-primary: #f3f6ff;
+  --text-secondary: #a7b0d4;
+  --text-muted: #6b7399;
+
+  /* Brand accents */
+  --accent: #00e5ff;
+  --accent-2: #7c5cff;
+  --accent-gradient: linear-gradient(135deg, #00e5ff 0%, #7c5cff 100%);
+  --accent-glow: 0 0 24px rgba(0, 229, 255, 0.35);
+  --accent-2-glow: 0 0 24px rgba(124, 92, 255, 0.35);
+
+  /* Semantic */
+  --success: #2ee6a6;
+  --warning: #ffb547;
+  --error: #ff5470;
+  --on-accent: #04101c;
+
+  /* Elevation shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+
+  /* Radius */
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+  --r-full: 999px;
+
+  /* Spacing (8pt grid) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  /* Type */
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Sora", var(--font);
+
+  /* Motion */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --dur-fast: 150ms;
+  --dur-med: 300ms;
+  --dur-slow: 500ms;
+
+  /* Layout */
+  --max-w: 480px; /* app is mobile-first; centers as a phone-width column on desktop */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
