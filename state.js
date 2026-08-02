@@ -41,6 +41,12 @@ export const state = {
   get isDriverOnline() { return read("isDriverOnline", false); },
   set isDriverOnline(v) { write("isDriverOnline", v); },
 
+  // Where to send the user after they finish phone+OTP login — set right
+  // before bouncing a guest to /phone (either by the router's auth guard or
+  // by an action button like "Request Ride"), consumed once on success.
+  get postAuthRedirect() { return read("postAuthRedirect"); },
+  set postAuthRedirect(v) { write("postAuthRedirect", v); },
+
   clearBookingDraft() {
     write("pickup", null);
     write("dropoff", null);

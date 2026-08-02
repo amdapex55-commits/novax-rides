@@ -3,6 +3,7 @@
 // intervals/geolocation watches/socket listeners so nothing leaks across
 // navigation), then the new view renders with a fade-rise transition.
 import { Token } from "./api.js";
+import { state } from "./state.js";
 import * as Auth from "./auth.js";
 import * as RiderHome from "./riderHome.js";
 import * as RiderTrip from "./riderTrip.js";
@@ -15,16 +16,20 @@ import * as Parcel from "./parcel.js";
 import * as Ops from "./ops.js";
 import * as Support from "./support.js";
 
-// auth: "none" (public) | "any" (any logged-in role) | "RIDER" | "DRIVER" | "ADMIN"
+// auth: "none" (public) | "guest" (public, but bounces a logged-in
+// non-rider to their own home) | "any" (any logged-in role) | "RIDER" |
+// "DRIVER" | "ADMIN". "guest" is what lets people browse the app before
+// they have an account — OTP is only required at the point of an action
+// that actually needs one (booking, wallet, profile, etc.).
 export const ROUTES = {
   "/splash": { render: Auth.renderSplash, auth: "none", nav: false },
   "/phone": { render: (root) => Auth.renderPhoneEntry("RIDER")(root), auth: "none", nav: false },
   "/driver/phone": { render: (root) => Auth.renderPhoneEntry("DRIVER")(root), auth: "none", nav: false },
   "/otp": { render: Auth.renderOtp, auth: "none", nav: false },
 
-  "/home": { render: RiderHome.renderHome, auth: "RIDER", nav: true, tab: "home" },
-  "/set-locations": { render: RiderHome.renderSetLocations, auth: "RIDER", nav: false },
-  "/fare": { render: RiderHome.renderFareSelection, auth: "RIDER", nav: false },
+  "/home": { render: RiderHome.renderHome, auth: "guest", nav: true, tab: "home" },
+  "/set-locations": { render: RiderHome.renderSetLocations, auth: "guest", nav: false },
+  "/fare": { render: RiderHome.renderFareSelection, auth: "guest", nav: false },
   "/tracking": { render: RiderTrip.renderActiveTracking, auth: "RIDER", nav: false },
   "/rate": { render: RiderTrip.renderRateTrip, auth: "RIDER", nav: false },
   "/wallet": { render: RiderAccount.renderWallet, auth: "RIDER", nav: true, tab: "wallet" },
@@ -46,9 +51,9 @@ export const ROUTES = {
   "/driver/notifications": { render: DriverAccount.renderDriverNotifications, auth: "DRIVER", nav: true, tab: "alerts" },
   "/driver/incentives": { render: DriverAccount.renderIncentives, auth: "DRIVER", nav: false },
 
-  "/parcel/service": { render: Parcel.renderParcelService, auth: "RIDER", nav: false },
-  "/parcel/details": { render: Parcel.renderParcelDetails, auth: "RIDER", nav: false },
-  "/parcel/contact": { render: Parcel.renderParcelContact, auth: "RIDER", nav: false },
+  "/parcel/service": { render: Parcel.renderParcelService, auth: "guest", nav: false },
+  "/parcel/details": { render: Parcel.renderParcelDetails, auth: "guest", nav: false },
+  "/parcel/contact": { render: Parcel.renderParcelContact, auth: "guest", nav: false },
   "/parcel/tracking": { render: Parcel.renderParcelTracking, auth: "RIDER", nav: false },
 
   "/ops/dashboard": { render: Ops.renderOpsDashboard, auth: "ADMIN", nav: true, tab: "dashboard" },
@@ -85,9 +90,15 @@ async function renderRoute(path) {
   if (!route) { navigate("/splash"); return; }
 
   // Auth guard
-  if (route.auth !== "none") {
+  if (route.auth === "guest") {
+    // Public browsing route. A logged-out visitor (or a logged-in RIDER)
+    // sees it as-is; a logged-in DRIVER/ADMIN gets bounced to their own
+    // home instead of the rider guest view.
     const user = Token.user;
-    if (!Token.access || !user) { navigate("/phone"); return; }
+    if (Token.access && user && user.role !== "RIDER") { navigate(roleHome(user.role)); return; }
+  } else if (route.auth !== "none") {
+    const user = Token.user;
+    if (!Token.access || !user) { state.postAuthRedirect = path; navigate("/phone"); return; }
     if (route.auth !== "any" && route.auth !== user.role) { navigate(roleHome(user.role)); return; }
   }
 

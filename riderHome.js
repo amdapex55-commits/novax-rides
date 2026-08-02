@@ -7,15 +7,23 @@ import { navigate } from "./router.js";
 
 export function renderHome(root) {
   const user = Token.user;
+  const isGuest = !user;
   root.innerHTML = `
     <div class="page pb-0">
       <div class="flex justify-between items-center mb-6">
         <div>
           <p class="text-secondary text-sm">Good ${timeOfDay()},</p>
-          <h1 class="text-xl">${(user?.name || "Rider").split(" ")[0]}</h1>
+          <h1 class="text-xl">${isGuest ? "there" : (user.name || "Rider").split(" ")[0]}</h1>
         </div>
         <div class="avatar" style="width:44px;height:44px;">${icon("person", 22)}</div>
       </div>
+
+      ${isGuest ? `
+      <div class="card mb-4 flex items-center gap-3" id="signInCard" style="cursor:pointer;">
+        <div class="list-row-icon" style="background:rgba(124,92,255,0.14); color:var(--accent-2);">${icon("bolt", 18)}</div>
+        <div style="flex:1;"><p class="font-bold text-sm">Sign in</p><p class="text-secondary text-xs">Just a phone number + code — only needed to book</p></div>
+        ${icon("chevronRight", 18)}
+      </div>` : ""}
 
       <div class="glow-card mb-4" id="whereToCard" style="cursor:pointer;">
         <div class="flex items-center gap-3">
@@ -58,11 +66,19 @@ export function renderHome(root) {
           <div style="flex:1;"><p class="font-bold text-sm">Nova X for Business</p></div>
           ${icon("chevronRight", 18)}
         </div>
+        ${isGuest ? `
+        <div class="list-row stagger-item" data-nav-driver="1" style="cursor:pointer; animation-delay:180ms;">
+          <div class="list-row-icon">${icon("car", 18)}</div>
+          <div style="flex:1;"><p class="font-bold text-sm">Drive with Nova X</p></div>
+          ${icon("chevronRight", 18)}
+        </div>` : ""}
       </div>
     </div>
   `;
 
   root.querySelector("#whereToCard").addEventListener("click", () => navigate("/set-locations"));
+  root.querySelector("#signInCard")?.addEventListener("click", () => navigate("/phone"));
+  root.querySelector("[data-nav-driver]")?.addEventListener("click", () => navigate("/driver/phone"));
   const rideBtn = root.querySelector("#rideBtn");
   const parcelBtn = root.querySelector("#parcelBtn");
   rideBtn.addEventListener("click", () => {
@@ -174,6 +190,11 @@ export function renderFareSelection(root) {
 
   const requestBtn = root.querySelector("#requestRideBtn");
   requestBtn.addEventListener("click", async () => {
+    if (!Token.access) {
+      state.postAuthRedirect = "/fare";
+      navigate("/phone");
+      return;
+    }
     requestBtn.disabled = true;
     requestBtn.innerHTML = `<span class="spinner"></span> Finding a driver...`;
     try {

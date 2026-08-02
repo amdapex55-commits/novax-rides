@@ -2,7 +2,7 @@
 // recipient contact + confirm (creates a real delivery), live tracking.
 // Mirrors the trips flow but against the Delivery module (POST /deliveries,
 // same real matching engine on the backend).
-import { api } from "./api.js";
+import { api, Token } from "./api.js";
 import { state } from "./state.js";
 import { icon } from "./icons.js";
 import { toast } from "./ui.js";
@@ -118,6 +118,13 @@ export function renderParcelContact(root) {
     const phoneLocal = root.querySelector("#phoneInput").value.trim();
     const digits = phoneLocal.replace(/\D/g, "").replace(/^0+/, "");
     if (!name || digits.length < 9) { toast("Enter a valid receiver name and phone", true); return; }
+    if (!Token.access) {
+      // Save what they've typed so it's still here after they log in.
+      state.parcelDraft = { ...draft, recipientName: name, recipientPhoneLocal: phoneLocal };
+      state.postAuthRedirect = "/parcel/contact";
+      navigate("/phone");
+      return;
+    }
     const btn = e.currentTarget;
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span>`;

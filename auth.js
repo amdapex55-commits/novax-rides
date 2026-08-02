@@ -30,7 +30,10 @@ export function renderSplash(root) {
         return;
       } catch { Token.clear(); }
     }
-    navigate("/phone");
+    // No account yet (or session expired) — land straight in the app to
+    // browse. OTP only kicks in when something they do actually needs an
+    // account (booking, wallet, profile, etc. — see router.js auth guard).
+    navigate("/home");
   }, 900);
   return () => clearTimeout(t);
 }
@@ -39,26 +42,33 @@ export function renderPhoneEntry(role) {
   return (root) => {
     const isDriver = role === "DRIVER";
     root.innerHTML = `
-      <div class="page flex-col" style="height:100dvh; justify-content:center;">
-        <div class="mb-6">
-          <div style="width:64px;height:64px;border-radius:20px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;box-shadow:var(--accent-glow);margin-bottom:20px;">
-            ${icon(isDriver ? "car" : "bolt", 30, 2)}
+      <div class="page flex-col" style="height:100dvh;">
+        <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
+        <div class="flex-col" style="flex:1; justify-content:center;">
+          <div class="mb-6">
+            <div style="width:64px;height:64px;border-radius:20px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;box-shadow:var(--accent-glow);margin-bottom:20px;">
+              ${icon(isDriver ? "car" : "bolt", 30, 2)}
+            </div>
+            <h1 class="text-xl">${isDriver ? "Drive with Nova X" : "Welcome to Nova X"}</h1>
+            <p class="text-secondary mt-2">${isDriver ? "Enter your registered driver number to continue." : "Enter your phone number to get started."}</p>
           </div>
-          <h1 class="text-xl">${isDriver ? "Drive with Nova X" : "Welcome to Nova X"}</h1>
-          <p class="text-secondary mt-2">${isDriver ? "Enter your registered driver number to continue." : "Enter your phone number to get started."}</p>
+          <label class="field-label">Phone Number</label>
+          <div class="flex gap-2 mb-4">
+            <div class="input flex items-center justify-center" style="width:64px; flex:none; color:var(--text-secondary);">+92</div>
+            <input id="phoneInput" class="input" type="tel" inputmode="numeric" maxlength="10" placeholder="300 1234567"/>
+          </div>
+          <button id="continueBtn" class="btn btn-primary btn-block">Continue ${icon("arrow-forward", 18)}</button>
+          ${!isDriver ? `<button id="toDriverBtn" class="btn btn-ghost btn-block mt-2">I'm a driver →</button>` : `<button id="toRiderBtn" class="btn btn-ghost btn-block mt-2">I'm a rider →</button>`}
+          <p class="text-xs text-muted text-center mt-6">By continuing you agree to Nova X's Terms of Service and Privacy Policy.</p>
         </div>
-        <label class="field-label">Phone Number</label>
-        <div class="flex gap-2 mb-4">
-          <div class="input flex items-center justify-center" style="width:64px; flex:none; color:var(--text-secondary);">+92</div>
-          <input id="phoneInput" class="input" type="tel" inputmode="numeric" maxlength="10" placeholder="300 1234567"/>
-        </div>
-        <button id="continueBtn" class="btn btn-primary btn-block">Continue ${icon("arrow-forward", 18)}</button>
-        ${!isDriver ? `<button id="toDriverBtn" class="btn btn-ghost btn-block mt-2">I'm a driver →</button>` : `<button id="toRiderBtn" class="btn btn-ghost btn-block mt-2">I'm a rider →</button>`}
-        <p class="text-xs text-muted text-center mt-6">By continuing you agree to Nova X's Terms of Service and Privacy Policy.</p>
       </div>
     `;
     const input = root.querySelector("#phoneInput");
     const btn = root.querySelector("#continueBtn");
+    root.querySelector("#backBtn").addEventListener("click", () => {
+      if (history.length > 1) history.back();
+      else navigate("/home");
+    });
     input.focus();
 
     btn.addEventListener("click", async () => {
@@ -143,7 +153,14 @@ export function renderOtp(root) {
       const user = await api.getMe();
       state.pendingPhone = null;
       window.__novaxRefreshNav();
-      if (user.role === "DRIVER") navigate(user.kycStatus === "APPROVED" ? "/driver/home" : "/driver/pending");
+      // Resume whatever guest action triggered the login prompt (request a
+      // ride, confirm a parcel, open wallet, ...) instead of always
+      // dropping them back on home. The router re-validates this path
+      // against the now-known role, so a stale/mismatched target is safe.
+      const resume = state.postAuthRedirect;
+      state.postAuthRedirect = null;
+      if (resume) navigate(resume);
+      else if (user.role === "DRIVER") navigate(user.kycStatus === "APPROVED" ? "/driver/home" : "/driver/pending");
       else if (user.role === "ADMIN") navigate("/ops/dashboard");
       else navigate("/home");
     } catch (err) {
