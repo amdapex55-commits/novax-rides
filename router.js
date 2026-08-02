@@ -18,8 +18,8 @@ import * as Support from "./support.js";
 // auth: "none" (public) | "any" (any logged-in role) | "RIDER" | "DRIVER" | "ADMIN"
 export const ROUTES = {
   "/splash": { render: Auth.renderSplash, auth: "none", nav: false },
-  "/phone": { render: () => Auth.renderPhoneEntry("RIDER"), auth: "none", nav: false },
-  "/driver/phone": { render: () => Auth.renderPhoneEntry("DRIVER"), auth: "none", nav: false },
+  "/phone": { render: (root) => Auth.renderPhoneEntry("RIDER")(root), auth: "none", nav: false },
+  "/driver/phone": { render: (root) => Auth.renderPhoneEntry("DRIVER")(root), auth: "none", nav: false },
   "/otp": { render: Auth.renderOtp, auth: "none", nav: false },
 
   "/home": { render: RiderHome.renderHome, auth: "RIDER", nav: true, tab: "home" },
