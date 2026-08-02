@@ -38,6 +38,13 @@ const PATHS = {
   bolt: 'M13 2 3 14h7l-1 8 10-12h-7z',
   layers: 'M12 2l9 5-9 5-9-5 9-5zM3 12l9 5 9-5M3 17l9 5 9-5',
   locate: 'M12 2v3M12 19v3M2 12h3M19 12h3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
+  utensils: 'M6 2v7a2 2 0 0 0 4 0V2M8 9v13M16 2c-2 0-3 2-3 5s1 4 3 4M16 2v18',
+  store: 'M3 7l1-4h16l1 4M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7M3 7h18M9 21v-6h6v6',
+  plus: 'M12 5v14M5 12h14',
+  cart: 'M6 2l1.5 4M18 2l-1.5 4M3.5 6h17l-1.5 12a2 2 0 0 1-2 1.8H7a2 2 0 0 1-2-1.8L3.5 6zM9 10v4M15 10v4',
+  swap: 'M7 4v3H3l4 4 4-4H7V4zM17 20v-3h4l-4-4-4 4h4v3z',
+  taxi: 'M5 17V9l2-4h10l2 4v8M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM15 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM5 13h14M9 5v0M15 5v0',
+  basket: 'M4 9h16l-1.5 10.5a2 2 0 0 1-2 1.5H7.5a2 2 0 0 1-2-1.5L4 9zM8 9l2-6M16 9l-2-6M9 13v4M15 13v4',
 };
 
 export function icon(name, size = 20, strokeWidth = 2) {

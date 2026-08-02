@@ -22,6 +22,11 @@ const NAV_SETS = {
     { tab: "approvals", icon: "check-circle", label: "Approvals", path: "/ops/approvals" },
     { tab: "users", icon: "users", label: "Users", path: "/ops/users" },
   ],
+  RESTAURANT: [
+    { tab: "orders", icon: "package", label: "Orders", path: "/restaurant/orders" },
+    { tab: "menu", icon: "utensils", label: "Menu", path: "/restaurant/menu" },
+    { tab: "profile", icon: "store", label: "Store", path: "/restaurant/profile" },
+  ],
 };
 
 export function renderBottomNav() {

@@ -10,6 +10,7 @@ import { socketManager } from "./socket.js";
 export function renderDriverHome(root) {
   const user = Token.user;
   let online = state.isDriverOnline;
+  let mode = state.driverMode || "RIDE"; // "RIDE" | "FOOD_ERRAND"
   let watchId = null;
 
   root.innerHTML = `
@@ -20,6 +21,12 @@ export function renderDriverHome(root) {
           <h1 class="text-xl">${(user?.name || "Driver").split(" ")[0]}</h1>
         </div>
         <div class="avatar" style="width:44px;height:44px;">${icon("person", 22)}</div>
+      </div>
+
+      <div class="mode-switch mb-4${mode === "FOOD_ERRAND" ? " right" : ""}" id="modeSwitch">
+        <div class="mode-switch-indicator"></div>
+        <button class="mode-switch-option${mode === "RIDE" ? " active" : ""}" data-mode="RIDE">${icon("bike", 18)}<span>Ride & Taxi</span></button>
+        <button class="mode-switch-option${mode === "FOOD_ERRAND" ? " active" : ""}" data-mode="FOOD_ERRAND">${icon("utensils", 18)}<span>Food & Errands</span></button>
       </div>
 
       <button id="onlineToggle" class="glow-card mb-6 w-full flex items-center justify-between" style="padding:20px; cursor:pointer;">
@@ -47,7 +54,7 @@ export function renderDriverHome(root) {
 
       <div class="radar-field" style="height:180px; border-radius:var(--r-lg); display:flex; align-items:center; justify-content:center;">
         ${online ? '<div class="radar-sweep"></div>' : ""}
-        <p class="text-xs text-muted" style="position:relative; z-index:1;">${online ? "Listening for ride requests..." : "Go online to start receiving trips"}</p>
+        <p class="text-xs text-muted" style="position:relative; z-index:1;" id="radarLabel">${radarLabel(online, mode)}</p>
       </div>
     </div>
   `;
@@ -55,11 +62,15 @@ export function renderDriverHome(root) {
   const toggle = root.querySelector("#onlineToggle");
   const dot = root.querySelector("#statusDot");
   const label = root.querySelector("#onlineLabel");
+  const radarLabelEl = root.querySelector("#radarLabel");
+  const modeSwitch = root.querySelector("#modeSwitch");
 
   function goOnline() {
     const socket = socketManager.connect();
     if (!socket) { toast("Session expired — log in again", true); navigate("/driver/phone"); return; }
-    socketManager.on("trip:offer", onOffer);
+    socketManager.on("trip:offer", onTripOffer);
+    socketManager.on("foodOrder:offer", onFoodOffer);
+    socketManager.on("errand:offer", onErrandOffer);
     if (navigator.geolocation) {
       watchId = navigator.geolocation.watchPosition(
         (pos) => socketManager.emit("driver:location", { lat: pos.coords.latitude, lng: pos.coords.longitude }),
@@ -72,28 +83,75 @@ export function renderDriverHome(root) {
     dot.style.background = "var(--success)";
     dot.style.animation = "";
     label.textContent = "You're Online";
+    radarLabelEl.textContent = radarLabel(online, mode);
   }
   function goOffline() {
     if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
-    socketManager.off("trip:offer", onOffer);
+    socketManager.off("trip:offer", onTripOffer);
+    socketManager.off("foodOrder:offer", onFoodOffer);
+    socketManager.off("errand:offer", onErrandOffer);
     online = false;
     state.isDriverOnline = false;
     dot.style.background = "var(--text-muted)";
     dot.style.animation = "none";
     label.textContent = "You're Offline";
+    radarLabelEl.textContent = radarLabel(online, mode);
   }
-  function onOffer(payload) {
+  function onTripOffer(payload) {
+    if (mode !== "RIDE") return; // stale event from before a mode switch — ignore
     state.offerTripId = payload.tripId;
     navigate("/driver/offer");
+  }
+  function onFoodOffer(payload) {
+    if (mode !== "FOOD_ERRAND") return;
+    state.offerFoodOrderId = payload.orderId;
+    navigate("/driver/food-offer");
+  }
+  function onErrandOffer(payload) {
+    if (mode !== "FOOD_ERRAND") return;
+    state.offerErrandId = payload.errandId;
+    navigate("/driver/errand-offer");
   }
 
   toggle.addEventListener("click", () => (online ? goOffline() : goOnline()));
   if (online) goOnline(); // resume listening if we navigated back while already online
 
+  modeSwitch.querySelectorAll("[data-mode]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const next = btn.dataset.mode;
+      if (next === mode) return;
+      // Confirm with the backend BEFORE flipping the UI — the backend now
+      // rejects a switch while a job is in progress (see users.service.ts
+      // setActiveMode), and an optimistic flip that then silently fails
+      // would leave the UI showing a queue the driver isn't actually
+      // subscribed to, dropping real offers on the floor.
+      modeSwitch.style.opacity = "0.6";
+      try {
+        await api.setDriverMode(next);
+        mode = next;
+        state.driverMode = mode;
+        modeSwitch.classList.toggle("right", mode === "FOOD_ERRAND");
+        modeSwitch.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+        radarLabelEl.textContent = radarLabel(online, mode);
+      } catch (err) {
+        toast(err.message || "Couldn't switch queues", true);
+      } finally {
+        modeSwitch.style.opacity = "";
+      }
+    });
+  });
+
   return () => {
-    socketManager.off("trip:offer", onOffer);
+    socketManager.off("trip:offer", onTripOffer);
+    socketManager.off("foodOrder:offer", onFoodOffer);
+    socketManager.off("errand:offer", onErrandOffer);
     if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
   };
+}
+
+function radarLabel(online, mode) {
+  if (!online) return "Go online to start receiving requests";
+  return mode === "FOOD_ERRAND" ? "Listening for food & errand offers..." : "Listening for ride requests...";
 }
 
 export function renderIncomingOffer(root) {

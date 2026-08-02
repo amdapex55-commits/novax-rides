@@ -182,9 +182,16 @@ export function renderParcelTracking(root) {
   if (!deliveryId) { navigate("/home"); return; }
   root.querySelector("#backBtn").addEventListener("click", () => navigate("/home"));
 
+  const statusCard = root.querySelector(".card-elevated");
   const statusBadge = root.querySelector("#statusBadge");
   const statusText = root.querySelector("#statusText");
-  function setStatus(s) { statusBadge.textContent = s; statusText.textContent = STATUS_COPY[s] || s; }
+  function setStatus(s) {
+    statusBadge.textContent = s;
+    statusText.textContent = STATUS_COPY[s] || s;
+    statusCard.classList.remove("success-pulse");
+    void statusCard.offsetWidth;
+    statusCard.classList.add("success-pulse");
+  }
 
   api.getDelivery(deliveryId).then((d) => setStatus(d.status)).catch(() => setStatus("REQUESTED"));
 

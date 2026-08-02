@@ -15,6 +15,10 @@ import * as DriverAccount from "./driverAccount.js";
 import * as Parcel from "./parcel.js";
 import * as Ops from "./ops.js";
 import * as Support from "./support.js";
+import * as Food from "./food.js";
+import * as Errand from "./errand.js";
+import * as Restaurant from "./restaurant.js";
+import * as DriverFoodErrand from "./driverFoodErrand.js";
 
 // auth: "none" (public) | "guest" (public, but bounces a logged-in
 // non-rider to their own home) | "any" (any logged-in role) | "RIDER" |
@@ -25,6 +29,7 @@ export const ROUTES = {
   "/splash": { render: Auth.renderSplash, auth: "none", nav: false },
   "/phone": { render: (root) => Auth.renderPhoneEntry("RIDER")(root), auth: "none", nav: false },
   "/driver/phone": { render: (root) => Auth.renderPhoneEntry("DRIVER")(root), auth: "none", nav: false },
+  "/restaurant/phone": { render: (root) => Auth.renderPhoneEntry("RESTAURANT")(root), auth: "none", nav: false },
   "/otp": { render: Auth.renderOtp, auth: "none", nav: false },
 
   "/home": { render: RiderHome.renderHome, auth: "guest", nav: true, tab: "home" },
@@ -32,9 +37,9 @@ export const ROUTES = {
   "/fare": { render: RiderHome.renderFareSelection, auth: "guest", nav: false },
   "/tracking": { render: RiderTrip.renderActiveTracking, auth: "RIDER", nav: false },
   "/rate": { render: RiderTrip.renderRateTrip, auth: "RIDER", nav: false },
-  "/wallet": { render: RiderAccount.renderWallet, auth: "RIDER", nav: true, tab: "wallet" },
-  "/history": { render: RiderAccount.renderTripHistory, auth: "RIDER", nav: true, tab: "history" },
-  "/profile": { render: RiderAccount.renderProfile, auth: "RIDER", nav: true, tab: "profile" },
+  "/wallet": { render: RiderAccount.renderWallet, auth: "guest", nav: true, tab: "wallet" },
+  "/history": { render: RiderAccount.renderTripHistory, auth: "guest", nav: true, tab: "history" },
+  "/profile": { render: RiderAccount.renderProfile, auth: "guest", nav: true, tab: "profile" },
   "/settings": { render: RiderAccount.renderSettings, auth: "RIDER", nav: false },
   "/loyalty": { render: RiderExtras.renderLoyalty, auth: "guest", nav: false },
   "/refer": { render: RiderExtras.renderRefer, auth: "guest", nav: false },
@@ -56,12 +61,34 @@ export const ROUTES = {
   "/parcel/contact": { render: Parcel.renderParcelContact, auth: "guest", nav: false },
   "/parcel/tracking": { render: Parcel.renderParcelTracking, auth: "RIDER", nav: false },
 
+  "/errand/details": { render: Errand.renderErrandDetails, auth: "guest", nav: false },
+  "/errand/tracking": { render: Errand.renderErrandTracking, auth: "RIDER", nav: false },
+
+  "/food/browse": { render: Food.renderFoodBrowse, auth: "guest", nav: false },
+  "/food/restaurant": { render: Food.renderRestaurantMenu, auth: "guest", nav: false },
+  "/food/cart": { render: Food.renderFoodCart, auth: "guest", nav: false },
+  "/food/tracking": { render: Food.renderFoodTracking, auth: "RIDER", nav: false },
+
   "/ops/dashboard": { render: Ops.renderOpsDashboard, auth: "ADMIN", nav: true, tab: "dashboard" },
   "/ops/approvals": { render: Ops.renderOpsApprovals, auth: "ADMIN", nav: true, tab: "approvals" },
   "/ops/users": { render: Ops.renderOpsUsers, auth: "ADMIN", nav: true, tab: "users" },
 
-  "/chat": { render: Support.renderChat, auth: "any", nav: false },
-  "/support": { render: Support.renderSupport, auth: "any", nav: false },
+  "/restaurant/onboarding": { render: Restaurant.renderRestaurantOnboarding, auth: "RESTAURANT", nav: false },
+  "/restaurant/pending": { render: Restaurant.renderRestaurantPending, auth: "RESTAURANT", nav: false },
+  "/restaurant/orders": { render: Restaurant.renderRestaurantOrders, auth: "RESTAURANT", nav: true, tab: "orders" },
+  "/restaurant/menu": { render: Restaurant.renderRestaurantMenuManage, auth: "RESTAURANT", nav: true, tab: "menu" },
+  "/restaurant/profile": { render: Restaurant.renderRestaurantProfile, auth: "RESTAURANT", nav: true, tab: "profile" },
+
+  "/driver/food-offer": { render: DriverFoodErrand.renderFoodOfferIncoming, auth: "DRIVER", nav: false },
+  "/driver/food-progress": { render: DriverFoodErrand.renderFoodOrderProgress, auth: "DRIVER", nav: false },
+  "/driver/errand-offer": { render: DriverFoodErrand.renderErrandOfferIncoming, auth: "DRIVER", nav: false },
+  "/driver/errand-progress": { render: DriverFoodErrand.renderErrandProgress, auth: "DRIVER", nav: false },
+
+  // "none" here (not "guest") — support should be reachable by anyone
+  // regardless of role, including a logged-in DRIVER/ADMIN, with no
+  // role-based bounce. "guest" would incorrectly redirect them away.
+  "/chat": { render: Support.renderChat, auth: "none", nav: false },
+  "/support": { render: Support.renderSupport, auth: "none", nav: false },
 };
 
 let currentCleanup = null;
@@ -70,6 +97,14 @@ let currentRoute = null;
 function roleHome(role) {
   if (role === "DRIVER") return Token.user?.kycStatus === "APPROVED" ? "/driver/home" : "/driver/pending";
   if (role === "ADMIN") return "/ops/dashboard";
+  // RESTAURANT's real home depends on onboarding/approval status, which
+  // isn't in the JWT — auth.js's restaurantHomePath() resolves that with a
+  // real API call right after login. Bouncing mid-navigation here (e.g. a
+  // RESTAURANT user hitting a RIDER-only route) can only safely land on the
+  // orders queue; a stale bounce to onboarding would wipe an already-approved
+  // restaurant back to square one, so restaurant/pending's own poll loop and
+  // onboarding's own submit flow are the only paths that go there.
+  if (role === "RESTAURANT") return "/restaurant/orders";
   return "/home";
 }
 

@@ -69,9 +69,9 @@ img { max-width: 100%; display: block; }
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
-  filter: blur(80px);
-  opacity: 0.35;
-  animation: nx-aura-drift 18s ease-in-out infinite alternate;
+  filter: blur(90px);
+  opacity: 0.14;
+  animation: nx-aura-drift 26s ease-in-out infinite alternate;
 }
 #app-root::before {
   top: -20vmax;

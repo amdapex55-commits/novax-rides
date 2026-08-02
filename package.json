@@ -1,0 +1,24 @@
+{
+  "name": "novax-rides",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nova X Rides — futuristic rider/driver/parcel app, wired to novax-backend.",
+  "scripts": {
+    "serve": "npx http-server . -p 8100 -c-1",
+    "cap:sync": "npx cap sync",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/geolocation": "^6.0.1",
+    "@capacitor/ios": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "http-server": "^14.1.1"
+  }
+}

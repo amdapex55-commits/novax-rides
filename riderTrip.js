@@ -57,9 +57,13 @@ export function renderActiveTracking(root) {
   const statusText = root.querySelector("#statusText");
   const cancelBtn = root.querySelector("#cancelTripBtn");
 
+  const statusCard = root.querySelector(".card-elevated");
   function setStatus(status) {
     statusBadge.textContent = status;
     statusText.textContent = STATUS_COPY[status] || status;
+    statusCard.classList.remove("success-pulse");
+    void statusCard.offsetWidth;
+    statusCard.classList.add("success-pulse");
   }
 
   api.getTrip(tripId).then((trip) => setStatus(trip.status)).catch(() => setStatus("REQUESTED"));

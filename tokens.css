@@ -4,35 +4,38 @@
    they all use white/yellow/green/black; nobody in this category owns
    cyan-violet neon-on-navy). */
 :root {
-  /* Surfaces */
-  --bg: #060912;
-  --bg-elevated: #0b1020;
-  --surface: #10162a;
-  --surface-2: #161d36;
-  --surface-3: #1d2542;
-  --surface-border: #2a3357;
+  /* Surfaces — anchored on novaxlogistics.com's confirmed browser
+     theme-color (#04100b, a near-black deep green-navy) rather than the
+     blue-navy this app started with. Same fintech-grade restraint as their
+     site: dark, quiet, almost no color until something needs attention. */
+  --bg: #04100b;
+  --bg-elevated: #081a13;
+  --surface: #0d1f17;
+  --surface-2: #12291f;
+  --surface-3: #17342a;
+  --surface-border: #234438;
 
   /* Text */
-  --text-primary: #f3f6ff;
-  --text-secondary: #a7b0d4;
-  --text-muted: #6b7399;
+  --text-primary: #f2f7f4;
+  --text-secondary: #a3b6ac;
+  --text-muted: #66796f;
 
-  /* Brand accents */
-  --accent: #00e5ff;
-  --accent-2: #7c5cff;
-  --accent-3: #ff4fd8;
-  --accent-gradient: linear-gradient(135deg, #00e5ff 0%, #7c5cff 100%);
-  --accent-gradient-3: linear-gradient(120deg, #00e5ff 0%, #7c5cff 55%, #ff4fd8 100%);
-  --accent-glow: 0 0 24px rgba(0, 229, 255, 0.35);
-  --accent-2-glow: 0 0 24px rgba(124, 92, 255, 0.35);
+  /* Brand accent — one confident emerald, used the way their site uses its
+     checkmarks and "live" ticker: sparingly, only on CTAs/status/money.
+     Amber is the sole secondary, reserved for warnings/pending states. */
+  --accent: #23d68a;
+  --accent-2: #ffb648;
+  --accent-gradient: linear-gradient(135deg, #1fbf7d 0%, #23d68a 100%);
+  --accent-gradient-3: var(--accent-gradient);
+  --accent-glow: 0 0 14px rgba(35, 214, 138, 0.22);
+  --accent-2-glow: 0 0 14px rgba(255, 182, 72, 0.22);
 
-  /* Glass surfaces — used on cards/nav for the layered "premium fintech"
-     depth (vs. the flat single-color surfaces most AI-generated UIs default
-     to). */
-  --glass-bg: rgba(16, 22, 42, 0.55);
-  --glass-bg-strong: rgba(11, 16, 32, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.09);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  /* Glass surfaces — layered depth, kept dark/green-tinted instead of the
+     previous blue-tinted glass. */
+  --glass-bg: rgba(13, 31, 23, 0.55);
+  --glass-bg-strong: rgba(8, 26, 19, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --glass-blur: 22px;
 
   /* Semantic */

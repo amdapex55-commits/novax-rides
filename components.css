@@ -24,28 +24,20 @@
 .btn-sm { height: 40px; padding: 0 var(--sp-4); font-size: 13px; border-radius: var(--r-sm); }
 
 .btn-primary {
-  background: var(--accent-gradient-3);
-  background-size: 200% 100%;
+  background: var(--accent-gradient);
   color: var(--on-accent);
   box-shadow: var(--accent-glow), var(--glass-highlight);
-  transition: transform var(--dur-fast) var(--ease-bounce), box-shadow var(--dur-fast), background-position var(--dur-slow) var(--ease-out);
 }
-.btn-primary:active { background-position: 100% 0; }
-/* Diagonal light sweep on primary CTAs — the single biggest "this cost
-   money" cue you can add to a button for free. */
+/* One clean light sweep on press/appear — not a looping animation. A
+   button that shimmers forever reads as a slot machine, not a CTA. */
 .btn-primary::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 48%, transparent 62%);
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.22) 50%, transparent 65%);
   transform: translateX(-120%);
-  animation: nx-btn-shine 3.2s ease-in-out infinite;
-  animation-delay: 1s;
 }
-@keyframes nx-btn-shine {
-  0%, 40% { transform: translateX(-120%); }
-  65%, 100% { transform: translateX(120%); }
-}
+.btn-primary:active::after { transition: transform 0.5s var(--ease-out); transform: translateX(120%); }
 .btn-secondary {
   background: var(--surface-2);
   color: var(--text-primary);
@@ -89,13 +81,13 @@
 }
 .glow-card {
   position: relative;
-  background: linear-gradient(160deg, rgba(0,229,255,0.07), var(--glass-bg) 55%);
+  background: linear-gradient(160deg, rgba(35, 214, 138, 0.07), var(--glass-bg) 55%);
   border-radius: var(--r-lg);
   padding: var(--sp-5);
-  border: 1px solid rgba(0, 229, 255, 0.28);
+  border: 1px solid rgba(35, 214, 138, 0.28);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.06), var(--accent-glow), var(--glass-highlight);
+  box-shadow: 0 0 0 1px rgba(35, 214, 138, 0.06), var(--accent-glow), var(--glass-highlight);
   transition: transform var(--dur-fast) var(--ease-bounce), box-shadow var(--dur-fast);
 }
 .glow-card:active { transform: scale(0.985); }
@@ -124,7 +116,7 @@
 .input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(35, 214, 138, 0.15);
 }
 .input::placeholder { color: var(--text-muted); }
 textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resize: none; }
@@ -140,7 +132,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   border-radius: var(--r-sm);
   color: var(--text-primary);
 }
-.otp-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15); }
+.otp-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(35, 214, 138, 0.15); }
 
 /* ---------- Header ---------- */
 .topbar {
@@ -182,7 +174,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 }
 .nav-item svg { width: 22px; height: 22px; transition: transform var(--dur-fast) var(--ease-bounce); }
 .nav-item:active { transform: scale(0.9); }
-.nav-item.active { color: var(--accent); background: rgba(0, 229, 255, 0.1); box-shadow: 0 0 16px rgba(0,229,255,0.18); }
+.nav-item.active { color: var(--accent); background: rgba(35, 214, 138, 0.1); }
 .nav-item.active svg { transform: translateY(-1px); }
 
 /* ---------- List items / rows ---------- */
@@ -215,10 +207,10 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.badge-success { background: rgba(46, 230, 166, 0.12); color: var(--success); box-shadow: 0 0 12px rgba(46,230,166,0.18); }
-.badge-warning { background: rgba(255, 181, 71, 0.12); color: var(--warning); box-shadow: 0 0 12px rgba(255,181,71,0.18); }
-.badge-error { background: rgba(255, 84, 112, 0.12); color: var(--error); box-shadow: 0 0 12px rgba(255,84,112,0.18); }
-.badge-accent { background: rgba(0, 229, 255, 0.12); color: var(--accent); box-shadow: 0 0 12px rgba(0,229,255,0.18); }
+.badge-success { background: rgba(46, 230, 166, 0.12); color: var(--success); }
+.badge-warning { background: rgba(255, 181, 71, 0.12); color: var(--warning); }
+.badge-error { background: rgba(255, 84, 112, 0.12); color: var(--error); }
+.badge-accent { background: rgba(35, 214, 138, 0.12); color: var(--accent); }
 
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
@@ -232,7 +224,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   transition: all var(--dur-fast);
 }
 .chip.selected {
-  background: rgba(0, 229, 255, 0.1);
+  background: rgba(35, 214, 138, 0.1);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -275,7 +267,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 }
 .option-card.selected {
   border-color: var(--accent);
-  background: linear-gradient(135deg, rgba(0,229,255,0.1), rgba(124,92,255,0.1));
+  background: linear-gradient(135deg, rgba(35, 214, 138, 0.1), rgba(255, 182, 72, 0.1));
   box-shadow: var(--accent-glow), var(--glass-highlight);
   transform: scale(1.01);
 }
@@ -344,3 +336,163 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   font-size: 12px;
   margin-bottom: var(--sp-5);
 }
+
+/* ---------- Top tabs — the tri-modal Food/Bike/Taxi (and Restaurant-portal
+   Orders/Menu) segmented switcher. One pill slides under the active label
+   instead of each tab getting its own background — a single moving piece
+   reads as precise, four independently-lit tabs reads as a slot machine. */
+.top-tabs {
+  position: relative;
+  display: grid;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--r-full);
+  padding: 4px;
+  margin-bottom: var(--sp-5);
+}
+.top-tabs-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: var(--r-full);
+  background: var(--accent-gradient);
+  box-shadow: var(--accent-glow);
+  transition: transform var(--dur-med) var(--ease-spring), width var(--dur-med) var(--ease-spring);
+  z-index: 0;
+}
+.top-tab {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  border-radius: var(--r-full);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.top-tab.active { color: var(--on-accent); }
+.top-tab:active { transform: scale(0.97); }
+
+/* ---------- Toggle switch — driver dual-mode, restaurant open/closed.
+   A real sliding thumb (not a repainted button) so the state change itself
+   is the animation, on every tap, exactly where the "maximum animation on
+   every toggle" brief is aimed. */
+.toggle-switch {
+  --tw: 52px; --th: 30px;
+  position: relative;
+  width: var(--tw);
+  height: var(--th);
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  border: 1px solid var(--surface-border);
+  flex: none;
+  transition: background var(--dur-med) var(--ease-out), border-color var(--dur-med) var(--ease-out);
+}
+.toggle-switch.on { background: var(--accent-gradient); border-color: transparent; box-shadow: var(--accent-glow); }
+.toggle-switch-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: calc(var(--th) - 8px);
+  height: calc(var(--th) - 8px);
+  border-radius: 50%;
+  background: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-med) var(--ease-spring);
+}
+.toggle-switch.on .toggle-switch-thumb { transform: translateX(calc(var(--tw) - var(--th)));  background: var(--on-accent); }
+
+/* ---------- Mode switch — bigger sibling of toggle-switch, used for the
+   driver's Ride vs Food & Errands queue selector: two labeled halves with
+   one sliding highlight, so switching queues is unmistakably a real state
+   change rather than a small checkbox buried in settings. */
+.mode-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--r-lg);
+  padding: 4px;
+}
+.mode-switch-indicator {
+  position: absolute;
+  top: 4px; bottom: 4px; left: 4px;
+  width: calc(50% - 4px);
+  border-radius: var(--r-md);
+  background: var(--accent-gradient);
+  box-shadow: var(--accent-glow);
+  transition: transform var(--dur-med) var(--ease-spring);
+  z-index: 0;
+}
+.mode-switch.right .mode-switch-indicator { transform: translateX(calc(100% + 0px)); }
+.mode-switch-option {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--sp-4) var(--sp-2);
+  border-radius: var(--r-md);
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.mode-switch-option.active { color: var(--on-accent); }
+
+/* ---------- Quantity stepper — cart line items, menu-item add controls. ---------- */
+.qty-stepper { display: flex; align-items: center; gap: var(--sp-3); }
+.qty-btn {
+  width: 32px; height: 32px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--surface-border);
+  color: var(--text-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 16px;
+  transition: transform var(--dur-fast) var(--ease-bounce), background var(--dur-fast);
+}
+.qty-btn:active { transform: scale(0.88); background: var(--surface-3); }
+
+/* ---------- Restaurant / menu cards ---------- */
+.restaurant-card {
+  display: flex; gap: var(--sp-4);
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-highlight);
+  transition: transform var(--dur-fast) var(--ease-bounce), border-color var(--dur-fast);
+}
+.restaurant-card:active { transform: scale(0.98); border-color: rgba(35, 214, 138, 0.3); }
+.restaurant-card-thumb {
+  width: 64px; height: 64px; flex: none;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+}
+
+/* ---------- Floating cart button — appears/disappears with a spring pop,
+   not a hard show/hide, whenever the cart item count changes. ---------- */
+.cart-fab {
+  position: fixed;
+  left: var(--sp-4); right: var(--sp-4);
+  bottom: calc(var(--sp-4) + 76px + var(--safe-bottom));
+  max-width: calc(var(--max-w) - var(--sp-8));
+  margin: 0 auto;
+  z-index: 150;
+  transform: translateY(120%) scale(0.9);
+  opacity: 0;
+  transition: transform var(--dur-med) var(--ease-spring), opacity var(--dur-med) var(--ease-out);
+  pointer-events: none;
+}
+.cart-fab.show { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }

@@ -3,10 +3,6 @@ import { api, Token } from "./api.js";
 import { icon } from "./icons.js";
 import { toast, fmtMoney, fmtDate, countUp, skeletonRows } from "./ui.js";
 
-function pendingFlag() {
-  return `<div class="pending-flag">${icon("bell", 16)} Designed but not backend-wired yet — no API exists for this feature.</div>`;
-}
-
 export function renderEarnings(root) {
   root.innerHTML = `
     <div class="page">
@@ -103,33 +99,94 @@ export function renderDriverProfile(root) {
   root.querySelectorAll("[data-nav]").forEach((r) => r.addEventListener("click", () => (location.hash = r.dataset.nav)));
 }
 
+const VEHICLE_TYPES = [
+  { value: "bike", label: "Bike" },
+  { value: "rickshaw", label: "Rickshaw" },
+  { value: "car", label: "Car" },
+];
+
 export function renderVehicle(root) {
   root.innerHTML = `
     <div class="page">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-4">Vehicle Management</h1>
-      ${pendingFlag()}
-      <div class="card flex items-center gap-3 mb-3">
-        <div class="list-row-icon">${icon("car", 20)}</div>
-        <div style="flex:1;">
-          <p class="font-bold text-sm">Primary Vehicle</p>
-          <p class="text-secondary text-xs">Not added yet</p>
-        </div>
-      </div>
-      <button class="btn btn-secondary btn-block">Add Vehicle</button>
+      <div id="vehicleForm">${skeletonRows(3)}</div>
     </div>
   `;
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
+
+  api.getVehicle()
+    .then((v) => renderForm(v || {}))
+    .catch(() => renderForm({}));
+
+  function renderForm(v) {
+    root.querySelector("#vehicleForm").innerHTML = `
+      <label class="field-label">Vehicle Type</label>
+      <div class="flex gap-2 mb-4" id="typeRow">
+        ${VEHICLE_TYPES.map((t) => `<button class="option-card${v.vehicleType === t.value ? " selected" : ""}" data-type="${t.value}" style="flex:1; justify-content:center;">${t.label}</button>`).join("")}
+      </div>
+      <label class="field-label">Number Plate</label>
+      <input id="plateInput" class="input mb-4" placeholder="e.g. KHI-2024" value="${v.vehiclePlate || ""}"/>
+      <label class="field-label">CNIC Number</label>
+      <input id="cnicInput" class="input mb-6" placeholder="42101-1234567-1" value="${v.cnicNumber || ""}"/>
+      <button id="saveVehicleBtn" class="btn btn-primary btn-block">Save Vehicle</button>
+    `;
+    let selectedType = v.vehicleType || "bike";
+    root.querySelectorAll("#typeRow .option-card").forEach((c) => {
+      c.addEventListener("click", () => {
+        root.querySelectorAll("#typeRow .option-card").forEach((x) => x.classList.remove("selected"));
+        c.classList.add("selected");
+        selectedType = c.dataset.type;
+      });
+    });
+    root.querySelector("#saveVehicleBtn").addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span>`;
+      try {
+        await api.updateVehicle({
+          vehicleType: selectedType,
+          vehiclePlate: root.querySelector("#plateInput").value.trim() || undefined,
+          cnicNumber: root.querySelector("#cnicInput").value.trim() || undefined,
+        });
+        toast("Vehicle saved");
+      } catch (err) {
+        toast(err.message || "Couldn't save vehicle", true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = "Save Vehicle";
+      }
+    });
+  }
 }
 
 export function renderDriverNotifications(root) {
   root.innerHTML = `
     <div class="page">
       <h1 class="text-xl mb-4">Notifications</h1>
-      ${pendingFlag()}
-      <div class="empty-state"><div class="icon">${icon("bell", 32)}</div><p>No notifications yet</p></div>
+      <div id="notifList">${skeletonRows(3)}</div>
     </div>
   `;
+  api.getNotifications()
+    .then((items) => {
+      if (!Array.isArray(items) || items.length === 0) {
+        root.querySelector("#notifList").innerHTML = `<div class="empty-state"><div class="icon">${icon("bell", 32)}</div><p>No notifications yet</p></div>`;
+        return;
+      }
+      root.querySelector("#notifList").innerHTML = items.map((n, i) => `
+        <div class="list-row stagger-item" style="animation-delay:${i * 40}ms;" data-id="${n.id}">
+          <div class="list-row-icon">${icon("bell", 18)}</div>
+          <div class="flex-col" style="flex:1;">
+            <p class="font-bold text-sm">${n.title}${n.read ? "" : ` <span class="badge badge-accent">New</span>`}</p>
+            <p class="text-secondary text-xs mt-1">${n.body}</p>
+            <p class="text-xs text-muted mt-1">${fmtDate(n.createdAt)}</p>
+          </div>
+        </div>`).join("");
+      root.querySelectorAll("#notifList [data-id]").forEach((row) => {
+        row.addEventListener("click", () => api.markNotificationRead(row.dataset.id).catch(() => {}));
+      });
+    })
+    .catch(() => { root.querySelector("#notifList").innerHTML = `<div class="empty-state"><p>Couldn't load notifications</p></div>`; });
 }
 
 export function renderIncentives(root) {
@@ -137,12 +194,27 @@ export function renderIncentives(root) {
     <div class="page">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-4">Incentives & Rewards</h1>
-      ${pendingFlag()}
-      <div class="card mb-3">
-        <p class="font-bold mb-1">Complete 20 trips this week</p>
-        <p class="text-secondary text-sm">Earn a Rs. 1,500 bonus</p>
-      </div>
+      <div id="incentiveCard">${skeletonRows(1)}</div>
     </div>
   `;
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
+
+  api.getIncentiveProgress()
+    .then((p) => {
+      const pct = Math.min(100, Math.round((p.tripsThisWeek / p.target) * 100));
+      root.querySelector("#incentiveCard").innerHTML = `
+        <div class="card mb-3">
+          <div class="flex justify-between items-center mb-2">
+            <p class="font-bold">Complete ${p.target} trips this week</p>
+            <span class="badge ${p.achieved ? "badge-success" : "badge-accent"}">${p.achieved ? "Achieved" : `${p.tripsThisWeek}/${p.target}`}</span>
+          </div>
+          <p class="text-secondary text-sm mb-3">Earn a Rs. ${p.bonusAmount.toLocaleString("en-PK")} bonus</p>
+          <div style="height:8px; border-radius:var(--r-full); background:var(--surface-2); overflow:hidden;">
+            <div style="height:100%; width:${pct}%; background:var(--accent-gradient); border-radius:var(--r-full);"></div>
+          </div>
+          <p class="text-xs text-muted mt-2">${p.achieved ? "Bonus paid out with your next payout cycle." : `${p.remaining} more trip${p.remaining === 1 ? "" : "s"} to go`}</p>
+        </div>
+      `;
+    })
+    .catch(() => { root.querySelector("#incentiveCard").innerHTML = `<div class="empty-state"><p>Couldn't load incentive progress</p></div>`; });
 }

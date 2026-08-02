@@ -26,6 +26,7 @@ export function renderSplash(root) {
         window.__novaxRefreshNav();
         if (user.role === "DRIVER") navigate(user.kycStatus === "APPROVED" ? "/driver/home" : "/driver/pending");
         else if (user.role === "ADMIN") navigate("/ops/dashboard");
+        else if (user.role === "RESTAURANT") navigate(await restaurantHomePath());
         else navigate("/home");
         return;
       } catch { Token.clear(); }
@@ -38,27 +39,55 @@ export function renderSplash(root) {
   return () => clearTimeout(t);
 }
 
+// A restaurant account's landing screen depends on how far they've gotten
+// in onboarding — no profile yet, awaiting approval, or fully live. One
+// extra request on login (mirrors the driver KYC check above) rather than
+// guessing from the JWT, since restaurant status can change server-side
+// (admin approval/suspension) between logins.
+async function restaurantHomePath() {
+  try {
+    const restaurant = await api.getMyRestaurant();
+    if (restaurant.status === "PENDING") return "/restaurant/pending";
+    return "/restaurant/orders";
+  } catch {
+    return "/restaurant/onboarding";
+  }
+}
+
+const ROLE_COPY = {
+  RIDER: { icon: "bolt", title: "Welcome to Nova X", subtitle: "Enter your phone number to get started.", swap: [{ label: "I'm a driver →", to: "/driver/phone" }, { label: "List your restaurant →", to: "/restaurant/phone" }] },
+  DRIVER: { icon: "car", title: "Drive with Nova X", subtitle: "Enter your number to start earning — bike, rickshaw, or car.", swap: [{ label: "I'm a rider →", to: "/phone" }, { label: "List your restaurant →", to: "/restaurant/phone" }] },
+  RESTAURANT: { icon: "store", title: "List Your Restaurant", subtitle: "Enter your number to set up your storefront on Nova X Food.", swap: [{ label: "I'm a rider →", to: "/phone" }, { label: "I'm a driver →", to: "/driver/phone" }] },
+};
+
 export function renderPhoneEntry(role) {
   return (root) => {
-    const isDriver = role === "DRIVER";
+    const copy = ROLE_COPY[role] || ROLE_COPY.RIDER;
+    const isRider = role === "RIDER";
     root.innerHTML = `
       <div class="page flex-col" style="height:100dvh;">
         <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
         <div class="flex-col" style="flex:1; justify-content:center;">
           <div class="mb-6">
             <div style="width:64px;height:64px;border-radius:20px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;box-shadow:var(--accent-glow);margin-bottom:20px;">
-              ${icon(isDriver ? "car" : "bolt", 30, 2)}
+              ${icon(copy.icon, 30, 2)}
             </div>
-            <h1 class="text-xl">${isDriver ? "Drive with Nova X" : "Welcome to Nova X"}</h1>
-            <p class="text-secondary mt-2">${isDriver ? "Enter your registered driver number to continue." : "Enter your phone number to get started."}</p>
+            <h1 class="text-xl">${copy.title}</h1>
+            <p class="text-secondary mt-2">${copy.subtitle}</p>
           </div>
           <label class="field-label">Phone Number</label>
           <div class="flex gap-2 mb-4">
             <div class="input flex items-center justify-center" style="width:64px; flex:none; color:var(--text-secondary);">+92</div>
             <input id="phoneInput" class="input" type="tel" inputmode="numeric" maxlength="10" placeholder="300 1234567"/>
           </div>
+          ${isRider ? `
+          <label class="field-label">Referral Code <span class="text-muted" style="text-transform:none; font-weight:400;">(optional)</span></label>
+          <input id="referralInput" class="input mb-4" type="text" maxlength="8" placeholder="e.g. AB12CD" value="${state.pendingReferralCode || ""}" style="text-transform:uppercase;"/>
+          ` : ""}
           <button id="continueBtn" class="btn btn-primary btn-block">Continue ${icon("arrow-forward", 18)}</button>
-          ${!isDriver ? `<button id="toDriverBtn" class="btn btn-ghost btn-block mt-2">I'm a driver →</button>` : `<button id="toRiderBtn" class="btn btn-ghost btn-block mt-2">I'm a rider →</button>`}
+          <div class="flex-col gap-1 mt-2">
+            ${copy.swap.map((s, i) => `<button class="btn btn-ghost btn-block" data-swap-to="${s.to}">${s.label}</button>`).join("")}
+          </div>
           <p class="text-xs text-muted text-center mt-6">By continuing you agree to Nova X's Terms of Service and Privacy Policy.</p>
         </div>
       </div>
@@ -78,11 +107,13 @@ export function renderPhoneEntry(role) {
       const raw = input.value.replace(/\D/g, "");
       if (raw.length < 10) { toast("Enter a valid 10-digit number", true); return; }
       const phone = e164(input.value);
+      const referralCode = root.querySelector("#referralInput")?.value.trim().toUpperCase() || undefined;
       btn.disabled = true;
       btn.innerHTML = `<span class="spinner"></span>`;
       try {
-        await api.requestOtp(phone);
+        await api.requestOtp(phone, referralCode, isRider ? undefined : role);
         state.pendingPhone = phone;
+        state.pendingReferralCode = null;
         navigate("/otp");
       } catch (err) {
         toast(err.message || "Couldn't send code", true);
@@ -91,8 +122,7 @@ export function renderPhoneEntry(role) {
       }
     });
 
-    const swapBtn = root.querySelector("#toDriverBtn") || root.querySelector("#toRiderBtn");
-    swapBtn?.addEventListener("click", () => navigate(isDriver ? "/phone" : "/driver/phone"));
+    root.querySelectorAll("[data-swap-to]").forEach((b) => b.addEventListener("click", () => navigate(b.dataset.swapTo)));
   };
 }
 
@@ -165,6 +195,7 @@ export function renderOtp(root) {
       if (resume) navigate(resume);
       else if (user.role === "DRIVER") navigate(user.kycStatus === "APPROVED" ? "/driver/home" : "/driver/pending");
       else if (user.role === "ADMIN") navigate("/ops/dashboard");
+      else if (user.role === "RESTAURANT") navigate(await restaurantHomePath());
       else navigate("/home");
     } catch (err) {
       toast(err.message || "Invalid code", true);

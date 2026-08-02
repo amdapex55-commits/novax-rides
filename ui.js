@@ -22,7 +22,7 @@ export function closeSheet(sheetEl, overlayEl) {
   sheetEl.classList.remove("open");
 }
 
-const CONFETTI_COLORS = ["#00e5ff", "#7c5cff", "#2ee6a6", "#ffb547", "#f3f6ff"];
+const CONFETTI_COLORS = ["#23d68a", "#ffb648", "#2ee6a6", "#ffb547", "#f2f7f4"];
 export function confettiBurst(x, y, count = 26) {
   for (let i = 0; i < count; i++) {
     const p = document.createElement("div");
