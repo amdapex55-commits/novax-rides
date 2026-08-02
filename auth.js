@@ -66,8 +66,11 @@ export function renderPhoneEntry(role) {
     const input = root.querySelector("#phoneInput");
     const btn = root.querySelector("#continueBtn");
     root.querySelector("#backBtn").addEventListener("click", () => {
-      if (history.length > 1) history.back();
-      else navigate("/home");
+      // Always land on guest home, never history.back() — a route that
+      // bounced them here (auth guard) would just bounce them right back,
+      // trapping them in a loop with no way out.
+      state.postAuthRedirect = null;
+      navigate("/home");
     });
     input.focus();
 

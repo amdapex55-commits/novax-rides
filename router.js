@@ -36,9 +36,9 @@ export const ROUTES = {
   "/history": { render: RiderAccount.renderTripHistory, auth: "RIDER", nav: true, tab: "history" },
   "/profile": { render: RiderAccount.renderProfile, auth: "RIDER", nav: true, tab: "profile" },
   "/settings": { render: RiderAccount.renderSettings, auth: "RIDER", nav: false },
-  "/loyalty": { render: RiderExtras.renderLoyalty, auth: "RIDER", nav: false },
-  "/refer": { render: RiderExtras.renderRefer, auth: "RIDER", nav: false },
-  "/business": { render: RiderExtras.renderBusiness, auth: "RIDER", nav: false },
+  "/loyalty": { render: RiderExtras.renderLoyalty, auth: "guest", nav: false },
+  "/refer": { render: RiderExtras.renderRefer, auth: "guest", nav: false },
+  "/business": { render: RiderExtras.renderBusiness, auth: "guest", nav: false },
 
   "/driver/pending": { render: DriverAuth.renderPendingApproval, auth: "DRIVER", nav: false },
   "/driver/kyc": { render: DriverAuth.renderKycUpload, auth: "DRIVER", nav: false },

@@ -20,7 +20,8 @@ body {
 h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  font-feature-settings: "ss01" 1;
 }
 
 button, input, textarea, select {
@@ -53,6 +54,43 @@ img { max-width: 100%; display: block; }
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  isolation: isolate;
+}
+
+/* Ambient aura — two soft, slowly-drifting glow blobs behind every screen.
+   This one layer is most of the difference between "flat dark app" and
+   "app that feels expensive": nothing else in the DOM references it. */
+#app-root::before,
+#app-root::after {
+  content: "";
+  position: fixed;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(80px);
+  opacity: 0.35;
+  animation: nx-aura-drift 18s ease-in-out infinite alternate;
+}
+#app-root::before {
+  top: -20vmax;
+  left: -20vmax;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+}
+#app-root::after {
+  bottom: -22vmax;
+  right: -18vmax;
+  background: radial-gradient(circle, var(--accent-2) 0%, transparent 70%);
+  animation-delay: -9s;
+  animation-direction: alternate-reverse;
+}
+@keyframes nx-aura-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(6%, 4%) scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #app-root::before, #app-root::after { animation: none; }
 }
 
 #view-container {

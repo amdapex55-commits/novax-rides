@@ -77,7 +77,7 @@ export function renderHome(root) {
   `;
 
   root.querySelector("#whereToCard").addEventListener("click", () => navigate("/set-locations"));
-  root.querySelector("#signInCard")?.addEventListener("click", () => navigate("/phone"));
+  root.querySelector("#signInCard")?.addEventListener("click", () => { state.postAuthRedirect = null; navigate("/phone"); });
   root.querySelector("[data-nav-driver]")?.addEventListener("click", () => navigate("/driver/phone"));
   const rideBtn = root.querySelector("#rideBtn");
   const parcelBtn = root.querySelector("#parcelBtn");
