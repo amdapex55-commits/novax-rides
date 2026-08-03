@@ -1,10 +1,10 @@
 // Nova X Rides — rider home (tri-modal Food / Bike / Taxi shell), set
 // locations, fare/vehicle selection.
-import { api, Token } from "./api.js";
-import { state } from "./state.js";
-import { icon } from "./icons.js";
-import { toast, fmtMoney, skeletonRows } from "./ui.js";
-import { navigate } from "./router.js";
+import { api, Token } from "../api.js";
+import { state } from "../state.js";
+import { icon } from "../icons.js";
+import { toast, fmtMoney, skeletonRows } from "../ui.js";
+import { navigate } from "../router.js";
 
 const TABS = [
   { key: "FOOD", label: "Food", icon: "utensils" },

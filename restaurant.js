@@ -2,11 +2,11 @@
 // queue, menu management, store profile. Mirrors driverAuth.js's
 // pending-approval pattern (poll real status, same honest "still under
 // review" copy) and food.js's cart/menu patterns for consistency.
-import { api, Token } from "./api.js";
-import { icon } from "./icons.js";
-import { toast, fmtMoney, skeletonRows } from "./ui.js";
-import { navigate } from "./router.js";
-import { socketManager } from "./socket.js";
+import { api, Token } from "../api.js";
+import { icon } from "../icons.js";
+import { toast, fmtMoney, skeletonRows } from "../ui.js";
+import { navigate } from "../router.js";
+import { socketManager } from "../socket.js";
 
 const KARACHI = { lat: 24.8607, lng: 67.0011 };
 function getDeviceCoords() {

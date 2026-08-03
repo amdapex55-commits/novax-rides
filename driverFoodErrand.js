@@ -2,11 +2,11 @@
 // + step-through progress screens. Mirrors driverHome.js's
 // renderIncomingOffer/renderTripProgress shape exactly, just pointed at the
 // food-orders/errands endpoints instead of trips.
-import { api } from "./api.js";
-import { state } from "./state.js";
-import { icon } from "./icons.js";
-import { toast, fmtMoney } from "./ui.js";
-import { navigate } from "./router.js";
+import { api } from "../api.js";
+import { state } from "../state.js";
+import { icon } from "../icons.js";
+import { toast, fmtMoney } from "../ui.js";
+import { navigate } from "../router.js";
 
 function renderOfferCountdown(root, { badge, onAccept, onDecline, id, fallbackPath }) {
   let seconds = 15;

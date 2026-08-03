@@ -4,21 +4,21 @@
 // navigation), then the new view renders with a fade-rise transition.
 import { Token } from "./api.js";
 import { state } from "./state.js";
-import * as Auth from "./auth.js";
-import * as RiderHome from "./riderHome.js";
-import * as RiderTrip from "./riderTrip.js";
-import * as RiderAccount from "./riderAccount.js";
-import * as RiderExtras from "./riderExtras.js";
-import * as DriverAuth from "./driverAuth.js";
-import * as DriverHome from "./driverHome.js";
-import * as DriverAccount from "./driverAccount.js";
-import * as Parcel from "./parcel.js";
-import * as Ops from "./ops.js";
-import * as Support from "./support.js";
-import * as Food from "./food.js";
-import * as Errand from "./errand.js";
-import * as Restaurant from "./restaurant.js";
-import * as DriverFoodErrand from "./driverFoodErrand.js";
+import * as Auth from "./views/auth.js";
+import * as RiderHome from "./views/riderHome.js";
+import * as RiderTrip from "./views/riderTrip.js";
+import * as RiderAccount from "./views/riderAccount.js";
+import * as RiderExtras from "./views/riderExtras.js";
+import * as DriverAuth from "./views/driverAuth.js";
+import * as DriverHome from "./views/driverHome.js";
+import * as DriverAccount from "./views/driverAccount.js";
+import * as Parcel from "./views/parcel.js";
+import * as Ops from "./views/ops.js";
+import * as Support from "./views/support.js";
+import * as Food from "./views/food.js";
+import * as Errand from "./views/errand.js";
+import * as Restaurant from "./views/restaurant.js";
+import * as DriverFoodErrand from "./views/driverFoodErrand.js";
 
 // auth: "none" (public) | "guest" (public, but bounces a logged-in
 // non-rider to their own home) | "any" (any logged-in role) | "RIDER" |

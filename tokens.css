@@ -1,48 +1,46 @@
 /* Nova X Rides — design tokens.
-   Futuristic dark system: deep space-navy base, electric cyan + violet
-   accents (distinct from any of Careem/Uber/InDrive/Bykea's palettes —
-   they all use white/yellow/green/black; nobody in this category owns
-   cyan-violet neon-on-navy). */
+   Light system, deliberately matching category convention (Uber/Careem/
+   inDrive/Bykea are all light/white with one bold accent) instead of
+   fighting it — in ride-hailing/food-delivery, "boring and trustworthy"
+   beats "distinctive and dark." Dark UI reads as gaming/crypto here, and
+   is worse outdoors in daylight, which is most of this app's usage. */
 :root {
-  /* Surfaces — anchored on novaxlogistics.com's confirmed browser
-     theme-color (#04100b, a near-black deep green-navy) rather than the
-     blue-navy this app started with. Same fintech-grade restraint as their
-     site: dark, quiet, almost no color until something needs attention. */
-  --bg: #04100b;
-  --bg-elevated: #081a13;
-  --surface: #0d1f17;
-  --surface-2: #12291f;
-  --surface-3: #17342a;
-  --surface-border: #234438;
+  /* Surfaces — clean white base with a whisper of cool-gray for depth
+     between stacked cards, not a return to flat gray-on-gray. */
+  --bg: #ffffff;
+  --bg-elevated: #ffffff;
+  --surface: #f6f8f7;
+  --surface-2: #eef1ef;
+  --surface-3: #e3e7e4;
+  --surface-border: #dfe3e0;
 
   /* Text */
-  --text-primary: #f2f7f4;
-  --text-secondary: #a3b6ac;
-  --text-muted: #66796f;
+  --text-primary: #0e1d16;
+  --text-secondary: #5c6a63;
+  --text-muted: #94a19a;
 
-  /* Brand accent — one confident emerald, used the way their site uses its
-     checkmarks and "live" ticker: sparingly, only on CTAs/status/money.
-     Amber is the sole secondary, reserved for warnings/pending states. */
-  --accent: #23d68a;
-  --accent-2: #ffb648;
-  --accent-gradient: linear-gradient(135deg, #1fbf7d 0%, #23d68a 100%);
+  /* Brand accent — same emerald identity, deepened slightly so it holds
+     AA contrast on white instead of the neon-on-navy tuning. Amber stays
+     the sole secondary, reserved for warnings/pending states. */
+  --accent: #0fa968;
+  --accent-2: #e2960a;
+  --accent-gradient: linear-gradient(135deg, #0c9a5e 0%, #12b673 100%);
   --accent-gradient-3: var(--accent-gradient);
-  --accent-glow: 0 0 14px rgba(35, 214, 138, 0.22);
-  --accent-2-glow: 0 0 14px rgba(255, 182, 72, 0.22);
+  --accent-glow: 0 0 14px rgba(15, 169, 104, 0.22);
+  --accent-2-glow: 0 0 14px rgba(226, 150, 10, 0.22);
 
-  /* Glass surfaces — layered depth, kept dark/green-tinted instead of the
-     previous blue-tinted glass. */
-  --glass-bg: rgba(13, 31, 23, 0.55);
-  --glass-bg-strong: rgba(8, 26, 19, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  /* Glass surfaces — light, frosted-white instead of dark-tinted. */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-bg-strong: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(14, 29, 22, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   --glass-blur: 22px;
 
   /* Semantic */
-  --success: #2ee6a6;
-  --warning: #ffb547;
-  --error: #ff5470;
-  --on-accent: #04101c;
+  --success: #12b673;
+  --warning: #d97706;
+  --error: #e11d48;
+  --on-accent: #ffffff;
 
   /* Elevation shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);

@@ -1,9 +1,9 @@
 // Nova X Rides — ops/admin screens. Real list endpoints now exist
 // (AdminController) instead of the backend only supporting a single
 // approve-by-id action, so this dashboard is genuinely wired.
-import { api } from "./api.js";
-import { icon } from "./icons.js";
-import { toast, fmtDate, skeletonRows } from "./ui.js";
+import { api } from "../api.js";
+import { icon } from "../icons.js";
+import { toast, fmtDate, skeletonRows } from "../ui.js";
 
 export function renderOpsDashboard(root) {
   root.innerHTML = `

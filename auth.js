@@ -2,11 +2,11 @@
 // This is the one flow both roles share; the backend, not the button the
 // user tapped, decides the real role (see README "Known gaps" — there's no
 // self-service driver registration yet, role is set in the database).
-import { api, Token } from "./api.js";
-import { state } from "./state.js";
-import { icon } from "./icons.js";
-import { toast, e164 } from "./ui.js";
-import { navigate } from "./router.js";
+import { api, Token } from "../api.js";
+import { state } from "../state.js";
+import { icon } from "../icons.js";
+import { toast, e164 } from "../ui.js";
+import { navigate } from "../router.js";
 
 export function renderSplash(root) {
   root.innerHTML = `

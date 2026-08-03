@@ -145,7 +145,7 @@ img { max-width: 100%; display: block; }
    intentionally, not just a stranded strip of content. */
 @media (min-width: 640px) {
   body {
-    background: radial-gradient(ellipse at top, #0d1326 0%, #030509 70%);
+    background: #eef1ef;
   }
   #app-root {
     margin-top: 24px;

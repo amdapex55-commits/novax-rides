@@ -1,10 +1,10 @@
 // Nova X Rides — active trip tracking (live socket) + rate trip.
-import { api } from "./api.js";
-import { state } from "./state.js";
-import { icon } from "./icons.js";
-import { toast, confettiBurst } from "./ui.js";
-import { navigate } from "./router.js";
-import { socketManager } from "./socket.js";
+import { api } from "../api.js";
+import { state } from "../state.js";
+import { icon } from "../icons.js";
+import { toast, confettiBurst } from "../ui.js";
+import { navigate } from "../router.js";
+import { socketManager } from "../socket.js";
 
 const STATUS_COPY = {
   REQUESTED: "Looking for a driver...",

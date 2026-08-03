@@ -1,10 +1,10 @@
 // Nova X Rides — driver pending-approval (polls real KYC status) and KYC
 // document upload (wired to the real presign endpoint; actual file PUT only
 // succeeds once R2 credentials are configured on the backend — see README).
-import { api, Token } from "./api.js";
-import { icon } from "./icons.js";
-import { toast } from "./ui.js";
-import { navigate } from "./router.js";
+import { api, Token } from "../api.js";
+import { icon } from "../icons.js";
+import { toast } from "../ui.js";
+import { navigate } from "../router.js";
 
 export function renderPendingApproval(root) {
   root.innerHTML = `

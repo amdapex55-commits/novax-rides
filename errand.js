@@ -1,12 +1,12 @@
 // Nova X Rides — "Pick & Deliver to Me" errand flow: what to buy + where
 // from + budget, then live tracking. Mirrors parcel.js's shape against the
 // Errands module (POST /errands) instead of Delivery.
-import { api, Token } from "./api.js";
-import { state } from "./state.js";
-import { icon } from "./icons.js";
-import { toast, fmtMoney } from "./ui.js";
-import { navigate } from "./router.js";
-import { socketManager } from "./socket.js";
+import { api, Token } from "../api.js";
+import { state } from "../state.js";
+import { icon } from "../icons.js";
+import { toast, fmtMoney } from "../ui.js";
+import { navigate } from "../router.js";
+import { socketManager } from "../socket.js";
 
 const KARACHI = { lat: 24.8607, lng: 67.0011 };
 function getDemoCoords() {

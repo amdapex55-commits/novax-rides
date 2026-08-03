@@ -1,7 +1,7 @@
 // Nova X Rides — driver earnings, profile, vehicle, notifications, incentives.
-import { api, Token } from "./api.js";
-import { icon } from "./icons.js";
-import { toast, fmtMoney, fmtDate, countUp, skeletonRows } from "./ui.js";
+import { api, Token } from "../api.js";
+import { icon } from "../icons.js";
+import { toast, fmtMoney, fmtDate, countUp, skeletonRows } from "../ui.js";
 
 export function renderEarnings(root) {
   root.innerHTML = `

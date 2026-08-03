@@ -184,15 +184,15 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-3);
   border-radius: var(--r-md);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(14,29,22,0.07);
   transition: background var(--dur-fast), transform var(--dur-fast) var(--ease-bounce);
 }
 .list-row:last-child { border-bottom: none; }
-.list-row:active { background: rgba(255,255,255,0.04); transform: scale(0.99); }
+.list-row:active { background: rgba(14,29,22,0.04); transform: scale(0.99); }
 .list-row-icon {
   width: 44px; height: 44px; border-radius: var(--r-full);
   background: linear-gradient(160deg, var(--surface-3), var(--surface-2));
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(14,29,22,0.06);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }

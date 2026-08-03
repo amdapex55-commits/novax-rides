@@ -1,11 +1,11 @@
 // Nova X Rides — driver home (online/offline + live location), incoming
 // trip offer, trip-in-progress state machine.
-import { api, Token } from "./api.js";
-import { state } from "./state.js";
-import { icon } from "./icons.js";
-import { toast } from "./ui.js";
-import { navigate } from "./router.js";
-import { socketManager } from "./socket.js";
+import { api, Token } from "../api.js";
+import { state } from "../state.js";
+import { icon } from "../icons.js";
+import { toast } from "../ui.js";
+import { navigate } from "../router.js";
+import { socketManager } from "../socket.js";
 
 export function renderDriverHome(root) {
   const user = Token.user;

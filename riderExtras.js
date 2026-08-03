@@ -4,11 +4,11 @@
 // signup, and the business form lands a real row for manual follow-up
 // (no self-serve corporate billing system exists — that's a genuine
 // product build, not a form).
-import { api, Token } from "./api.js";
-import { state } from "./state.js";
-import { icon } from "./icons.js";
-import { toast, skeletonRows } from "./ui.js";
-import { navigate } from "./router.js";
+import { api, Token } from "../api.js";
+import { state } from "../state.js";
+import { icon } from "../icons.js";
+import { toast, skeletonRows } from "../ui.js";
+import { navigate } from "../router.js";
 
 function signInPrompt(title, body) {
   return `

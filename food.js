@@ -2,12 +2,12 @@
 // (creates a real FoodOrder against food-orders.controller.ts), live tracking.
 // Mirrors the parcel.js flow shape against the FoodOrders module instead of
 // Delivery — same real matching engine, driver just has to be in FOOD_ERRAND mode.
-import { api, Token } from "./api.js";
-import { state } from "./state.js";
-import { icon } from "./icons.js";
-import { toast, fmtMoney, skeletonRows } from "./ui.js";
-import { navigate } from "./router.js";
-import { socketManager } from "./socket.js";
+import { api, Token } from "../api.js";
+import { state } from "../state.js";
+import { icon } from "../icons.js";
+import { toast, fmtMoney, skeletonRows } from "../ui.js";
+import { navigate } from "../router.js";
+import { socketManager } from "../socket.js";
 import { restaurantCardHtml } from "./riderHome.js";
 
 export function renderFoodBrowse(root) {

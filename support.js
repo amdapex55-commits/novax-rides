@@ -2,11 +2,11 @@
 // backend exists (that's a real realtime feature) — this is the honest
 // functional version: a real ticket lands in the database via
 // POST /support/tickets instead of a chat UI that goes nowhere.
-import { icon } from "./icons.js";
-import { api, Token } from "./api.js";
-import { state } from "./state.js";
-import { toast } from "./ui.js";
-import { navigate } from "./router.js";
+import { icon } from "../icons.js";
+import { api, Token } from "../api.js";
+import { state } from "../state.js";
+import { toast } from "../ui.js";
+import { navigate } from "../router.js";
 
 export function renderChat(root) {
   root.innerHTML = `
