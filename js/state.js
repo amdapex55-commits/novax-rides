@@ -38,6 +38,12 @@ export const state = {
   get offerTripId() { return read("offerTripId"); },
   set offerTripId(v) { write("offerTripId", v); },
 
+  // Fare/fareType/distanceKm snapshot from the trip:offer socket payload —
+  // lets the incoming-offer screen show a BID trip's proposed price (or the
+  // FIXED estimate) instead of a generic "fare shown after accept" line.
+  get incomingTripOffer() { return read("incomingTripOffer"); },
+  set incomingTripOffer(v) { write("incomingTripOffer", v); },
+
   get parcelDraft() { return read("parcelDraft", {}); }, // { note, recipientName, recipientPhone }
   set parcelDraft(v) { write("parcelDraft", v); },
 
@@ -95,6 +101,11 @@ export const state = {
 
   get activeErrandId() { return read("activeErrandId"); },
   set activeErrandId(v) { write("activeErrandId", v); },
+
+  // Which thread /chat-thread should open — { contextType: "TRIP" |
+  // "DELIVERY" | "FOOD_ORDER" | "ERRAND", contextId, otherPartyLabel }.
+  get chatContext() { return read("chatContext"); },
+  set chatContext(v) { write("chatContext", v); },
 
   clearCart() {
     write("cart", { restaurantId: null, restaurantName: null, items: [] });

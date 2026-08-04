@@ -6,20 +6,10 @@ import { state } from "../state.js";
 import { icon } from "../icons.js";
 import { toast, fmtMoney } from "../ui.js";
 import { navigate } from "../router.js";
+import { track } from "../analytics.js";
 import { socketManager } from "../socket.js";
+import { geocode, getCurrentCoords } from "../geocode.js";
 
-const KARACHI = { lat: 24.8607, lng: 67.0011 };
-function getDemoCoords() {
-  return new Promise((resolve) => {
-    const fallback = () => ({ storeLat: KARACHI.lat, storeLng: KARACHI.lng, dropoffLat: KARACHI.lat + 0.02, dropoffLng: KARACHI.lng + 0.02 });
-    if (!navigator.geolocation) return resolve(fallback());
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ storeLat: pos.coords.latitude, storeLng: pos.coords.longitude, dropoffLat: pos.coords.latitude + 0.02, dropoffLng: pos.coords.longitude + 0.02 }),
-      () => resolve(fallback()),
-      { timeout: 4000 }
-    );
-  });
-}
 
 export function renderErrandDetails(root) {
   const draft = state.errandDraft || {};
@@ -72,14 +62,27 @@ export function renderErrandDetails(root) {
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span>`;
     try {
-      const coords = await getDemoCoords();
+      // Real geocoding of the store + delivery address the requester typed;
+      // this used to send current-GPS + a fixed offset for both.
+      const here = await getCurrentCoords();
+      const [store, dropoff] = await Promise.all([
+        geocode(storeLabel, here),
+        geocode(dropoffLabel, here),
+      ]);
+      if (!store.resolved || !dropoff.resolved) {
+        toast(`Couldn't find that ${!store.resolved ? "store" : "delivery"} address — try a more specific one`, true);
+        btn.disabled = false;
+        btn.innerHTML = `Request Errand ${icon("arrow-forward", 18)}`;
+        return;
+      }
+      track("errand_requested");
       const errand = await api.createErrand({
         storeLabel,
-        storeLat: coords.storeLat,
-        storeLng: coords.storeLng,
+        storeLat: store.lat,
+        storeLng: store.lng,
         dropoffLabel,
-        dropoffLat: coords.dropoffLat,
-        dropoffLng: coords.dropoffLng,
+        dropoffLat: dropoff.lat,
+        dropoffLng: dropoff.lng,
         itemsDescription,
         estimatedBudget,
       });

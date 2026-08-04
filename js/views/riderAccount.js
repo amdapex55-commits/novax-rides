@@ -2,7 +2,7 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, fmtMoney, fmtDate, countUp, skeletonRows, openSheet, closeSheet } from "../ui.js";
+import { toast, fmtMoney, fmtDate, countUp, skeletonRows, esc } from "../ui.js";
 import { navigate } from "../router.js";
 
 function signInPrompt(title, body) {
@@ -22,8 +22,6 @@ function wireSignInPrompt(root, resumePath) {
   });
 }
 
-const TOPUP_PRESETS = [500, 1000, 2000, 5000];
-
 export function renderWallet(root) {
   if (!Token.access) {
     root.innerHTML = `<div class="page">
@@ -41,22 +39,9 @@ export function renderWallet(root) {
         <p class="text-secondary text-sm mb-2">Available Balance</p>
         <h1 class="text-xl" id="balanceText" style="font-size:34px;">Rs. 0.00</h1>
       </div>
-      <button id="addMoneyBtn" class="btn btn-primary btn-block mb-6">${icon("bolt", 18)} Add Money</button>
+      <button id="addMoneyBtn" class="btn btn-secondary btn-block mb-6">${icon("bolt", 18)} Add Money</button>
       <h3 class="text-sm text-secondary mb-3" style="text-transform:uppercase; letter-spacing:0.04em;">Recent Activity</h3>
       <div id="historyList">${skeletonRows(4)}</div>
-    </div>
-
-    <div class="overlay" id="topupOverlay"></div>
-    <div class="sheet" id="topupSheet">
-      <div class="sheet-handle"></div>
-      <h2 class="text-lg mb-1">Add Money</h2>
-      <p class="text-secondary text-sm mb-5">No card on file yet — this credits your Nova X balance directly so you can use the app while a real payment gateway is being connected.</p>
-      <div class="flex gap-2 mb-4" id="presetRow" style="flex-wrap:wrap;">
-        ${TOPUP_PRESETS.map((v) => `<button class="chip" data-amt="${v}">Rs. ${v.toLocaleString("en-PK")}</button>`).join("")}
-      </div>
-      <label class="field-label">Or enter an amount</label>
-      <input id="topupInput" class="input mb-5" type="number" min="1" max="500000" placeholder="e.g. 1500"/>
-      <button id="confirmTopupBtn" class="btn btn-primary btn-block">Add Funds</button>
     </div>
   `;
   const balanceText = root.querySelector("#balanceText");
@@ -82,7 +67,7 @@ export function renderWallet(root) {
             <div class="list-row stagger-item" style="animation-delay:${i * 40}ms;">
               <div class="list-row-icon">${icon("wallet", 18)}</div>
               <div class="flex-col" style="flex:1;">
-                <p class="font-bold text-sm">${(e.type || "Transaction").replace(/_/g, " ")}</p>
+                <p class="font-bold text-sm">${esc((e.type || "Transaction").replace(/_/g, " "))}</p>
                 <p class="text-xs text-muted">${fmtDate(e.createdAt || Date.now())}</p>
               </div>
               <p class="font-bold" style="color:${isCredit ? "var(--success)" : "var(--error)"};">${isCredit ? "+" : "-"} ${fmtMoney(Math.abs(e.netAmount || e.grossAmount || 0))}</p>
@@ -95,39 +80,12 @@ export function renderWallet(root) {
   loadBalance();
   loadHistory();
 
-  const overlay = root.querySelector("#topupOverlay");
-  const sheet = root.querySelector("#topupSheet");
-  const input = root.querySelector("#topupInput");
-  const confirmBtn = root.querySelector("#confirmTopupBtn");
-
-  root.querySelector("#addMoneyBtn").addEventListener("click", () => openSheet(sheet, overlay));
-  overlay.addEventListener("click", () => closeSheet(sheet, overlay));
-  root.querySelectorAll("#presetRow .chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      root.querySelectorAll("#presetRow .chip").forEach((c) => c.classList.remove("selected"));
-      chip.classList.add("selected");
-      input.value = chip.dataset.amt;
-    });
-  });
-
-  confirmBtn.addEventListener("click", async () => {
-    const amount = Number(input.value);
-    if (!amount || amount <= 0) { toast("Enter an amount to add", true); return; }
-    confirmBtn.disabled = true;
-    confirmBtn.innerHTML = `<span class="spinner"></span>`;
-    try {
-      await api.topUpWallet(amount);
-      closeSheet(sheet, overlay);
-      toast(`Rs. ${amount.toLocaleString("en-PK")} added`);
-      input.value = "";
-      root.querySelectorAll("#presetRow .chip").forEach((c) => c.classList.remove("selected"));
-      await Promise.all([loadBalance(), loadHistory()]);
-    } catch (err) {
-      toast(err.message || "Couldn't add funds", true);
-    } finally {
-      confirmBtn.disabled = false;
-      confirmBtn.innerHTML = "Add Funds";
-    }
+  // Real payment gateway (EasyPaisa/JazzCash) isn't connected yet — the
+  // backend no longer lets a rider self-credit their own balance (that was
+  // a real security hole: free money on demand), so this is honest about
+  // the gap instead of silently failing or pretending it worked.
+  root.querySelector("#addMoneyBtn").addEventListener("click", () => {
+    toast("Payments aren't connected yet — top-ups will work once a real payment gateway is wired in");
   });
 }
 
@@ -168,11 +126,11 @@ export function renderTripHistory(root) {
           (t, i) => `
         <div class="card mb-3 stagger-item" style="animation-delay:${i * 40}ms;">
           <div class="flex justify-between items-center mb-2">
-            <span class="badge ${TRIP_STATUS_BADGE[t.status] || "badge-accent"}">${t.status}</span>
+            <span class="badge ${TRIP_STATUS_BADGE[t.status] || "badge-accent"}">${esc(t.status)}</span>
             <span class="text-xs text-muted">${fmtDate(t.createdAt)}</span>
           </div>
           <div class="flex justify-between items-center">
-            <p class="text-sm text-secondary">${t.vehicleType || ""}</p>
+            <p class="text-sm text-secondary">${esc(t.vehicleType)}</p>
             <p class="font-bold">${t.fare ? fmtMoney(t.fare) : "—"}</p>
           </div>
         </div>`
@@ -196,8 +154,8 @@ export function renderProfile(root) {
     <div class="page">
       <h1 class="text-xl mb-6">Profile</h1>
       <div class="card-elevated text-center mb-6" style="padding:28px 20px;">
-        <div class="avatar" style="width:80px;height:80px;font-size:28px;margin:0 auto 12px;">${(cached.name || "N").charAt(0)}</div>
-        <h2 id="nameText">${cached.name || "Nova X Rider"}</h2>
+        <div class="avatar" style="width:80px;height:80px;font-size:28px;margin:0 auto 12px;">${esc((cached.name || "N").charAt(0))}</div>
+        <h2 id="nameText">${esc(cached.name) || "Nova X Rider"}</h2>
         <div class="flex items-center justify-center gap-1 mt-2">
           ${icon("star", 16)}<span id="ratingText" class="font-bold">${cached.rating || "5.0"}</span>
         </div>
@@ -206,7 +164,7 @@ export function renderProfile(root) {
       <div class="card mb-3">
         <label class="field-label">Full Name</label>
         <div class="flex gap-2">
-          <input id="nameInput" class="input" value="${cached.name || ""}" placeholder="Your name"/>
+          <input id="nameInput" class="input" value="${esc(cached.name)}" placeholder="Your name"/>
           <button id="saveNameBtn" class="btn btn-secondary">Save</button>
         </div>
       </div>
@@ -221,6 +179,20 @@ export function renderProfile(root) {
           <p style="flex:1;" class="font-bold text-sm">Help & Support</p>${icon("chevronRight", 18)}
         </div>
       </div>
+
+      <h3 class="text-sm text-secondary mt-6 mb-2" style="text-transform:uppercase; letter-spacing:0.04em;">Legal</h3>
+      <div class="flex-col gap-1">
+        <div class="list-row" style="cursor:pointer;" data-nav="/legal/terms">
+          <p style="flex:1;" class="text-sm">Terms of Service</p>${icon("chevronRight", 16)}
+        </div>
+        <div class="list-row" style="cursor:pointer;" data-nav="/legal/privacy">
+          <p style="flex:1;" class="text-sm">Privacy Policy</p>${icon("chevronRight", 16)}
+        </div>
+        <div class="list-row" style="cursor:pointer;" data-nav="/legal/cancellation">
+          <p style="flex:1;" class="text-sm">Cancellation &amp; Refunds</p>${icon("chevronRight", 16)}
+        </div>
+      </div>
+      <p class="text-xs text-muted text-center mt-5">Nova X · Cash payments · Karachi</p>
     </div>
   `;
 

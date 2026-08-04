@@ -80,4 +80,19 @@
   --max-w: 480px; /* app is mobile-first; centers as a phone-width column on desktop */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Brand roles — one accent per meaning, used consistently everywhere.
+     Electric green = go/confirm/money-in. Warm amber = food & rewards.
+     Anything outside these two is a semantic state (error/warning), never
+     decoration. This is what stops the app looking like five apps. */
+  --brand-ride: var(--accent);      /* rides, parcels, primary CTAs */
+  --brand-food: var(--accent-2);    /* food marketplace + loyalty */
+  --brand-ride-soft: rgba(15, 169, 104, 0.10);
+  --brand-food-soft: rgba(226, 150, 10, 0.12);
+
+  /* Sheets sit above maps; maps sit under everything. */
+  --z-map: 0;
+  --z-map-ui: 400;   /* above Leaflet's own panes (which top out around 400) */
+  --z-sheet: 900;
+  --z-toast: 1000;
 }

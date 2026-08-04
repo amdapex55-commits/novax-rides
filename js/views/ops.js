@@ -3,7 +3,7 @@
 // approve-by-id action, so this dashboard is genuinely wired.
 import { api } from "../api.js";
 import { icon } from "../icons.js";
-import { toast, fmtDate, skeletonRows } from "../ui.js";
+import { toast, fmtDate, skeletonRows, esc } from "../ui.js";
 
 export function renderOpsDashboard(root) {
   root.innerHTML = `
@@ -55,13 +55,13 @@ export function renderOpsApprovals(root) {
         <div class="card mb-3" data-id="${d.id}">
           <div class="flex justify-between items-start mb-2">
             <div>
-              <p class="font-bold">${d.name || "Unnamed driver"}</p>
-              <p class="text-secondary text-sm">${d.phone}</p>
+              <p class="font-bold">${esc(d.name) || "Unnamed driver"}</p>
+              <p class="text-secondary text-sm">${esc(d.phone)}</p>
             </div>
             <span class="badge badge-warning">Pending</span>
           </div>
           <p class="text-xs text-muted mb-3">
-            ${d.driverProfile ? `${d.driverProfile.vehicleType || "No vehicle set"} · ${d.driverProfile.vehiclePlate || "no plate"}` : "No vehicle info submitted yet"}
+            ${d.driverProfile ? `${esc(d.driverProfile.vehicleType) || "No vehicle set"} · ${esc(d.driverProfile.vehiclePlate) || "no plate"}` : "No vehicle info submitted yet"}
             · Applied ${fmtDate(d.createdAt)}
           </p>
           <button class="btn btn-primary btn-block approveBtn">${icon("check-circle", 16)} Approve</button>
@@ -110,10 +110,10 @@ export function renderOpsUsers(root) {
         <div class="list-row stagger-item" style="animation-delay:${Math.min(i, 10) * 30}ms;">
           <div class="list-row-icon">${icon("person", 18)}</div>
           <div class="flex-col" style="flex:1;">
-            <p class="font-bold text-sm">${u.name || u.phone}</p>
-            <p class="text-secondary text-xs">${u.phone} · joined ${fmtDate(u.createdAt)}</p>
+            <p class="font-bold text-sm">${esc(u.name || u.phone)}</p>
+            <p class="text-secondary text-xs">${esc(u.phone)} · joined ${fmtDate(u.createdAt)}</p>
           </div>
-          <span class="badge ${ROLE_BADGE[u.role] || "badge-accent"}">${u.role}</span>
+          <span class="badge ${ROLE_BADGE[u.role] || "badge-accent"}">${esc(u.role)}</span>
         </div>`).join("");
     })
     .catch(() => { root.querySelector("#usersList").innerHTML = `<div class="empty-state"><p>Couldn't load users</p></div>`; });

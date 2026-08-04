@@ -39,6 +39,7 @@ export function renderActiveTracking(root) {
         <div class="flex justify-between text-sm text-secondary mb-4">
           <span>${state.dropoff?.label || "Drop-off"}</span>
         </div>
+        <button id="chatBtn" class="btn btn-secondary btn-block mb-3 hidden">${icon("chat", 18)} Message Driver</button>
         <button id="cancelTripBtn" class="btn btn-danger btn-block">Cancel Trip</button>
       </div>
     </div>
@@ -56,6 +57,7 @@ export function renderActiveTracking(root) {
   const statusBadge = root.querySelector("#statusBadge");
   const statusText = root.querySelector("#statusText");
   const cancelBtn = root.querySelector("#cancelTripBtn");
+  const chatBtn = root.querySelector("#chatBtn");
 
   const statusCard = root.querySelector(".card-elevated");
   function setStatus(status) {
@@ -64,7 +66,14 @@ export function renderActiveTracking(root) {
     statusCard.classList.remove("success-pulse");
     void statusCard.offsetWidth;
     statusCard.classList.add("success-pulse");
+    // A driver is only actually assigned once the trip has moved past
+    // matching — chatting before that has nobody on the other end.
+    chatBtn.classList.toggle("hidden", !["MATCHED", "IN_PROGRESS"].includes(status));
   }
+  chatBtn.addEventListener("click", () => {
+    state.chatContext = { contextType: "TRIP", contextId: tripId, otherPartyLabel: "Your driver" };
+    navigate("/chat-thread");
+  });
 
   api.getTrip(tripId).then((trip) => setStatus(trip.status)).catch(() => setStatus("REQUESTED"));
 

@@ -3,8 +3,9 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, fmtMoney, skeletonRows } from "../ui.js";
+import { toast, fmtMoney, skeletonRows, esc } from "../ui.js";
 import { navigate } from "../router.js";
+import { resolveRoute } from "../geocode.js";
 
 const TABS = [
   { key: "FOOD", label: "Food", icon: "utensils" },
@@ -245,15 +246,38 @@ function renderFoodTab(panel, isGuest) {
   return () => { cancelled = true; };
 }
 
+/**
+ * Rich restaurant card — banner-led, the way food apps sell food. A plain
+ * text row makes a biryani place look like a bank statement line.
+ *
+ * bannerUrl comes from the restaurant's own upload; when it's missing we
+ * show a branded gradient placeholder rather than a broken image, so an
+ * un-photographed restaurant still looks deliberate.
+ */
 export function restaurantCardHtml(r) {
+  const tags = (r.cuisineTags || []).slice(0, 3);
+  const isOpen = r.isOpen !== false;
+  const prep = r.prepTimeMinutes || 20;
   return `
-    <div class="restaurant-card stagger-item" data-restaurant-id="${r.id}" style="cursor:pointer;">
-      <div class="restaurant-card-thumb">${icon("store", 26)}</div>
-      <div class="flex-col" style="flex:1; min-width:0;">
-        <p class="font-bold">${r.name}</p>
-        <p class="text-secondary text-xs mb-1">${(r.cuisineTags || []).join(" · ") || "Restaurant"}</p>
-        <div class="flex items-center gap-2">
+    <div class="food-card stagger-item" data-restaurant-id="${esc(r.id)}" style="cursor:pointer;">
+      <div class="food-card-banner" ${r.bannerUrl ? `style="background-image:url('${esc(r.bannerUrl)}');"` : ""}>
+        ${r.bannerUrl ? "" : icon("utensils", 34)}
+        <div class="food-card-badges">
+          ${isOpen ? `<span class="badge badge-success">Open now</span>` : ""}
+          ${r.status === "APPROVED" ? `<span class="badge badge-accent">${icon("check", 10)} Verified</span>` : ""}
+        </div>
+        ${isOpen ? "" : `<div class="closed-veil">Currently closed</div>`}
+      </div>
+      <div class="food-card-body">
+        <div class="flex justify-between items-start">
+          <p class="font-bold" style="flex:1;">${esc(r.name)}</p>
           <span class="badge badge-accent" style="padding:2px 8px;">${icon("star", 11)} ${(r.rating ?? 5).toFixed(1)}</span>
+        </div>
+        <p class="text-secondary text-xs mt-1">${esc(tags.join(" · ")) || "Restaurant"}</p>
+        <div class="food-meta">
+          <span>${prep}–${prep + 15} min</span>
+          <span class="dot"></span>
+          <span>Delivery from Rs. 50</span>
         </div>
       </div>
     </div>
@@ -328,6 +352,13 @@ const VEHICLES = [
 
 export function renderFareSelection(root) {
   let selected = state.selectedVehicle || "BIKE";
+  // "fareMode": FIXED (backend-calculated, take-it-or-leave-it, same as
+  // before) or BID (rider names their own price, inDrive-style — nearby
+  // drivers see the offer and choose to accept it or let it pass, same
+  // single-shot mechanic the backend's fareType=BID already supports).
+  let fareMode = "FIXED";
+  const selectedVehicleMeta = () => VEHICLES.find((v) => v.type === selected) || VEHICLES[0];
+
   root.innerHTML = `
     <div class="page">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
@@ -346,10 +377,51 @@ export function renderFareSelection(root) {
           </button>`
         ).join("")}
       </div>
-      <p class="text-xs text-muted mb-4 text-center">Exact fare is calculated by the backend once you request — this is an indicative starting price.</p>
-      <button id="requestRideBtn" class="btn btn-primary btn-block">Request Ride ${icon("bolt", 18)}</button>
+
+      <div class="top-tabs mb-4" id="fareModeTabs" style="grid-template-columns: 1fr 1fr;">
+        <div class="top-tabs-indicator" style="width:50%; transform:translateX(0);"></div>
+        <button class="top-tab active" data-mode="FIXED">Fixed Fare</button>
+        <button class="top-tab" data-mode="BID">Name Your Fare</button>
+      </div>
+
+      <div id="fareModePanel"></div>
+
+      <button id="requestRideBtn" class="btn btn-primary btn-block mt-4">Request Ride ${icon("bolt", 18)}</button>
     </div>
   `;
+
+  const tabsEl = root.querySelector("#fareModeTabs");
+  const indicator = tabsEl.querySelector(".top-tabs-indicator");
+  const panel = root.querySelector("#fareModePanel");
+  const requestBtn = root.querySelector("#requestRideBtn");
+
+  function renderPanel() {
+    if (fareMode === "FIXED") {
+      panel.innerHTML = `<p class="text-xs text-muted mb-2 text-center">Exact fare is calculated by the backend once you request — this is an indicative starting price.</p>`;
+      requestBtn.innerHTML = `Request Ride ${icon("bolt", 18)}`;
+    } else {
+      const suggested = selectedVehicleMeta().from;
+      panel.innerHTML = `
+        <div class="card mb-2">
+          <label class="field-label">Your offer (Rs.)</label>
+          <input id="bidInput" class="input" type="number" inputmode="numeric" min="1" placeholder="e.g. ${suggested}" value="${suggested}"/>
+          <p class="text-xs text-muted mt-2">Nearby drivers see your offer and choose to accept it — like inDrive. A fair offer near the going rate gets matched faster.</p>
+        </div>
+      `;
+      requestBtn.innerHTML = `Send Offer ${icon("bolt", 18)}`;
+    }
+  }
+  renderPanel();
+
+  tabsEl.querySelectorAll("[data-mode]").forEach((btn, i) => {
+    btn.addEventListener("click", () => {
+      fareMode = btn.dataset.mode;
+      tabsEl.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("active", b === btn));
+      indicator.style.transform = i === 0 ? "translateX(0)" : "translateX(100%)";
+      renderPanel();
+    });
+  });
+
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
   root.querySelectorAll(".option-card").forEach((c) => {
     c.addEventListener("click", () => {
@@ -357,34 +429,46 @@ export function renderFareSelection(root) {
       c.classList.add("selected");
       selected = c.dataset.type;
       state.selectedVehicle = selected;
+      if (fareMode === "BID") renderPanel();
     });
   });
 
-  const requestBtn = root.querySelector("#requestRideBtn");
   requestBtn.addEventListener("click", async () => {
     if (!Token.access) {
       state.postAuthRedirect = "/fare";
       navigate("/phone");
       return;
     }
+    let offeredFare;
+    if (fareMode === "BID") {
+      offeredFare = Number(root.querySelector("#bidInput").value);
+      if (!offeredFare || offeredFare <= 0) { toast("Enter a valid offer amount", true); return; }
+    }
     requestBtn.disabled = true;
-    requestBtn.innerHTML = `<span class="spinner"></span> Finding a driver...`;
+    requestBtn.innerHTML = `<span class="spinner"></span> ${fareMode === "BID" ? "Sending offer..." : "Finding a driver..."}`;
     try {
-      const coords = await getDemoCoords();
+      const coords = await getRouteCoords();
+      if (!coords.dropoffResolved) {
+        toast("Couldn't find that drop-off address — try a more specific one", true);
+        requestBtn.disabled = false;
+        requestBtn.innerHTML = fareMode === "BID" ? `Send Offer ${icon("bolt", 18)}` : `Request Ride ${icon("bolt", 18)}`;
+        return;
+      }
       const trip = await api.createTrip({
         pickupLat: coords.pickupLat,
         pickupLng: coords.pickupLng,
         dropoffLat: coords.dropoffLat,
         dropoffLng: coords.dropoffLng,
         vehicleType: selected,
-        fareType: "FIXED",
+        fareType: fareMode,
+        ...(fareMode === "BID" ? { offeredFare } : {}),
       });
       state.activeTripId = trip.id;
       navigate("/tracking");
     } catch (err) {
       toast(err.message || "Couldn't request a ride", true);
       requestBtn.disabled = false;
-      requestBtn.innerHTML = `Request Ride ${icon("bolt", 18)}`;
+      requestBtn.innerHTML = fareMode === "BID" ? `Send Offer ${icon("bolt", 18)}` : `Request Ride ${icon("bolt", 18)}`;
     }
   });
 }
@@ -392,19 +476,16 @@ export function renderFareSelection(root) {
 // No geocoding wired (needs a Maps/Places API key — real added cost flagged
 // in the roadmap). Pickup uses the device's real GPS; drop-off is a nearby
 // offset so the real matching/fare pipeline can be exercised end-to-end.
-function getDemoCoords() {
-  return new Promise((resolve) => {
-    const fallback = () => ({ pickupLat: KARACHI.lat, pickupLng: KARACHI.lng, dropoffLat: KARACHI.lat + 0.02, dropoffLng: KARACHI.lng + 0.02 });
-    if (!navigator.geolocation) return resolve(fallback());
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({
-        pickupLat: pos.coords.latitude,
-        pickupLng: pos.coords.longitude,
-        dropoffLat: pos.coords.latitude + 0.02,
-        dropoffLng: pos.coords.longitude + 0.02,
-      }),
-      () => resolve(fallback()),
-      { timeout: 4000 }
-    );
-  });
+// Geocodes the addresses the rider actually typed (see js/geocode.js).
+// Previously this ignored them entirely and sent current-GPS + a fixed
+// offset, so the driver was always dispatched to the wrong place.
+async function getRouteCoords() {
+  const { pickup, dropoff } = await resolveRoute(state.pickup?.label, state.dropoff?.label);
+  return {
+    pickupLat: pickup.lat,
+    pickupLng: pickup.lng,
+    dropoffLat: dropoff.lat,
+    dropoffLng: dropoff.lng,
+    dropoffResolved: dropoff.resolved,
+  };
 }

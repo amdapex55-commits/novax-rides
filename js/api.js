@@ -69,7 +69,29 @@ async function request(path, opts = {}, isRetry = false) {
   }
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+  // Guarded parse: not every response that reaches us is JSON. A Railway
+  // cold-start page, a Cloudflare 502, or an nginx error page is HTML, and
+  // an unguarded JSON.parse turns "server is down" into an unrelated
+  // "Unexpected token <" SyntaxError that surfaces to the user as gibberish
+  // and hides the real status code.
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      if (!res.ok) {
+        throw new ApiError(
+          res.status >= 500
+            ? "Server error — the backend may be starting up or down. Try again in a moment."
+            : `Unexpected response from server (${res.status})`,
+          res.status,
+          { raw: text.slice(0, 200) },
+        );
+      }
+      // 2xx that isn't JSON — hand back the raw text rather than throwing.
+      return text;
+    }
+  }
   if (!res.ok) {
     const msg = (data && (data.message || data.error)) || res.statusText;
     throw new ApiError(Array.isArray(msg) ? msg.join(", ") : msg, res.status, data);
@@ -145,11 +167,16 @@ export const api = {
 
   // --- Wallet ---
   getWalletBalance: () => request("/wallet/balance"),
+  getDriverEarnings: () => request("/wallet/earnings"),
   getWalletHistory: () => request("/wallet/history"),
-  topUpWallet: (amount) => request("/wallet/topup", { method: "POST", body: { amount } }),
 
   // --- Uploads ---
-  presignUpload: (purpose, contentType) => request("/uploads/presign", { method: "POST", body: { purpose, contentType } }),
+  // purpose must be one of the backend's UploadPurpose enum values
+  // ("kyc-doc" | "proof-of-delivery" | "profile-photo"), and fileName is
+  // required — the DTO rejects the request without it. Returns
+  // { uploadUrl, publicUrl, key, expiresInSeconds }.
+  presignUpload: (purpose, contentType, fileName) =>
+    request("/uploads/presign", { method: "POST", body: { purpose, contentType, fileName } }),
 
   // --- Restaurants (Food marketplace) ---
   browseRestaurants: (search) => request(`/restaurants${search ? `?search=${encodeURIComponent(search)}` : ""}`),
@@ -179,6 +206,36 @@ export const api = {
   markFoodPickedUp: (id) => request(`/food-orders/${id}/picked-up`, { method: "POST" }),
   markFoodDelivered: (id) => request(`/food-orders/${id}/delivered`, { method: "POST" }),
 
+  // --- Chat (one thread per Trip/Delivery/FoodOrder/Errand — see backend
+  // ChatService for how the two allowed participants are resolved) ---
+  listChatMessages: (contextType, contextId) => request(`/chat/${contextType}/${contextId}`),
+  sendChatMessage: (contextType, contextId, body) => request(`/chat/${contextType}/${contextId}`, { method: "POST", body: { body } }),
+
+  // --- Safety ---
+  raiseIncident: (dto) => request("/safety/incidents", { method: "POST", body: dto }),
+  listOpenIncidents: () => request("/safety/incidents/open"),
+  updateIncident: (id, status, resolution) =>
+    request(`/safety/incidents/${id}`, { method: "PATCH", body: { status, resolution } }),
+
+  // --- Trip sharing (public read needs no auth — see publicRequest below) ---
+  shareTrip: (tripId) => request(`/trips/${tripId}/share`, { method: "POST" }),
+
+  // --- Driver onboarding ---
+  getDriverOnboarding: () => request("/users/me/onboarding"),
+  saveDriverOnboarding: (dto) => request("/users/me/onboarding", { method: "PATCH", body: dto }),
+  submitDriverOnboarding: () => request("/users/me/onboarding/submit", { method: "POST" }),
+  getDriverApplication: (id) => request(`/users/${id}/application`),
+  reviewDriver: (id, dto) => request(`/users/${id}/review`, { method: "PATCH", body: dto }),
+  rejectDriverKyc: (id, reason) => request(`/users/${id}/reject-kyc`, { method: "POST", body: { reason } }),
+
+  // --- Ops: dispatch fallback + funnel ---
+  getStuckJobs: (minutes) => request(`/admin/stuck-jobs${minutes ? `?minutes=${minutes}` : ""}`),
+  getAvailableDrivers: () => request("/admin/drivers/available"),
+  manuallyAssign: (jobType, jobId, driverId) =>
+    request("/admin/assign", { method: "POST", body: { jobType, jobId, driverId } }),
+  getFunnel: (days) => request(`/analytics/funnel${days ? `?days=${days}` : ""}`),
+  adminTopUp: (userId, amount) => request(`/wallet/admin/topup/${userId}`, { method: "POST", body: { amount } }),
+
   // --- Errands (Pick & Deliver to Me) ---
   createErrand: (dto) => request("/errands", { method: "POST", body: dto }),
   listMyErrands: () => request("/errands"),
@@ -189,4 +246,16 @@ export const api = {
   startErrandShopping: (id) => request(`/errands/${id}/start-shopping`, { method: "POST" }),
   markErrandOnTheWay: (id, actualSpend) => request(`/errands/${id}/on-the-way`, { method: "POST", body: { actualSpend } }),
   markErrandDelivered: (id) => request(`/errands/${id}/delivered`, { method: "POST" }),
+
+  // Public read for a shared trip link. Bypasses `request()` entirely — no
+  // Authorization header and no 401-refresh dance, because the whole point
+  // is that the person opening this has no account.
+  getSharedTrip: async (shareToken) => {
+    const res = await fetch(`${BASE}/public/trips/shared/${encodeURIComponent(shareToken)}`);
+    const text = await res.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch { /* non-JSON error page */ }
+    if (!res.ok) throw new ApiError((data && data.message) || "This share link isn't valid", res.status, data);
+    return data;
+  },
 };

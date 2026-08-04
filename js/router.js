@@ -19,6 +19,12 @@ import * as Food from "./views/food.js";
 import * as Errand from "./views/errand.js";
 import * as Restaurant from "./views/restaurant.js";
 import * as DriverFoodErrand from "./views/driverFoodErrand.js";
+import * as ChatThread from "./views/chatThread.js";
+import * as RideFlow from "./views/rideFlow.js";
+import * as RideTracking from "./views/rideTracking.js";
+import * as Legal from "./views/legal.js";
+import * as OpsCommand from "./views/opsCommand.js";
+import * as DriverOnboarding from "./views/driverOnboarding.js";
 
 // auth: "none" (public) | "guest" (public, but bounces a logged-in
 // non-rider to their own home) | "any" (any logged-in role) | "RIDER" |
@@ -27,15 +33,28 @@ import * as DriverFoodErrand from "./views/driverFoodErrand.js";
 // that actually needs one (booking, wallet, profile, etc.).
 export const ROUTES = {
   "/splash": { render: Auth.renderSplash, auth: "none", nav: false },
+  "/welcome": { render: Auth.renderWelcome, auth: "guest", nav: false },
   "/phone": { render: (root) => Auth.renderPhoneEntry("RIDER")(root), auth: "none", nav: false },
   "/driver/phone": { render: (root) => Auth.renderPhoneEntry("DRIVER")(root), auth: "none", nav: false },
   "/restaurant/phone": { render: (root) => Auth.renderPhoneEntry("RESTAURANT")(root), auth: "none", nav: false },
   "/otp": { render: Auth.renderOtp, auth: "none", nav: false },
 
   "/home": { render: RiderHome.renderHome, auth: "guest", nav: true, tab: "home" },
-  "/set-locations": { render: RiderHome.renderSetLocations, auth: "guest", nav: false },
-  "/fare": { render: RiderHome.renderFareSelection, auth: "guest", nav: false },
-  "/tracking": { render: RiderTrip.renderActiveTracking, auth: "RIDER", nav: false },
+  // Map-first booking — one screen with a docked sheet, replacing the old
+  // /set-locations → /fare page-per-step flow (both kept as aliases so any
+  // saved postAuthRedirect or bookmark still lands somewhere sane).
+  "/ride": { render: RideFlow.renderRideBooking, auth: "guest", nav: false },
+  "/set-locations": { render: RideFlow.renderRideBooking, auth: "guest", nav: false },
+  "/fare": { render: RideFlow.renderRideBooking, auth: "guest", nav: false },
+  "/tracking": { render: RideTracking.renderRideTracking, auth: "RIDER", nav: false },
+  // Public live-tracking view opened from a shared link — no account needed.
+  "/shared": { render: RideTracking.renderSharedTrip, auth: "none", nav: false },
+
+  "/legal/terms": { render: Legal.renderTerms, auth: "none", nav: false },
+  "/legal/privacy": { render: Legal.renderPrivacy, auth: "none", nav: false },
+  "/legal/cancellation": { render: Legal.renderCancellation, auth: "none", nav: false },
+  "/legal/driver-agreement": { render: Legal.renderDriverAgreement, auth: "none", nav: false },
+  "/legal/restaurant-agreement": { render: Legal.renderRestaurantAgreement, auth: "none", nav: false },
   "/rate": { render: RiderTrip.renderRateTrip, auth: "RIDER", nav: false },
   "/wallet": { render: RiderAccount.renderWallet, auth: "guest", nav: true, tab: "wallet" },
   "/history": { render: RiderAccount.renderTripHistory, auth: "guest", nav: true, tab: "history" },
@@ -47,6 +66,7 @@ export const ROUTES = {
 
   "/driver/pending": { render: DriverAuth.renderPendingApproval, auth: "DRIVER", nav: false },
   "/driver/kyc": { render: DriverAuth.renderKycUpload, auth: "DRIVER", nav: false },
+  "/driver/onboarding": { render: DriverOnboarding.renderDriverOnboarding, auth: "DRIVER", nav: false },
   "/driver/home": { render: DriverHome.renderDriverHome, auth: "DRIVER", nav: true, tab: "home" },
   "/driver/offer": { render: DriverHome.renderIncomingOffer, auth: "DRIVER", nav: false },
   "/driver/progress": { render: DriverHome.renderTripProgress, auth: "DRIVER", nav: false },
@@ -69,6 +89,7 @@ export const ROUTES = {
   "/food/cart": { render: Food.renderFoodCart, auth: "guest", nav: false },
   "/food/tracking": { render: Food.renderFoodTracking, auth: "RIDER", nav: false },
 
+  "/ops/command": { render: OpsCommand.renderOpsCommand, auth: "ADMIN", nav: true, tab: "command" },
   "/ops/dashboard": { render: Ops.renderOpsDashboard, auth: "ADMIN", nav: true, tab: "dashboard" },
   "/ops/approvals": { render: Ops.renderOpsApprovals, auth: "ADMIN", nav: true, tab: "approvals" },
   "/ops/users": { render: Ops.renderOpsUsers, auth: "ADMIN", nav: true, tab: "users" },
@@ -89,6 +110,9 @@ export const ROUTES = {
   // role-based bounce. "guest" would incorrectly redirect them away.
   "/chat": { render: Support.renderChat, auth: "none", nav: false },
   "/support": { render: Support.renderSupport, auth: "none", nav: false },
+  // In-app chat with the other party on an active job — separate from
+  // /chat above, which is customer-support ticket messaging, not this.
+  "/chat-thread": { render: ChatThread.renderChatThread, auth: "any", nav: false },
 };
 
 let currentCleanup = null;
@@ -96,7 +120,7 @@ let currentRoute = null;
 
 function roleHome(role) {
   if (role === "DRIVER") return Token.user?.kycStatus === "APPROVED" ? "/driver/home" : "/driver/pending";
-  if (role === "ADMIN") return "/ops/dashboard";
+  if (role === "ADMIN") return "/ops/command";
   // RESTAURANT's real home depends on onboarding/approval status, which
   // isn't in the JWT — auth.js's restaurantHomePath() resolves that with a
   // real API call right after login. Bouncing mid-navigation here (e.g. a
@@ -118,7 +142,12 @@ function resolvePath() {
 }
 
 async function renderRoute(path) {
-  const route = ROUTES[path];
+  // Dynamic segment support. Only one route needs it — the public share link
+  // (/shared/<token>) — so this is a targeted prefix match rather than a
+  // full pattern router, which would be a lot of machinery for one case.
+  // The view reads the token off location.hash itself.
+  let route = ROUTES[path];
+  if (!route && path.startsWith("/shared/")) route = ROUTES["/shared"];
   const container = document.getElementById("view-container");
   const nav = document.getElementById("bottom-nav");
 

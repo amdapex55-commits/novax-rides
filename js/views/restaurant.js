@@ -4,7 +4,7 @@
 // review" copy) and food.js's cart/menu patterns for consistency.
 import { api, Token } from "../api.js";
 import { icon } from "../icons.js";
-import { toast, fmtMoney, skeletonRows } from "../ui.js";
+import { toast, fmtMoney, skeletonRows, esc, emptyRich } from "../ui.js";
 import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
 
@@ -107,9 +107,22 @@ const ORDER_STATUS_LABEL = {
 };
 
 export function renderRestaurantOrders(root) {
+  // POS surface, not a consumer list: this is read from across a counter by
+  // someone with flour on their hands. Loud colour on new orders, big
+  // buttons, prep time adjustable per order because a biryani is not a
+  // sandwich.
   root.innerHTML = `
     <div class="page pb-0">
-      <h1 class="text-xl mb-6">Orders</h1>
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h1 class="text-xl">Orders</h1>
+          <p class="text-secondary text-xs" id="liveCount">Live queue</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="pulse-dot" style="width:8px;height:8px;background:var(--success);"></span>
+          <span class="text-xs text-secondary">Live</span>
+        </div>
+      </div>
       <div id="orderList" class="flex-col gap-3">${skeletonRows(3)}</div>
     </div>
   `;
@@ -121,7 +134,13 @@ export function renderRestaurantOrders(root) {
       if (cancelled) return;
       draw(orders);
     } catch {
-      if (!cancelled) root.querySelector("#orderList").innerHTML = `<div class="empty-state"><p class="text-sm">Couldn't load orders.</p></div>`;
+      if (!cancelled) {
+        root.querySelector("#orderList").innerHTML = emptyRich({
+          icon: icon("bolt", 26),
+          title: "Couldn't load orders",
+          body: "Check your connection — we'll keep retrying automatically.",
+        });
+      }
     }
   }
 
@@ -129,49 +148,128 @@ export function renderRestaurantOrders(root) {
     const list = root.querySelector("#orderList");
     const active = orders.filter((o) => !["DELIVERED", "CANCELLED"].includes(o.status));
     const past = orders.filter((o) => ["DELIVERED", "CANCELLED"].includes(o.status));
+    const newCount = active.filter((o) => o.status === "PLACED").length;
+
+    root.querySelector("#liveCount").textContent =
+      newCount > 0 ? `${newCount} new order${newCount === 1 ? "" : "s"} need action` : `${active.length} in progress`;
+
     if (!orders.length) {
-      list.innerHTML = `<div class="empty-state"><p class="text-sm">No orders yet — make sure your store is open.</p></div>`;
+      list.innerHTML = emptyRich({
+        icon: icon("store", 26),
+        title: "No orders yet today",
+        body: "Make sure your store is open and your menu is up to date — orders appear here the moment they come in.",
+      });
       return;
     }
+
+    // Newest-actionable first: a PLACED order is money waiting on a decision.
+    const priority = { PLACED: 0, ACCEPTED: 1, READY: 2, MATCHING: 3, ASSIGNED: 4, PICKED_UP: 5 };
+    active.sort((a, b) => (priority[a.status] ?? 9) - (priority[b.status] ?? 9));
+
     list.innerHTML = [
-      ...active.map((o) => orderCardHtml(o, true)),
-      ...(past.length ? [`<h3 class="text-sm text-secondary mt-4 mb-1" style="text-transform:uppercase; letter-spacing:0.04em;">Past Orders</h3>`] : []),
-      ...past.slice(0, 10).map((o) => orderCardHtml(o, false)),
+      ...active.map((o) => posOrderHtml(o)),
+      ...(past.length ? [`<h3 class="text-sm text-secondary mt-5 mb-1" style="text-transform:uppercase; letter-spacing:0.04em;">Completed today</h3>`] : []),
+      ...past.slice(0, 10).map((o) => pastOrderHtml(o)),
     ].join("");
 
     list.querySelectorAll("[data-accept]").forEach((b) => b.addEventListener("click", async () => {
+      const card = b.closest(".pos-order");
+      const prep = card?.querySelector("[data-prep]")?.value;
       b.disabled = true;
-      try { await api.restaurantAcceptOrder(b.dataset.accept); toast("Order accepted"); load(); }
-      catch (err) { toast(err.message || "Couldn't accept", true); b.disabled = false; }
+      b.innerHTML = `<span class="spinner"></span>`;
+      try {
+        // Prep time is saved on the restaurant profile so it also improves
+        // the ETA shown to the next customer, not just this order.
+        if (prep) { try { await api.updateMyRestaurant({ prepTimeMinutes: Number(prep) }); } catch { /* non-fatal */ } }
+        await api.restaurantAcceptOrder(b.dataset.accept);
+        toast("Order accepted — kitchen notified");
+        load();
+      } catch (err) { toast(err.message || "Couldn't accept", true); b.disabled = false; b.textContent = "Accept order"; }
     }));
+
     list.querySelectorAll("[data-ready]").forEach((b) => b.addEventListener("click", async () => {
       b.disabled = true;
-      try { await api.markOrderReady(b.dataset.ready); toast("Marked ready — matching a driver"); load(); }
-      catch (err) { toast(err.message || "Couldn't update", true); b.disabled = false; }
+      b.innerHTML = `<span class="spinner"></span>`;
+      try { await api.markOrderReady(b.dataset.ready); toast("Ready — finding a rider"); load(); }
+      catch (err) { toast(err.message || "Couldn't update", true); b.disabled = false; b.textContent = "Mark ready for pickup"; }
     }));
   }
 
-  function orderCardHtml(o, active) {
-    const itemsSummary = (o.items || []).map((i) => `${i.quantity}x ${i.nameSnapshot}`).join(", ");
+  function statusClass(status) {
+    if (status === "PLACED") return "is-new";
+    if (status === "ACCEPTED") return "is-preparing";
+    return "is-ready";
+  }
+
+  function posOrderHtml(o) {
+    const items = (o.items || []);
+    const minsAgo = o.placedAt ? Math.floor((Date.now() - new Date(o.placedAt).getTime()) / 60000) : null;
     return `
-      <div class="card${active ? "" : " opacity-muted"}" style="${active ? "" : "opacity:0.6;"}">
-        <div class="flex justify-between items-start mb-2">
-          <span class="badge badge-accent">${ORDER_STATUS_LABEL[o.status] || o.status}</span>
-          <span class="font-bold text-accent">${fmtMoney(o.total)}</span>
+      <div class="pos-order ${statusClass(o.status)}">
+        <div class="pos-order-head">
+          <div>
+            <span class="badge ${o.status === "PLACED" ? "badge-error" : "badge-accent"}">${ORDER_STATUS_LABEL[o.status] || esc(o.status)}</span>
+            <p class="ref-id mt-2">#${esc((o.id || "").slice(0, 8).toUpperCase())}${minsAgo != null ? ` · ${minsAgo} min ago` : ""}</p>
+          </div>
+          <p class="font-bold text-lg">${fmtMoney(o.total)}</p>
         </div>
-        <p class="text-sm text-secondary mb-1">${itemsSummary || "No items"}</p>
-        <p class="text-xs text-muted">${o.dropoffLabel}</p>
-        ${o.status === "PLACED" ? `<button class="btn btn-primary btn-sm btn-block mt-3" data-accept="${o.id}">Accept Order</button>` : ""}
-        ${o.status === "ACCEPTED" ? `<button class="btn btn-primary btn-sm btn-block mt-3" data-ready="${o.id}">Mark Ready for Pickup</button>` : ""}
+
+        <div class="flex-col gap-1 mb-3">
+          ${items.map((i) => `
+            <div class="flex justify-between text-sm">
+              <span><b>${i.quantity}×</b> ${esc(i.nameSnapshot)}</span>
+              <span class="text-secondary">${fmtMoney(i.subtotal)}</span>
+            </div>`).join("") || `<p class="text-sm text-secondary">No items</p>`}
+        </div>
+
+        ${o.notes ? `
+          <div class="pending-flag" style="margin-bottom:var(--sp-3);">
+            <span>${icon("bolt", 14)}</span><span><b>Note:</b> ${esc(o.notes)}</span>
+          </div>` : ""}
+
+        <p class="text-xs text-muted mb-3">${icon("map-pin", 12)} ${esc(o.dropoffLabel)}</p>
+
+        ${o.status === "PLACED" ? `
+          <label class="field-label">Prep time</label>
+          <div class="flex gap-2 mb-3">
+            <select class="input" data-prep style="flex:1;">
+              ${[10, 15, 20, 30, 45, 60].map((m) => `<option value="${m}"${m === 20 ? " selected" : ""}>${m} minutes</option>`).join("")}
+            </select>
+          </div>
+          <button class="btn btn-primary btn-block" style="height:52px;" data-accept="${esc(o.id)}">Accept order</button>
+        ` : ""}
+
+        ${o.status === "ACCEPTED" ? `
+          <button class="btn btn-primary btn-block" style="height:52px;" data-ready="${esc(o.id)}">Mark ready for pickup</button>
+        ` : ""}
+
+        ${["READY", "MATCHING"].includes(o.status) ? `
+          <div class="flex items-center gap-2 text-sm text-secondary">
+            <span class="spinner" style="width:16px;height:16px;"></span> Finding a rider…
+          </div>` : ""}
+      </div>
+    `;
+  }
+
+  function pastOrderHtml(o) {
+    return `
+      <div class="card" style="opacity:0.55; padding:var(--sp-3) var(--sp-4);">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-sm font-bold">${ORDER_STATUS_LABEL[o.status] || esc(o.status)}</p>
+            <p class="ref-id">#${esc((o.id || "").slice(0, 8).toUpperCase())}</p>
+          </div>
+          <p class="font-bold">${fmtMoney(o.total)}</p>
+        </div>
       </div>
     `;
   }
 
   load();
   socketManager.connect();
-  const onNew = () => load();
+  const onNew = () => { toast("New order received"); load(); };
   socketManager.on("foodOrder:new", onNew);
-  const poll = setInterval(load, 20000);
+  const poll = setInterval(load, 15000);
 
   return () => { cancelled = true; clearInterval(poll); socketManager.off("foodOrder:new", onNew); };
 }
@@ -200,7 +298,7 @@ export function renderRestaurantMenuManage(root) {
     list.innerHTML = items.map((mi) => `
       <div class="list-row">
         <div class="flex-col" style="flex:1;">
-          <p class="font-bold text-sm">${mi.name}${mi.isAvailable ? "" : ` <span class="badge" style="background:var(--surface-2);">Archived</span>`}</p>
+          <p class="font-bold text-sm">${esc(mi.name)}${mi.isAvailable ? "" : ` <span class="badge" style="background:var(--surface-2);">Archived</span>`}</p>
           <p class="text-accent text-sm">${fmtMoney(mi.price)}</p>
         </div>
         ${mi.isAvailable ? `<button class="btn btn-secondary btn-sm" data-archive="${mi.id}">Archive</button>` : ""}
@@ -275,7 +373,7 @@ export function renderRestaurantProfile(root) {
         <div class="card-elevated mb-6 flex items-center justify-between">
           <div>
             <p class="font-bold">${r.isOpen ? "Open for orders" : "Closed"}</p>
-            <p class="text-secondary text-xs">${r.status === "APPROVED" ? "Toggle to start/stop receiving orders" : `Status: ${r.status}`}</p>
+            <p class="text-secondary text-xs">${r.status === "APPROVED" ? "Toggle to start/stop receiving orders" : `Status: ${esc(r.status)}`}</p>
           </div>
           <div class="toggle-switch${r.isOpen ? " on" : ""}" id="openToggle" role="switch">
             <div class="toggle-switch-thumb"></div>
@@ -283,8 +381,8 @@ export function renderRestaurantProfile(root) {
         </div>
 
         <div class="card mb-6">
-          <p class="font-bold mb-1">${r.name}</p>
-          <p class="text-secondary text-sm mb-1">${r.address}</p>
+          <p class="font-bold mb-1">${esc(r.name)}</p>
+          <p class="text-secondary text-sm mb-1">${esc(r.address)}</p>
           <p class="text-secondary text-xs">${(r.cuisineTags || []).join(" · ") || "No cuisine tags"}</p>
         </div>
 

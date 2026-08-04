@@ -5,32 +5,86 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, fmtMoney, skeletonRows } from "../ui.js";
+import { toast, fmtMoney, skeletonRows, esc, emptyRich } from "../ui.js";
 import { navigate } from "../router.js";
+import { track } from "../analytics.js";
 import { socketManager } from "../socket.js";
+import { geocode, getCurrentCoords } from "../geocode.js";
 import { restaurantCardHtml } from "./riderHome.js";
 
 export function renderFoodBrowse(root) {
   root.innerHTML = `
     <div class="page">
-      <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
-      <h1 class="text-xl mb-4">Restaurants</h1>
-      <div class="input flex items-center gap-2 mb-6">
+      <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
+      <h1 class="text-xl mb-1">Food</h1>
+      <p class="text-secondary text-sm mb-4">Delivered by Nova X riders</p>
+
+      <div class="input flex items-center gap-2 mb-4">
         ${icon("eye", 16)}
-        <input id="searchInput" type="text" placeholder="Search restaurants or cuisines" style="background:none;border:none;outline:none;flex:1;color:var(--text-primary);"/>
+        <input id="searchInput" type="text" placeholder="Search food or restaurants" style="background:none;border:none;outline:none;flex:1;color:var(--text-primary);"/>
       </div>
-      <div id="list" class="flex-col gap-3">${skeletonRows(4)}</div>
+
+      <div class="chip-row mb-4" id="cuisineRow"></div>
+      <div id="list" class="flex-col gap-4">${skeletonRows(3)}</div>
     </div>
   `;
   root.querySelector("#backBtn").addEventListener("click", () => navigate("/home"));
 
   let all = [];
+  let activeCuisine = null;
+  let query = "";
   let cancelled = false;
   const list = root.querySelector("#list");
+  const cuisineRow = root.querySelector("#cuisineRow");
 
-  function draw(items) {
+  function visible() {
+    return all.filter((r) => {
+      const matchesQ = !query
+        || r.name.toLowerCase().includes(query)
+        || (r.cuisineTags || []).some((c) => c.toLowerCase().includes(query));
+      const matchesC = !activeCuisine || (r.cuisineTags || []).includes(activeCuisine);
+      return matchesQ && matchesC;
+    });
+  }
+
+  function drawCuisines() {
+    // Cuisines come from what restaurants actually tagged themselves — no
+    // hardcoded list that goes stale the moment a new place joins.
+    const counts = new Map();
+    all.forEach((r) => (r.cuisineTags || []).forEach((c) => counts.set(c, (counts.get(c) || 0) + 1)));
+    const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([c]) => c);
+    if (!top.length) { cuisineRow.innerHTML = ""; return; }
+    cuisineRow.innerHTML = `
+      <button class="chip${activeCuisine ? "" : " selected"}" data-cuisine="">All</button>
+      ${top.map((c) => `<button class="chip${activeCuisine === c ? " selected" : ""}" data-cuisine="${esc(c)}">${esc(c)}</button>`).join("")}
+    `;
+    cuisineRow.querySelectorAll("[data-cuisine]").forEach((chip) =>
+      chip.addEventListener("click", () => {
+        activeCuisine = chip.dataset.cuisine || null;
+        drawCuisines();
+        draw();
+      }),
+    );
+  }
+
+  function draw() {
+    const items = visible();
     if (!items.length) {
-      list.innerHTML = `<div class="empty-state"><p class="text-sm">No restaurants match — try a different search.</p></div>`;
+      // A quiet marketplace should read as "early", not "broken".
+      list.innerHTML = all.length
+        ? emptyRich({
+            icon: icon("utensils", 26),
+            title: "Nothing matches that",
+            body: "Try a different search or clear your filters.",
+          })
+        : emptyRich({
+            icon: icon("utensils", 26),
+            title: "Restaurants are joining this week",
+            body: "We're onboarding kitchens across Karachi right now. Tell us where you'd like Nova X Food next.",
+            actionLabel: "Request a restaurant",
+            actionId: "requestRestaurantBtn",
+          });
+      list.querySelector("#requestRestaurantBtn")?.addEventListener("click", () => navigate("/support"));
       return;
     }
     list.innerHTML = items.map((r) => restaurantCardHtml(r)).join("");
@@ -39,23 +93,29 @@ export function renderFoodBrowse(root) {
         const r = all.find((x) => x.id === c.dataset.restaurantId);
         state.currentRestaurant = r ? { ...r, menuItems: null } : { id: c.dataset.restaurantId };
         navigate("/food/restaurant");
-      })
+      }),
     );
   }
 
   api.browseRestaurants().then((restaurants) => {
     if (cancelled) return;
-    all = restaurants;
-    draw(all);
-  }).catch(() => { if (!cancelled) list.innerHTML = `<div class="empty-state"><p class="text-sm">Couldn't load restaurants right now.</p></div>`; });
+    all = Array.isArray(restaurants) ? restaurants : [];
+    drawCuisines();
+    draw();
+  }).catch(() => {
+    if (cancelled) return;
+    list.innerHTML = emptyRich({
+      icon: icon("bolt", 26),
+      title: "Couldn't load restaurants",
+      body: "Check your connection and try again.",
+    });
+  });
 
   let debounce;
   root.querySelector("#searchInput").addEventListener("input", (e) => {
     clearTimeout(debounce);
-    const q = e.target.value.trim().toLowerCase();
-    debounce = setTimeout(() => {
-      draw(q ? all.filter((r) => r.name.toLowerCase().includes(q) || (r.cuisineTags || []).some((c) => c.toLowerCase().includes(q))) : all);
-    }, 200);
+    query = e.target.value.trim().toLowerCase();
+    debounce = setTimeout(draw, 200);
   });
 
   return () => { cancelled = true; clearTimeout(debounce); };
@@ -99,6 +159,7 @@ export function renderRestaurantMenu(root) {
   api.getRestaurant(stub.id).then((restaurant) => {
     if (cancelled) return;
     state.currentRestaurant = restaurant;
+    track("food_restaurant_viewed", { restaurantId: restaurant.id });
     renderHeader(restaurant);
     renderMenu(restaurant);
   }).catch((err) => {
@@ -108,18 +169,32 @@ export function renderRestaurantMenu(root) {
   });
 
   function renderHeader(r) {
+    const prep = r.prepTimeMinutes || 20;
     root.querySelector("#header").innerHTML = `
-      <div class="card-elevated mb-2">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="restaurant-card-thumb">${icon("store", 26)}</div>
-          <div class="flex-col" style="flex:1;">
-            <h1 class="text-lg">${r.name}</h1>
-            <p class="text-secondary text-xs">${(r.cuisineTags || []).join(" · ") || "Restaurant"}</p>
+      <div class="food-card" style="box-shadow:var(--shadow-md);">
+        <div class="food-card-banner" style="height:150px;${r.bannerUrl ? `background-image:url('${esc(r.bannerUrl)}');` : ""}">
+          ${r.bannerUrl ? "" : icon("utensils", 38)}
+          <div class="food-card-badges">
+            ${r.isOpen ? `<span class="badge badge-success">Open now</span>` : `<span class="badge badge-error">Closed</span>`}
+            ${r.status === "APPROVED" ? `<span class="badge badge-accent">${icon("check", 10)} Verified partner</span>` : ""}
           </div>
-          <span class="badge badge-accent">${icon("star", 12)} ${(r.rating ?? 5).toFixed(1)}</span>
+          ${r.isOpen ? "" : `<div class="closed-veil">Not accepting orders right now</div>`}
         </div>
-        ${r.description ? `<p class="text-secondary text-sm">${r.description}</p>` : ""}
-        <p class="text-xs mt-2" style="color:${r.isOpen ? "var(--success)" : "var(--error)"};">${r.isOpen ? "Open now" : "Currently closed"}</p>
+        <div class="food-card-body">
+          <div class="flex justify-between items-start">
+            <h1 class="text-lg" style="flex:1;">${esc(r.name)}</h1>
+            <span class="badge badge-accent">${icon("star", 12)} ${(r.rating ?? 5).toFixed(1)}</span>
+          </div>
+          <p class="text-secondary text-xs mt-1">${esc((r.cuisineTags || []).join(" · ")) || "Restaurant"}</p>
+          ${r.description ? `<p class="text-secondary text-sm mt-2">${esc(r.description)}</p>` : ""}
+          <div class="food-meta">
+            <span>${prep}–${prep + 15} min</span>
+            <span class="dot"></span>
+            <span>Delivery from Rs. 50</span>
+            <span class="dot"></span>
+            <span>Cash on delivery</span>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -154,17 +229,25 @@ function menuItemRowHtml(mi) {
   const cart = state.cart;
   const inCart = cart.items.find((i) => i.menuItemId === mi.id);
   const qty = inCart ? inCart.quantity : 0;
+  // Photo-led: a dish with a picture sells; a dish as a text row does not.
+  // Falls back to a branded tile so an un-photographed menu still looks
+  // intentional rather than half-built.
   return `
-    <div class="list-row" data-item-id="${mi.id}">
-      <div class="flex-col" style="flex:1;">
-        <p class="font-bold text-sm">${mi.name}</p>
-        ${mi.description ? `<p class="text-secondary text-xs">${mi.description}</p>` : ""}
-        <p class="text-accent font-bold text-sm mt-1">${fmtMoney(mi.price)}</p>
+    <div class="menu-item" data-item-id="${esc(mi.id)}">
+      <div class="menu-item-photo" ${mi.imageUrl ? `style="background-image:url('${esc(mi.imageUrl)}');"` : ""}>
+        ${mi.imageUrl ? "" : icon("utensils", 22)}
       </div>
-      <div class="qty-stepper">
-        <button class="qty-btn" data-action="dec">−</button>
-        <span class="font-bold" data-qty style="min-width:16px; text-align:center;">${qty}</span>
-        <button class="qty-btn" data-action="inc">+</button>
+      <div class="flex-col" style="flex:1; min-width:0;">
+        <p class="font-bold text-sm">${esc(mi.name)}</p>
+        ${mi.description ? `<p class="text-secondary text-xs mt-1">${esc(mi.description)}</p>` : ""}
+        <div class="flex items-center justify-between mt-2">
+          <p class="font-bold">${fmtMoney(mi.price)}</p>
+          <div class="qty-stepper">
+            <button class="qty-btn" data-action="dec">−</button>
+            <span class="font-bold" data-qty style="min-width:16px; text-align:center;">${qty}</span>
+            <button class="qty-btn" data-action="inc">+</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -204,7 +287,7 @@ export function renderFoodCart(root) {
     <div class="page">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-1">Your Cart</h1>
-      <p class="text-secondary mb-6">${cart.restaurantName || "No restaurant selected"}</p>
+      <p class="text-secondary mb-6">${esc(cart.restaurantName) || "No restaurant selected"}</p>
 
       ${!cart.items.length ? `
       <div class="empty-state"><p class="text-sm">Your cart is empty.</p></div>
@@ -214,7 +297,7 @@ export function renderFoodCart(root) {
         ${cart.items.map((i) => `
           <div class="list-row" data-cart-item="${i.menuItemId}">
             <div class="flex-col" style="flex:1;">
-              <p class="font-bold text-sm">${i.name}</p>
+              <p class="font-bold text-sm">${esc(i.name)}</p>
               <p class="text-accent text-sm">${fmtMoney(i.price * i.quantity)}</p>
             </div>
             <div class="qty-stepper">
@@ -266,8 +349,18 @@ export function renderFoodCart(root) {
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span>`;
     try {
-      const coords = await getDemoDropoffCoords();
+      // Geocode the delivery address the customer actually typed — this
+      // used to just send their current GPS regardless of the address.
+      const here = await getCurrentCoords();
+      const coords = await geocode(dropoffLabel, here);
+      if (!coords.resolved) {
+        toast("Couldn't find that delivery address — try a more specific one", true);
+        btn.disabled = false;
+        btn.innerHTML = `Place Order ${icon("bolt", 18)}`;
+        return;
+      }
       const currentCart = state.cart;
+      track("food_checkout_started");
       const order = await api.createFoodOrder({
         restaurantId: currentCart.restaurantId,
         items: currentCart.items.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
@@ -277,6 +370,7 @@ export function renderFoodCart(root) {
         notes: notes || undefined,
       });
       state.activeFoodOrderId = order.id;
+      track("food_order_placed", { orderId: order.id });
       state.clearCart();
       navigate("/food/tracking");
     } catch (err) {
@@ -296,18 +390,6 @@ function bumpCartItem(menuItemId, delta, root) {
   renderFoodCart(root); // small screen, full re-render is simplest & keeps totals honest
 }
 
-const KARACHI = { lat: 24.8607, lng: 67.0011 };
-function getDemoDropoffCoords() {
-  return new Promise((resolve) => {
-    const fallback = () => ({ lat: KARACHI.lat + 0.01, lng: KARACHI.lng + 0.01 });
-    if (!navigator.geolocation) return resolve(fallback());
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => resolve(fallback()),
-      { timeout: 4000 }
-    );
-  });
-}
 
 const FOOD_STATUS_COPY = {
   PLACED: "Waiting for the restaurant to accept...",
@@ -332,8 +414,12 @@ export function renderFoodTracking(root) {
     </div>
     <div class="page" style="margin-top:-24px; position:relative; z-index:2;">
       <div class="card-elevated" style="border-radius:var(--r-xl);">
-        <span class="badge badge-accent mb-3" id="statusBadge">Loading...</span>
-        <p class="text-lg font-bold" id="statusText">Connecting...</p>
+        <div class="flex justify-between items-center mb-3">
+          <span class="badge badge-accent" id="statusBadge">Loading...</span>
+          <span class="text-xs text-muted" id="orderNumText"></span>
+        </div>
+        <p class="text-lg font-bold mb-4" id="statusText">Connecting...</p>
+        <button id="chatBtn" class="btn btn-secondary btn-block hidden">${icon("chat", 18)} Message Delivery Rider</button>
       </div>
     </div>
   `;
@@ -343,6 +429,11 @@ export function renderFoodTracking(root) {
   const statusCard = root.querySelector(".card-elevated");
   const statusBadge = root.querySelector("#statusBadge");
   const statusText = root.querySelector("#statusText");
+  const chatBtn = root.querySelector("#chatBtn");
+  chatBtn.addEventListener("click", () => {
+    state.chatContext = { contextType: "FOOD_ORDER", contextId: orderId, otherPartyLabel: "Delivery rider" };
+    navigate("/chat-thread");
+  });
   function setStatus(s) {
     statusBadge.textContent = s;
     statusText.textContent = FOOD_STATUS_COPY[s] || s;
@@ -351,9 +442,14 @@ export function renderFoodTracking(root) {
     statusCard.classList.remove("success-pulse");
     void statusCard.offsetWidth;
     statusCard.classList.add("success-pulse");
+    // A driver is only actually assigned from ASSIGNED onward.
+    chatBtn.classList.toggle("hidden", !["ASSIGNED", "PICKED_UP"].includes(s));
   }
 
-  api.getFoodOrder(orderId).then((o) => setStatus(o.status)).catch(() => setStatus("PLACED"));
+  api.getFoodOrder(orderId).then((o) => {
+    setStatus(o.status);
+    root.querySelector("#orderNumText").textContent = `Order #${(o.id || "").slice(0, 8).toUpperCase()}`;
+  }).catch(() => setStatus("PLACED"));
 
   socketManager.connect();
   const onAccepted = () => setStatus("ACCEPTED");

@@ -5,9 +5,11 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast } from "../ui.js";
+import { toast, esc } from "../ui.js";
 import { navigate } from "../router.js";
+import { track } from "../analytics.js";
 import { socketManager } from "../socket.js";
+import { resolveRoute } from "../geocode.js";
 
 const SERVICES = [
   { key: "standard", name: "Nova Standard", desc: "Next available driver", eta: "25-40 min" },
@@ -77,31 +79,25 @@ export function renderParcelDetails(root) {
   });
 }
 
-const KARACHI = { lat: 24.8607, lng: 67.0011 };
-function getDemoCoords() {
-  return new Promise((resolve) => {
-    const fallback = () => ({ pickupLat: KARACHI.lat, pickupLng: KARACHI.lng, dropoffLat: KARACHI.lat + 0.02, dropoffLng: KARACHI.lng + 0.02 });
-    if (!navigator.geolocation) return resolve(fallback());
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ pickupLat: pos.coords.latitude, pickupLng: pos.coords.longitude, dropoffLat: pos.coords.latitude + 0.02, dropoffLng: pos.coords.longitude + 0.02 }),
-      () => resolve(fallback()),
-      { timeout: 4000 }
-    );
-  });
-}
-
 export function renderParcelContact(root) {
   const draft = state.parcelDraft || {};
   root.innerHTML = `
     <div class="page">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
-      <h1 class="text-xl mb-6">Receiver Details</h1>
+      <h1 class="text-xl mb-6">Pickup & Receiver</h1>
+
+      <label class="field-label">Pickup Address</label>
+      <input id="pickupInput" class="input mb-4" placeholder="Leave blank to use your current location" value="${esc(draft.pickupLabel)}"/>
+
+      <label class="field-label">Delivery Address</label>
+      <input id="dropoffInput" class="input mb-4" placeholder="e.g. House 12, Street 4, DHA Phase 6" value="${esc(draft.dropoffLabel)}"/>
+
       <label class="field-label">Receiver Name</label>
-      <input id="nameInput" class="input mb-4" placeholder="e.g. Sara Khan" value="${draft.recipientName || ""}"/>
+      <input id="nameInput" class="input mb-4" placeholder="e.g. Sara Khan" value="${esc(draft.recipientName)}"/>
       <label class="field-label">Phone Number</label>
       <div class="flex gap-2 mb-6">
         <div class="input flex items-center justify-center" style="width:64px; flex:none; color:var(--text-secondary);">+92</div>
-        <input id="phoneInput" class="input" type="tel" placeholder="321 7654321" value="${draft.recipientPhoneLocal || ""}"/>
+        <input id="phoneInput" class="input" type="tel" placeholder="321 7654321" value="${esc(draft.recipientPhoneLocal)}"/>
       </div>
       <div class="card mb-6">
         <div class="flex justify-between">
@@ -116,11 +112,14 @@ export function renderParcelContact(root) {
   root.querySelector("#confirmBtn").addEventListener("click", async (e) => {
     const name = root.querySelector("#nameInput").value.trim();
     const phoneLocal = root.querySelector("#phoneInput").value.trim();
+    const pickupLabel = root.querySelector("#pickupInput").value.trim();
+    const dropoffLabel = root.querySelector("#dropoffInput").value.trim();
     const digits = phoneLocal.replace(/\D/g, "").replace(/^0+/, "");
     if (!name || digits.length < 9) { toast("Enter a valid receiver name and phone", true); return; }
+    if (!dropoffLabel) { toast("Enter the delivery address", true); return; }
     if (!Token.access) {
       // Save what they've typed so it's still here after they log in.
-      state.parcelDraft = { ...draft, recipientName: name, recipientPhoneLocal: phoneLocal };
+      state.parcelDraft = { ...draft, recipientName: name, recipientPhoneLocal: phoneLocal, pickupLabel, dropoffLabel };
       state.postAuthRedirect = "/parcel/contact";
       navigate("/phone");
       return;
@@ -129,17 +128,26 @@ export function renderParcelContact(root) {
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span>`;
     try {
-      const coords = await getDemoCoords();
+      // Real geocoding of what the sender typed — this flow used to submit
+      // current-GPS + a fixed offset and ignore the addresses entirely.
+      const { pickup, dropoff } = await resolveRoute(pickupLabel, dropoffLabel);
+      if (!dropoff.resolved) {
+        toast("Couldn't find that delivery address — try a more specific one", true);
+        btn.disabled = false;
+        btn.innerHTML = `Confirm & Book ${icon("arrow-forward", 18)}`;
+        return;
+      }
       const dto = {
-        pickupLat: coords.pickupLat,
-        pickupLng: coords.pickupLng,
-        dropoffLat: coords.dropoffLat,
-        dropoffLng: coords.dropoffLng,
+        pickupLat: pickup.lat,
+        pickupLng: pickup.lng,
+        dropoffLat: dropoff.lat,
+        dropoffLng: dropoff.lng,
         recipientName: name,
         recipientPhone: "+92" + digits,
         parcelNote: draft.note || undefined,
       };
       if (draft.codAmount) dto.codAmount = Number(draft.codAmount);
+      track("parcel_requested");
       const delivery = await api.createDelivery(dto);
       state.activeDeliveryId = delivery.id;
       state.parcelDraft = {};

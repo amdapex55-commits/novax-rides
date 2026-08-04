@@ -61,7 +61,7 @@ export function renderFoodOfferIncoming(root) {
 }
 
 const FOOD_DRIVER_STEPS = [
-  { action: "picked-up", label: "Picked up from restaurant", btn: "Picked Up Order" },
+  { action: "picked-up", label: "Picked up from restaurant", btn: "Confirm Pickup" },
   { action: "delivered", label: "Delivered to customer", btn: "Mark Delivered" },
 ];
 
@@ -71,19 +71,54 @@ export function renderFoodOrderProgress(root) {
   root.innerHTML = `
     <div class="page">
       <h1 class="text-xl mb-6">Food Delivery in Progress</h1>
-      <div class="radar-field" style="height:220px; border-radius:var(--r-lg); margin-bottom:24px; display:flex; align-items:center; justify-content:center;">
+      <div class="radar-field" style="height:180px; border-radius:var(--r-lg); margin-bottom:24px; display:flex; align-items:center; justify-content:center;">
         <div class="radar-sweep"></div>
         <div class="pulse-dot" style="position:relative; z-index:1;"></div>
       </div>
-      <div class="card mb-6">
-        <p class="text-secondary text-sm">Head to the restaurant, then deliver to the customer's address shown in the order.</p>
-      </div>
-      <button id="actionBtn" class="btn btn-primary btn-block">${FOOD_DRIVER_STEPS[0].btn}</button>
+      <div id="orderCard" class="card mb-6">${skeletonRow()}</div>
+      <button id="chatBtn" class="btn btn-secondary btn-block mb-3">${icon("chat", 18)} Message Customer</button>
+      <button id="actionBtn" class="btn btn-primary btn-block" disabled>${FOOD_DRIVER_STEPS[0].btn}</button>
     </div>
   `;
   if (!orderId) { navigate("/driver/home"); return; }
 
+  root.querySelector("#chatBtn").addEventListener("click", () => {
+    state.chatContext = { contextType: "FOOD_ORDER", contextId: orderId, otherPartyLabel: "Customer" };
+    navigate("/chat-thread");
+  });
+
+  const orderCard = root.querySelector("#orderCard");
   const btn = root.querySelector("#actionBtn");
+
+  api.getFoodOrder(orderId).then((order) => {
+    stepIndex = order.status === "PICKED_UP" ? 1 : 0;
+    drawOrderCard(order, stepIndex);
+    btn.disabled = false;
+    btn.textContent = FOOD_DRIVER_STEPS[stepIndex].btn;
+  }).catch(() => {
+    orderCard.innerHTML = `<p class="text-secondary text-sm">Head to the restaurant, then deliver to the customer's address.</p>`;
+    btn.disabled = false;
+  });
+
+  function drawOrderCard(order, step) {
+    const shortId = (order.id || "").slice(0, 8).toUpperCase();
+    orderCard.innerHTML = `
+      <div class="flex justify-between items-center mb-3">
+        <span class="badge badge-accent">Order #${shortId}</span>
+        <span class="font-bold text-accent">${fmtMoney(order.total)}</span>
+      </div>
+      <div class="flex items-start gap-3 mb-3">
+        <div class="list-row-icon">${icon(step === 0 ? "store" : "map-pin", 18)}</div>
+        <div style="flex:1;">
+          <p class="text-xs text-muted">${step === 0 ? "Pick up from" : "Deliver to"}</p>
+          <p class="text-sm font-bold" style="color:var(--text-primary);">${step === 0 ? (order.restaurant?.name || "Restaurant") : "Customer"}</p>
+          <p class="text-xs text-secondary">${step === 0 ? (order.restaurant?.address || "") : order.dropoffLabel}</p>
+        </div>
+      </div>
+      ${order.notes ? `<div class="pending-flag" style="margin-bottom:0;"><span>${icon("bolt", 14)}</span><span>${order.notes}</span></div>` : ""}
+    `;
+  }
+
   btn.addEventListener("click", async () => {
     const step = FOOD_DRIVER_STEPS[stepIndex];
     btn.disabled = true;
@@ -99,6 +134,10 @@ export function renderFoodOrderProgress(root) {
         navigate("/driver/earnings");
         return;
       }
+      try {
+        const order = await api.getFoodOrder(orderId);
+        drawOrderCard(order, stepIndex);
+      } catch { /* non-fatal — card just won't flip to the dropoff view */ }
       btn.disabled = false;
       btn.textContent = FOOD_DRIVER_STEPS[stepIndex].btn;
     } catch (err) {
@@ -107,6 +146,10 @@ export function renderFoodOrderProgress(root) {
       btn.textContent = FOOD_DRIVER_STEPS[stepIndex].btn;
     }
   });
+}
+
+function skeletonRow() {
+  return `<div class="skeleton" style="height:60px; border-radius:var(--r-md);"></div>`;
 }
 
 export function renderErrandOfferIncoming(root) {

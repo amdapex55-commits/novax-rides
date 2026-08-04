@@ -481,6 +481,243 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   color: var(--accent);
 }
 
+/* ============================================================
+   MAP LAYER — the hero of ride/parcel/tracking screens.
+   ============================================================ */
+
+.nx-map {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-map);
+  background: var(--surface);
+}
+/* Full-bleed map screen: map fills the viewport, a sheet floats over it. */
+.map-screen {
+  position: relative;
+  height: 100dvh;
+  height: 100vh;
+  overflow: hidden;
+}
+.nx-map-skeleton { border-radius: var(--r-lg); width: 100%; }
+
+/* Floating controls that sit on top of the map (back, recenter, SOS). */
+.map-fab {
+  position: absolute;
+  z-index: var(--z-map-ui);
+  width: 44px; height: 44px;
+  border-radius: var(--r-full);
+  background: var(--bg);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-md);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-primary);
+  transition: transform var(--dur-fast) var(--ease-bounce);
+}
+.map-fab:active { transform: scale(0.9); }
+.map-fab.danger { color: var(--error); border-color: rgba(225,29,72,0.35); }
+
+/* Teardrop pin, drawn in CSS so it themes with the app and needs no assets. */
+.nx-pin-wrap { background: none !important; border: none !important; }
+.nx-pin {
+  width: 28px; height: 28px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--pin, var(--accent));
+  border: 2.5px solid #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.28);
+}
+/* Live driver position — pulses so it reads as "moving/live", not a static pin. */
+.nx-driver-marker {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  animation: nx-glow-pulse 1.8s ease-out infinite;
+}
+
+/* ============================================================
+   BOTTOM-SHEET FLOWS — actions happen in sheets, not new pages.
+   ============================================================ */
+
+/* A sheet docked over a map (not a modal): always visible, no overlay,
+   content swaps as the flow advances. This is the ride-app feel. */
+.dock-sheet {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: var(--z-sheet);
+  background: var(--bg);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: 0 -10px 40px rgba(14, 29, 22, 0.16);
+  padding: var(--sp-3) var(--sp-5) calc(var(--sp-5) + var(--safe-bottom));
+  max-height: 82%;
+  overflow-y: auto;
+  transition: transform var(--dur-med) var(--ease-spring);
+}
+.dock-sheet .sheet-handle {
+  width: 40px; height: 4px; border-radius: var(--r-full);
+  background: var(--surface-3);
+  margin: 0 auto var(--sp-4);
+}
+/* Content swap inside a docked sheet gets its own small enter animation, so
+   advancing a step reads as progress rather than a flicker. */
+.sheet-step { animation: nx-sheet-step 280ms var(--ease-spring); }
+@keyframes nx-sheet-step {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   TRUST — the details that make people believe the app.
+   ============================================================ */
+
+.trust-row {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+}
+.trust-avatar {
+  width: 52px; height: 52px; border-radius: var(--r-full);
+  background: var(--surface-2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent); font-weight: 800; font-size: 18px;
+  flex: none;
+  border: 2px solid var(--surface-border);
+}
+.verified-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 700;
+  color: var(--accent);
+  background: var(--brand-ride-soft);
+  padding: 3px 8px; border-radius: var(--r-full);
+}
+.plate-chip {
+  display: inline-flex; align-items: center;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-weight: 700; font-size: 13px; letter-spacing: 0.06em;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-border);
+  padding: 4px 10px; border-radius: var(--r-sm);
+}
+.ref-id {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px; color: var(--text-muted); letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   FOOD — Foodpanda-grade cards. Food is emotional; lists are not.
+   ============================================================ */
+
+.food-card {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-bounce), box-shadow var(--dur-fast);
+}
+.food-card:active { transform: scale(0.985); box-shadow: var(--shadow-md); }
+.food-card-banner {
+  height: 132px;
+  background: linear-gradient(135deg, var(--surface-2), var(--surface-3));
+  background-size: cover; background-position: center;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+}
+/* Badges float on the banner so the card reads at a glance. */
+.food-card-badges {
+  position: absolute; top: var(--sp-3); left: var(--sp-3);
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.food-card-body { padding: var(--sp-4); }
+.food-meta {
+  display: flex; align-items: center; gap: var(--sp-3);
+  font-size: 12px; color: var(--text-secondary);
+  margin-top: 6px;
+}
+.food-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-muted); }
+.closed-veil {
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0.72);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; color: var(--text-secondary);
+  backdrop-filter: blur(1px);
+}
+
+/* Menu item row with a photo — the food equivalent of a product card. */
+.menu-item {
+  display: flex; gap: var(--sp-4);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid rgba(14,29,22,0.07);
+}
+.menu-item:last-child { border-bottom: none; }
+.menu-item-photo {
+  width: 76px; height: 76px; flex: none;
+  border-radius: var(--r-md);
+  background: var(--surface-2) center/cover no-repeat;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+}
+
+/* Horizontal cuisine filter strip. */
+.chip-row {
+  display: flex; gap: var(--sp-2);
+  overflow-x: auto;
+  padding-bottom: var(--sp-2);
+  scrollbar-width: none;
+}
+.chip-row::-webkit-scrollbar { display: none; }
+.chip-row .chip { flex: none; }
+
+/* ============================================================
+   RESTAURANT POS — an operational surface, not a consumer one.
+   Loud status colour, big touch targets, glanceable from a counter.
+   ============================================================ */
+
+.pos-order {
+  border-radius: var(--r-lg);
+  border: 1px solid var(--surface-border);
+  border-left: 5px solid var(--surface-3);
+  background: var(--bg);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+.pos-order.is-new {
+  border-left-color: var(--error);
+  background: rgba(225, 29, 72, 0.04);
+  animation: nx-pos-attention 1.6s ease-in-out infinite;
+}
+.pos-order.is-preparing { border-left-color: var(--warning); }
+.pos-order.is-ready { border-left-color: var(--accent); }
+@keyframes nx-pos-attention {
+  0%, 100% { box-shadow: var(--shadow-sm); }
+  50% { box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.10); }
+}
+.pos-order-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: var(--sp-3);
+}
+
+/* ============================================================
+   EMPTY STATES — a quiet marketplace must not look broken.
+   ============================================================ */
+
+.empty-rich {
+  text-align: center;
+  padding: var(--sp-8) var(--sp-5);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px dashed var(--surface-border);
+}
+.empty-rich .icon-wrap {
+  width: 64px; height: 64px; border-radius: var(--r-full);
+  background: var(--bg);
+  border: 1px solid var(--surface-border);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto var(--sp-4);
+  color: var(--accent);
+}
+
 /* ---------- Floating cart button — appears/disappears with a spring pop,
    not a hard show/hide, whenever the cart item count changes. ---------- */
 .cart-fab {

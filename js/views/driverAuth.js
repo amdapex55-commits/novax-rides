@@ -14,11 +14,14 @@ export function renderPendingApproval(root) {
       </div>
       <h1 class="text-xl mb-2">Verification in Progress</h1>
       <p class="text-secondary mb-8">We're reviewing your documents. This usually takes 24-48 hours once submitted.</p>
-      <button id="kycBtn" class="btn btn-secondary btn-block mb-3">${icon("upload", 18)} Upload Documents</button>
-      <button id="checkStatusBtn" class="btn btn-primary btn-block">${icon("refresh", 18)} Check Status</button>
+      <button id="kycBtn" class="btn btn-primary btn-block mb-3">${icon("upload", 18)} Complete Your Application</button>
+      <button id="checkStatusBtn" class="btn btn-secondary btn-block">${icon("refresh", 18)} Check Status</button>
     </div>
   `;
-  root.querySelector("#kycBtn").addEventListener("click", () => navigate("/driver/kyc"));
+  // Points at the full onboarding flow (documents + vehicle + service area +
+  // payout + emergency contact), not the old upload-only screen — an
+  // application missing half its fields just gets rejected.
+  root.querySelector("#kycBtn").addEventListener("click", () => navigate("/driver/onboarding"));
 
   const checkBtn = root.querySelector("#checkStatusBtn");
   async function check(showToastIfPending) {
@@ -76,8 +79,12 @@ export function renderKycUpload(root) {
       const statusBadge = root.querySelector(`[data-status="${key}"]`);
       statusBadge.textContent = "Uploading...";
       try {
-        const { url } = await api.presignUpload("KYC_DOCUMENT", file.type || "image/jpeg");
-        const putRes = await fetch(url, { method: "PUT", headers: { "Content-Type": file.type || "image/jpeg" }, body: file });
+        // "kyc-doc" (not "KYC_DOCUMENT") and fileName are what the backend's
+        // PresignUploadDto actually requires, and the response field is
+        // uploadUrl — the previous values silently 400'd on every attempt.
+        const contentType = file.type || "image/jpeg";
+        const { uploadUrl } = await api.presignUpload("kyc-doc", contentType, file.name || "kyc-document.jpg");
+        const putRes = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": contentType }, body: file });
         if (!putRes.ok) throw new Error("Upload rejected by storage");
         statusBadge.textContent = "Uploaded";
         statusBadge.className = "badge badge-success";

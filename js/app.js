@@ -18,7 +18,10 @@ const NAV_SETS = {
     { tab: "profile", icon: "person", label: "Profile", path: "/driver/profile" },
   ],
   ADMIN: [
-    { tab: "dashboard", icon: "dashboard", label: "Live", path: "/ops/dashboard" },
+    // Command first: stuck jobs and SOS incidents are the reason anyone
+    // opens the ops app during a shift.
+    { tab: "command", icon: "bolt", label: "Command", path: "/ops/command" },
+    { tab: "dashboard", icon: "dashboard", label: "Stats", path: "/ops/dashboard" },
     { tab: "approvals", icon: "check-circle", label: "Approvals", path: "/ops/approvals" },
     { tab: "users", icon: "users", label: "Users", path: "/ops/users" },
   ],

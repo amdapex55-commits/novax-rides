@@ -1,12 +1,15 @@
-// Nova X Rides — splash, phone entry (rider + driver), OTP verify.
-// This is the one flow both roles share; the backend, not the button the
-// user tapped, decides the real role (see README "Known gaps" — there's no
-// self-service driver registration yet, role is set in the database).
+// Nova X Rides — splash, welcome/role picker, phone entry (rider + driver +
+// restaurant), OTP verify. Self-service signup is real: whichever door a
+// new phone number comes through (rider / "Drive & Earn" / "List Your
+// Restaurant") sets that account's role on creation — see
+// auth.service.requestOtp on the backend. An existing account's role never
+// changes by re-requesting an OTP through a different door.
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
 import { toast, e164 } from "../ui.js";
 import { navigate } from "../router.js";
+import { track } from "../analytics.js";
 
 export function renderSplash(root) {
   root.innerHTML = `
@@ -31,12 +34,92 @@ export function renderSplash(root) {
         return;
       } catch { Token.clear(); }
     }
-    // No account yet (or session expired) — land straight in the app to
-    // browse. OTP only kicks in when something they do actually needs an
-    // account (booking, wallet, profile, etc. — see router.js auth guard).
-    navigate("/home");
+    // No account yet (or session expired) — show the welcome/role picker
+    // instead of dropping straight into rider browsing, so Drive & Earn and
+    // List Your Restaurant are an actual front door, not a buried link.
+    navigate("/welcome");
   }, 900);
   return () => clearTimeout(t);
+}
+
+// First front door a logged-out visitor sees: pick a lane (Rider / Driver /
+// Restaurant) or skip straight to browsing as a guest. Each option leads to
+// its own phone-entry + OTP flow, and — because role is set on the backend
+// at first signup (see file header) — its own distinct portal afterward.
+const WELCOME_OPTIONS = [
+  { role: "DRIVER", to: "/driver/phone", icon: "car", title: "Drive & Earn", subtitle: "Your hours, your vehicle" },
+  { role: "RESTAURANT", to: "/restaurant/phone", icon: "store", title: "Partner Your Restaurant", subtitle: "Reach customers city-wide" },
+];
+
+// What Nova X actually does, said in four words the moment the app opens.
+const MODES = [
+  { icon: "bike", label: "Rides" },
+  { icon: "utensils", label: "Food" },
+  { icon: "package", label: "Parcels" },
+  { icon: "basket", label: "Errands" },
+];
+
+export function renderWelcome(root) {
+  track("app_opened");
+  root.innerHTML = `
+    <div class="page flex-col" style="min-height:100dvh; justify-content:center;">
+
+      <div class="text-center mb-6">
+        <div style="width:64px;height:64px;border-radius:20px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;box-shadow:var(--accent-glow);margin:0 auto 18px;">
+          ${icon("bolt", 30, 2)}
+        </div>
+        <span class="badge badge-accent mb-3">${icon("map-pin", 11)} Available in Karachi</span>
+        <h1 class="text-xl" style="font-size:28px;">Rides, food, parcels<br/>&amp; errands</h1>
+        <p class="text-secondary mt-2">One app. One tap. Across the city.</p>
+      </div>
+
+      <!-- The four things, as icons rather than a paragraph -->
+      <div class="flex gap-2 mb-6">
+        ${MODES.map((m) => `
+          <div class="card text-center" style="flex:1; padding:var(--sp-4) var(--sp-2);">
+            <div style="color:var(--accent); margin-bottom:6px;">${icon(m.icon, 22)}</div>
+            <p class="text-xs font-bold">${m.label}</p>
+          </div>`).join("")}
+      </div>
+
+      <button id="riderBtn" class="btn btn-primary btn-block mb-3" style="height:56px; font-size:16px;">
+        Continue as Rider ${icon("arrow-forward", 18)}
+      </button>
+      <button id="guestBtn" class="btn btn-ghost btn-block mb-6">Browse first — no account needed</button>
+
+      <div style="border-top:1px solid var(--surface-border); padding-top:var(--sp-5);">
+        <p class="text-xs text-muted text-center mb-3" style="text-transform:uppercase; letter-spacing:0.06em;">Work with Nova X</p>
+        <div class="flex-col gap-2">
+          ${WELCOME_OPTIONS.map((o) => `
+            <button class="list-row" data-to="${o.to}" style="cursor:pointer; width:100%;">
+              <div class="list-row-icon">${icon(o.icon, 20)}</div>
+              <div style="flex:1; text-align:left;">
+                <p class="font-bold text-sm">${o.title}</p>
+                <p class="text-secondary text-xs">${o.subtitle}</p>
+              </div>
+              ${icon("chevronRight", 18)}
+            </button>`).join("")}
+        </div>
+      </div>
+
+      <p class="text-xs text-muted text-center mt-6">
+        By continuing you agree to our
+        <a href="#/legal/terms" style="color:var(--accent);">Terms</a> and
+        <a href="#/legal/privacy" style="color:var(--accent);">Privacy Policy</a>.
+      </p>
+    </div>
+  `;
+  root.querySelector("#riderBtn").addEventListener("click", () => {
+    track("welcome_role_selected", { role: "RIDER" });
+    navigate("/phone");
+  });
+  root.querySelector("#guestBtn").addEventListener("click", () => navigate("/home"));
+  root.querySelectorAll("[data-to]").forEach((b) =>
+    b.addEventListener("click", () => {
+      track("welcome_role_selected", { role: b.dataset.to.includes("driver") ? "DRIVER" : "RESTAURANT" });
+      navigate(b.dataset.to);
+    }),
+  );
 }
 
 // A restaurant account's landing screen depends on how far they've gotten
@@ -95,11 +178,11 @@ export function renderPhoneEntry(role) {
     const input = root.querySelector("#phoneInput");
     const btn = root.querySelector("#continueBtn");
     root.querySelector("#backBtn").addEventListener("click", () => {
-      // Always land on guest home, never history.back() — a route that
+      // Always land on /welcome, never history.back() — a route that
       // bounced them here (auth guard) would just bounce them right back,
       // trapping them in a loop with no way out.
       state.postAuthRedirect = null;
-      navigate("/home");
+      navigate("/welcome");
     });
     input.focus();
 
@@ -112,6 +195,7 @@ export function renderPhoneEntry(role) {
       btn.innerHTML = `<span class="spinner"></span>`;
       try {
         await api.requestOtp(phone, referralCode, isRider ? undefined : role);
+        track("otp_requested", { role });
         state.pendingPhone = phone;
         state.pendingReferralCode = null;
         navigate("/otp");
@@ -183,6 +267,7 @@ export function renderOtp(root) {
     verifyBtn.innerHTML = `<span class="spinner"></span>`;
     try {
       await api.verifyOtp(phone, code);
+      track("otp_verified");
       const user = await api.getMe();
       state.pendingPhone = null;
       window.__novaxRefreshNav();
