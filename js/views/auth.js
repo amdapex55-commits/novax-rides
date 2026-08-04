@@ -10,6 +10,7 @@ import { icon } from "../icons.js";
 import { toast, e164 } from "../ui.js";
 import { navigate } from "../router.js";
 import { track } from "../analytics.js";
+import { APP, APP_CONFIG, isCustomerApp } from "../appMode.js";
 
 export function renderSplash(root) {
   root.innerHTML = `
@@ -17,8 +18,8 @@ export function renderSplash(root) {
       <div style="width:96px;height:96px;border-radius:28px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;box-shadow:var(--accent-glow);margin-bottom:24px;">
         ${icon("bolt", 48, 2)}
       </div>
-      <h1 style="font-size:28px;">Nova X</h1>
-      <p class="text-secondary mt-2">Rides. Delivered. Faster.</p>
+      <h1 style="font-size:28px;">${APP_CONFIG.name}</h1>
+      <p class="text-secondary mt-2">${APP_CONFIG.tagline}</p>
       <div class="spinner text-accent mt-6"></div>
     </div>
   `;
@@ -27,80 +28,67 @@ export function renderSplash(root) {
       try {
         const user = await api.getMe();
         window.__novaxRefreshNav();
+        // Wrong app for this account — the router's own guard renders a clear
+        // "use the other app" screen, so just land on this build's home and
+        // let it catch them there.
+        if (!APP_CONFIG.allowedRoles.includes(user.role)) { navigate(APP_CONFIG.home); return; }
+
         if (user.role === "DRIVER") navigate(user.kycStatus === "APPROVED" ? "/driver/home" : "/driver/pending");
-        else if (user.role === "ADMIN") navigate("/ops/dashboard");
+        else if (user.role === "ADMIN") navigate("/ops/command");
         else if (user.role === "RESTAURANT") navigate(await restaurantHomePath());
         else navigate("/home");
         return;
       } catch { Token.clear(); }
     }
-    // No account yet (or session expired) — show the welcome/role picker
-    // instead of dropping straight into rider browsing, so Drive & Earn and
-    // List Your Restaurant are an actual front door, not a buried link.
     navigate("/welcome");
   }, 900);
   return () => clearTimeout(t);
 }
 
-// First front door a logged-out visitor sees: pick a lane (Rider / Driver /
-// Restaurant) or skip straight to browsing as a guest. Each option leads to
-// its own phone-entry + OTP flow, and — because role is set on the backend
-// at first signup (see file header) — its own distinct portal afterward.
-const WELCOME_OPTIONS = [
-  { role: "DRIVER", to: "/driver/phone", icon: "car", title: "Drive & Earn", subtitle: "Your hours, your vehicle" },
-  { role: "RESTAURANT", to: "/restaurant/phone", icon: "store", title: "Partner Your Restaurant", subtitle: "Reach customers city-wide" },
+// ---------------------------------------------------------------------------
+// Welcome screens — one per app.
+//
+// The customer app is a CONSUMER product: it opens on "what can I get right
+// now", never on "which kind of user are you". Driver/merchant/ops open on
+// their own value proposition. This is the difference between an app that
+// feels like a product and one that feels like an internal tool with a
+// public login.
+// ---------------------------------------------------------------------------
+
+const CUSTOMER_SERVICES = [
+  { icon: "bike", label: "Ride", sub: "Bike, rickshaw or car" },
+  { icon: "utensils", label: "Food", sub: "From restaurants near you" },
+  { icon: "package", label: "Parcel", sub: "Send it across town" },
+  { icon: "basket", label: "Errand", sub: "We'll pick it up for you" },
 ];
 
-// What Nova X actually does, said in four words the moment the app opens.
-const MODES = [
-  { icon: "bike", label: "Rides" },
-  { icon: "utensils", label: "Food" },
-  { icon: "package", label: "Parcels" },
-  { icon: "basket", label: "Errands" },
-];
-
-export function renderWelcome(root) {
-  track("app_opened");
+function renderCustomerWelcome(root) {
   root.innerHTML = `
     <div class="page flex-col" style="min-height:100dvh; justify-content:center;">
-
       <div class="text-center mb-6">
         <div style="width:64px;height:64px;border-radius:20px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;box-shadow:var(--accent-glow);margin:0 auto 18px;">
           ${icon("bolt", 30, 2)}
         </div>
         <span class="badge badge-accent mb-3">${icon("map-pin", 11)} Available in Karachi</span>
-        <h1 class="text-xl" style="font-size:28px;">Rides, food, parcels<br/>&amp; errands</h1>
-        <p class="text-secondary mt-2">One app. One tap. Across the city.</p>
+        <h1 class="text-xl" style="font-size:30px; line-height:1.15;">Anything you need,<br/>on its way</h1>
+        <p class="text-secondary mt-2">Rides, food, parcels &amp; errands — one app.</p>
       </div>
 
-      <!-- The four things, as icons rather than a paragraph -->
-      <div class="flex gap-2 mb-6">
-        ${MODES.map((m) => `
-          <div class="card text-center" style="flex:1; padding:var(--sp-4) var(--sp-2);">
-            <div style="color:var(--accent); margin-bottom:6px;">${icon(m.icon, 22)}</div>
-            <p class="text-xs font-bold">${m.label}</p>
+      <div class="flex-col gap-2 mb-6">
+        ${CUSTOMER_SERVICES.map((s) => `
+          <div class="list-row" style="background:var(--surface); border-radius:var(--r-md);">
+            <div class="list-row-icon" style="color:var(--accent);">${icon(s.icon, 20)}</div>
+            <div style="flex:1;">
+              <p class="font-bold text-sm">${s.label}</p>
+              <p class="text-secondary text-xs">${s.sub}</p>
+            </div>
           </div>`).join("")}
       </div>
 
-      <button id="riderBtn" class="btn btn-primary btn-block mb-3" style="height:56px; font-size:16px;">
-        Continue as Rider ${icon("arrow-forward", 18)}
+      <button id="startBtn" class="btn btn-primary btn-block mb-3" style="height:56px; font-size:16px;">
+        Get started ${icon("arrow-forward", 18)}
       </button>
-      <button id="guestBtn" class="btn btn-ghost btn-block mb-6">Browse first — no account needed</button>
-
-      <div style="border-top:1px solid var(--surface-border); padding-top:var(--sp-5);">
-        <p class="text-xs text-muted text-center mb-3" style="text-transform:uppercase; letter-spacing:0.06em;">Work with Nova X</p>
-        <div class="flex-col gap-2">
-          ${WELCOME_OPTIONS.map((o) => `
-            <button class="list-row" data-to="${o.to}" style="cursor:pointer; width:100%;">
-              <div class="list-row-icon">${icon(o.icon, 20)}</div>
-              <div style="flex:1; text-align:left;">
-                <p class="font-bold text-sm">${o.title}</p>
-                <p class="text-secondary text-xs">${o.subtitle}</p>
-              </div>
-              ${icon("chevronRight", 18)}
-            </button>`).join("")}
-        </div>
-      </div>
+      <button id="guestBtn" class="btn btn-ghost btn-block">Look around first</button>
 
       <p class="text-xs text-muted text-center mt-6">
         By continuing you agree to our
@@ -109,17 +97,95 @@ export function renderWelcome(root) {
       </p>
     </div>
   `;
-  root.querySelector("#riderBtn").addEventListener("click", () => {
+  root.querySelector("#startBtn").addEventListener("click", () => {
     track("welcome_role_selected", { role: "RIDER" });
     navigate("/phone");
   });
   root.querySelector("#guestBtn").addEventListener("click", () => navigate("/home"));
-  root.querySelectorAll("[data-to]").forEach((b) =>
-    b.addEventListener("click", () => {
-      track("welcome_role_selected", { role: b.dataset.to.includes("driver") ? "DRIVER" : "RESTAURANT" });
-      navigate(b.dataset.to);
-    }),
-  );
+}
+
+const PARTNER_COPY = {
+  driver: {
+    icon: "car",
+    heading: "Earn on your schedule",
+    sub: "Accept rides, deliveries and errands. Get paid in cash, keep what you earn.",
+    points: [
+      { icon: "bolt", label: "Work when you want", sub: "Go online and offline any time" },
+      { icon: "wallet", label: "Cash in hand", sub: "Riders pay you directly" },
+      { icon: "bike", label: "Bike, rickshaw or car", sub: "Use what you already own" },
+    ],
+    cta: "Start driving",
+    legalPath: "/legal/driver-agreement",
+    legalLabel: "Driver Agreement",
+  },
+  merchant: {
+    icon: "store",
+    heading: "Fill more orders",
+    sub: "Put your kitchen in front of customers across the city. You control your menu, prices and hours.",
+    points: [
+      { icon: "package", label: "Orders straight to you", sub: "Accept, prepare, hand over" },
+      { icon: "utensils", label: "Your menu, your prices", sub: "Update anything, any time" },
+      { icon: "bike", label: "We handle delivery", sub: "Nova X riders collect and deliver" },
+    ],
+    cta: "Partner with Nova X",
+    legalPath: "/legal/restaurant-agreement",
+    legalLabel: "Restaurant Partner Agreement",
+  },
+  ops: {
+    icon: "bolt",
+    heading: "Nova X Operations",
+    sub: "Internal console. Dispatch, safety incidents and partner approvals.",
+    points: [],
+    cta: "Sign in",
+    legalPath: null,
+    legalLabel: null,
+  },
+};
+
+function renderPartnerWelcome(root) {
+  const c = PARTNER_COPY[APP] || PARTNER_COPY.driver;
+  root.innerHTML = `
+    <div class="page flex-col" style="min-height:100dvh; justify-content:center;">
+      <div class="text-center mb-6">
+        <div style="width:64px;height:64px;border-radius:20px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;box-shadow:var(--accent-glow);margin:0 auto 18px;">
+          ${icon(c.icon, 30, 2)}
+        </div>
+        <h1 class="text-xl" style="font-size:28px;">${c.heading}</h1>
+        <p class="text-secondary mt-2">${c.sub}</p>
+      </div>
+
+      ${c.points.length ? `
+        <div class="flex-col gap-2 mb-6">
+          ${c.points.map((p) => `
+            <div class="list-row" style="background:var(--surface); border-radius:var(--r-md);">
+              <div class="list-row-icon" style="color:var(--accent);">${icon(p.icon, 20)}</div>
+              <div style="flex:1;">
+                <p class="font-bold text-sm">${p.label}</p>
+                <p class="text-secondary text-xs">${p.sub}</p>
+              </div>
+            </div>`).join("")}
+        </div>` : `<div class="mb-6"></div>`}
+
+      <button id="startBtn" class="btn btn-primary btn-block" style="height:56px; font-size:16px;">
+        ${c.cta} ${icon("arrow-forward", 18)}
+      </button>
+
+      ${c.legalPath ? `
+        <p class="text-xs text-muted text-center mt-6">
+          By continuing you agree to the
+          <a href="#${c.legalPath}" style="color:var(--accent);">${c.legalLabel}</a>.
+        </p>` : ""}
+    </div>
+  `;
+  root.querySelector("#startBtn").addEventListener("click", () => {
+    track("welcome_role_selected", { role: APP_CONFIG.signupRole || "ADMIN" });
+    navigate("/phone");
+  });
+}
+
+export function renderWelcome(root) {
+  track("app_opened", { app: APP });
+  return isCustomerApp ? renderCustomerWelcome(root) : renderPartnerWelcome(root);
 }
 
 // A restaurant account's landing screen depends on how far they've gotten
@@ -137,10 +203,13 @@ async function restaurantHomePath() {
   }
 }
 
+// No cross-app "I'm actually a driver" links any more — each app is its own
+// product with its own download. A customer never sees the word "driver"
+// during signup, which is the entire point of the four-app split.
 const ROLE_COPY = {
-  RIDER: { icon: "bolt", title: "Welcome to Nova X", subtitle: "Enter your phone number to get started.", swap: [{ label: "I'm a driver →", to: "/driver/phone" }, { label: "List your restaurant →", to: "/restaurant/phone" }] },
-  DRIVER: { icon: "car", title: "Drive with Nova X", subtitle: "Enter your number to start earning — bike, rickshaw, or car.", swap: [{ label: "I'm a rider →", to: "/phone" }, { label: "List your restaurant →", to: "/restaurant/phone" }] },
-  RESTAURANT: { icon: "store", title: "List Your Restaurant", subtitle: "Enter your number to set up your storefront on Nova X Food.", swap: [{ label: "I'm a rider →", to: "/phone" }, { label: "I'm a driver →", to: "/driver/phone" }] },
+  RIDER: { icon: "bolt", title: "Enter your number", subtitle: "We'll text you a code to sign in." },
+  DRIVER: { icon: "car", title: "Enter your number", subtitle: "We'll text you a code to start your driver application." },
+  RESTAURANT: { icon: "store", title: "Enter your number", subtitle: "We'll text you a code to set up your restaurant." },
 };
 
 export function renderPhoneEntry(role) {
@@ -169,7 +238,7 @@ export function renderPhoneEntry(role) {
           ` : ""}
           <button id="continueBtn" class="btn btn-primary btn-block">Continue ${icon("arrow-forward", 18)}</button>
           <div class="flex-col gap-1 mt-2">
-            ${copy.swap.map((s, i) => `<button class="btn btn-ghost btn-block" data-swap-to="${s.to}">${s.label}</button>`).join("")}
+
           </div>
           <p class="text-xs text-muted text-center mt-6">By continuing you agree to Nova X's Terms of Service and Privacy Policy.</p>
         </div>
@@ -206,7 +275,7 @@ export function renderPhoneEntry(role) {
       }
     });
 
-    root.querySelectorAll("[data-swap-to]").forEach((b) => b.addEventListener("click", () => navigate(b.dataset.swapTo)));
+
   };
 }
 

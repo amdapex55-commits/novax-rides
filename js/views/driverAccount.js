@@ -95,7 +95,7 @@ export function renderDriverProfile(root) {
       toast("Profile updated");
     } catch (err) { toast(err.message || "Couldn't update", true); }
   });
-  root.querySelector("#logoutBtn").addEventListener("click", () => { api.logout(); location.hash = "/driver/phone"; });
+  root.querySelector("#logoutBtn").addEventListener("click", () => { api.logout(); location.hash = "/phone"; });
   root.querySelectorAll("[data-nav]").forEach((r) => r.addEventListener("click", () => (location.hash = r.dataset.nav)));
 }
 

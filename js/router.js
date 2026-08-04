@@ -4,6 +4,7 @@
 // navigation), then the new view renders with a fade-rise transition.
 import { Token } from "./api.js";
 import { state } from "./state.js";
+import { APP_CONFIG, routeAllowed } from "./appMode.js";
 import * as Auth from "./views/auth.js";
 import * as RiderHome from "./views/riderHome.js";
 import * as RiderTrip from "./views/riderTrip.js";
@@ -34,9 +35,11 @@ import * as DriverOnboarding from "./views/driverOnboarding.js";
 export const ROUTES = {
   "/splash": { render: Auth.renderSplash, auth: "none", nav: false },
   "/welcome": { render: Auth.renderWelcome, auth: "guest", nav: false },
-  "/phone": { render: (root) => Auth.renderPhoneEntry("RIDER")(root), auth: "none", nav: false },
-  "/driver/phone": { render: (root) => Auth.renderPhoneEntry("DRIVER")(root), auth: "none", nav: false },
-  "/restaurant/phone": { render: (root) => Auth.renderPhoneEntry("RESTAURANT")(root), auth: "none", nav: false },
+  // One phone-entry route per build. Which role a brand-new number becomes
+  // is decided by WHICH APP they downloaded (see appMode.js signupRole) —
+  // there's no in-app role picker any more, because a customer app that asks
+  // "are you a driver?" isn't a consumer product.
+  "/phone": { render: (root) => Auth.renderPhoneEntry(APP_CONFIG.signupRole || "RIDER")(root), auth: "none", nav: false },
   "/otp": { render: Auth.renderOtp, auth: "none", nav: false },
 
   "/home": { render: RiderHome.renderHome, auth: "guest", nav: true, tab: "home" },
@@ -132,6 +135,41 @@ function roleHome(role) {
   return "/home";
 }
 
+/**
+ * Wrong app for this account.
+ *
+ * A driver who opens the customer app (or vice versa) is a real, common
+ * situation — same person, two apps on one phone, tapped the wrong icon.
+ * Rather than dumping them somewhere broken or silently logging them out,
+ * say plainly which app they need.
+ */
+function renderWrongApp(container, userRole) {
+  const APP_FOR_ROLE = {
+    RIDER: "Nova X",
+    DRIVER: "Nova X Driver",
+    RESTAURANT: "Nova X Merchant",
+    ADMIN: "Nova X Ops",
+  };
+  container.innerHTML = `
+    <div class="page flex-col items-center text-center" style="min-height:100dvh; justify-content:center;">
+      <div style="width:72px;height:72px;border-radius:22px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+        <span style="font-size:30px;">🔑</span>
+      </div>
+      <h1 class="text-xl mb-2">Wrong app</h1>
+      <p class="text-secondary mb-6">
+        This number is registered as a <b>${(userRole || "").toLowerCase()}</b> account.<br/>
+        Please use <b>${APP_FOR_ROLE[userRole] || "the correct Nova X app"}</b> to sign in.
+      </p>
+      <button id="signOutBtn" class="btn btn-secondary btn-block">Sign out and use a different number</button>
+    </div>
+  `;
+  container.querySelector("#signOutBtn").addEventListener("click", () => {
+    Token.clear();
+    location.hash = "/welcome";
+    location.reload();
+  });
+}
+
 export function navigate(path) {
   if (location.hash.slice(1) === path) { renderRoute(path); return; }
   location.hash = path;
@@ -151,7 +189,26 @@ async function renderRoute(path) {
   const container = document.getElementById("view-container");
   const nav = document.getElementById("bottom-nav");
 
+  // App-scope guard, BEFORE the auth guard. Each build (customer / driver /
+  // merchant / ops) only exposes its own routes — see js/appMode.js. A
+  // customer typing /ops/command into the URL bar gets sent home, and more
+  // importantly the customer app contains no path that leads there, so the
+  // words "KYC", "approvals" and "dispatch" never appear in their world.
+  if (route && !routeAllowed(path)) {
+    navigate(Token.user ? roleHome(Token.user.role) : APP_CONFIG.home);
+    return;
+  }
+
   if (!route) { navigate("/splash"); return; }
+
+  // Wrong-app guard: this account's role isn't served by this build.
+  const signedInUser = Token.user;
+  if (Token.access && signedInUser && !APP_CONFIG.allowedRoles.includes(signedInUser.role)) {
+    if (currentCleanup) { try { currentCleanup(); } catch { /* noop */ } currentCleanup = null; }
+    nav.classList.add("hidden");
+    renderWrongApp(container, signedInUser.role);
+    return;
+  }
 
   // Auth guard
   if (route.auth === "guest") {

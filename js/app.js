@@ -3,38 +3,13 @@
 import { icon } from "./icons.js";
 import { Token } from "./api.js";
 import { initRouter, navigate } from "./router.js";
+import { APP_CONFIG } from "./appMode.js";
 
-const NAV_SETS = {
-  RIDER: [
-    { tab: "home", icon: "home", label: "Home", path: "/home" },
-    { tab: "history", icon: "history", label: "Activity", path: "/history" },
-    { tab: "wallet", icon: "wallet", label: "Wallet", path: "/wallet" },
-    { tab: "profile", icon: "person", label: "Profile", path: "/profile" },
-  ],
-  DRIVER: [
-    { tab: "home", icon: "home", label: "Home", path: "/driver/home" },
-    { tab: "earnings", icon: "wallet", label: "Earnings", path: "/driver/earnings" },
-    { tab: "alerts", icon: "bell", label: "Alerts", path: "/driver/notifications" },
-    { tab: "profile", icon: "person", label: "Profile", path: "/driver/profile" },
-  ],
-  ADMIN: [
-    // Command first: stuck jobs and SOS incidents are the reason anyone
-    // opens the ops app during a shift.
-    { tab: "command", icon: "bolt", label: "Command", path: "/ops/command" },
-    { tab: "dashboard", icon: "dashboard", label: "Stats", path: "/ops/dashboard" },
-    { tab: "approvals", icon: "check-circle", label: "Approvals", path: "/ops/approvals" },
-    { tab: "users", icon: "users", label: "Users", path: "/ops/users" },
-  ],
-  RESTAURANT: [
-    { tab: "orders", icon: "package", label: "Orders", path: "/restaurant/orders" },
-    { tab: "menu", icon: "utensils", label: "Menu", path: "/restaurant/menu" },
-    { tab: "profile", icon: "store", label: "Store", path: "/restaurant/profile" },
-  ],
-};
-
+// The nav comes from the BUILD, not the logged-in role. Each app ships with
+// exactly one nav bar — the customer app has no concept of an "Earnings" tab
+// existing anywhere, which is the whole point of the split.
 export function renderBottomNav() {
-  const role = Token.user?.role || "RIDER";
-  const items = NAV_SETS[role] || NAV_SETS.RIDER;
+  const items = APP_CONFIG.nav;
   const nav = document.getElementById("bottom-nav");
   nav.innerHTML = items
     .map(

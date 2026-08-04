@@ -129,17 +129,11 @@ function renderBikeTab(panel, isGuest) {
         <div style="flex:1;"><p class="font-bold text-sm">Nova X for Business</p></div>
         ${icon("chevronRight", 18)}
       </div>
-      ${isGuest ? `
-      <div class="list-row stagger-item" data-nav-driver="1" style="cursor:pointer; animation-delay:180ms;">
-        <div class="list-row-icon">${icon("car", 18)}</div>
-        <div style="flex:1;"><p class="font-bold text-sm">Drive with Nova X</p></div>
-        ${icon("chevronRight", 18)}
-      </div>` : ""}
+
     </div>
   `;
 
   panel.querySelector("#whereToCard").addEventListener("click", () => { state.selectedVehicle = "BIKE"; navigate("/set-locations"); });
-  panel.querySelector("[data-nav-driver]")?.addEventListener("click", () => navigate("/driver/phone"));
   const rideBtn = panel.querySelector("#rideBtn");
   const parcelBtn = panel.querySelector("#parcelBtn");
   const errandBtn = panel.querySelector("#errandBtn");

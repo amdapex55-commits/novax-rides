@@ -107,7 +107,7 @@ export function renderDriverHome(root) {
 
   function goOnline() {
     const socket = socketManager.connect();
-    if (!socket) { toast("Session expired — log in again", true); navigate("/driver/phone"); return; }
+    if (!socket) { toast("Session expired — log in again", true); navigate("/phone"); return; }
     socketManager.on("trip:offer", onTripOffer);
     socketManager.on("foodOrder:offer", onFoodOffer);
     socketManager.on("errand:offer", onErrandOffer);

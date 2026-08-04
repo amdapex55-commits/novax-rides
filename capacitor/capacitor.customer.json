@@ -1,0 +1,20 @@
+{
+  "appId": "com.novax.app",
+  "appName": "Nova X",
+  "webDir": ".",
+  "backgroundColor": "#ffffff",
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 400,
+      "backgroundColor": "#ffffff",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    }
+  },
+  "_entryPoint": "index.html",
+  "_note": "Before `npx cap sync`, copy this over capacitor.config.json AND make the chosen entry point the index.html (see BUILD_APPS.md)."
+}
