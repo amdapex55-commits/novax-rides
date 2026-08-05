@@ -1,0 +1,389 @@
+/* ===========================================================================
+   Nova X — public landing page.
+   Deliberately its own stylesheet: the landing is a DARK, cinematic marketing
+   surface, while all four apps are LIGHT product surfaces. Sharing tokens.css
+   here would mean every landing tweak risks the apps, and vice versa.
+   =========================================================================== */
+
+:root {
+  --nx-bg: #05070a;
+  --nx-bg-2: #0a0e14;
+  --nx-panel: rgba(255, 255, 255, 0.04);
+  --nx-border: rgba(255, 255, 255, 0.09);
+  --nx-text: #f2f6f4;
+  --nx-dim: #96a3ad;
+  --nx-faint: #5d6873;
+
+  --nx-ride: #17e08a;   /* rides & parcels */
+  --nx-food: #ffb02e;   /* food */
+  --nx-ops: #4d9dff;    /* ops / network */
+
+  --nx-max: 1180px;
+  --nx-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--nx-bg);
+  color: var(--nx-text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+a { color: inherit; text-decoration: none; }
+
+.nx-wrap { max-width: var(--nx-max); margin: 0 auto; padding: 0 24px; }
+
+/* ---------------------------------------------------------------- Nav --- */
+
+.nx-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 18px 0;
+  transition: background 400ms var(--nx-ease), backdrop-filter 400ms;
+}
+.nx-nav.scrolled {
+  background: rgba(5, 7, 10, 0.82);
+  backdrop-filter: blur(18px) saturate(1.3);
+  border-bottom: 1px solid var(--nx-border);
+}
+.nx-nav-inner { display: flex; align-items: center; justify-content: space-between; }
+.nx-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; letter-spacing: -0.02em; }
+.nx-logo-mark {
+  width: 30px; height: 30px; border-radius: 9px;
+  background: linear-gradient(135deg, var(--nx-ride), #0b9d63);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 22px rgba(23, 224, 138, 0.35);
+}
+.nx-nav-cta {
+  padding: 9px 18px; border-radius: 999px;
+  border: 1px solid var(--nx-border);
+  font-size: 14px; font-weight: 600;
+  transition: border-color 240ms, background 240ms, transform 240ms var(--nx-ease);
+}
+.nx-nav-cta:hover { border-color: var(--nx-ride); background: rgba(23, 224, 138, 0.08); transform: translateY(-1px); }
+
+/* --------------------------------------------------------------- Hero --- */
+
+.nx-hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  padding: 120px 0 80px;
+  overflow: hidden;
+}
+
+/* The 3D canvas sits behind everything and is never allowed to compete with
+   text — a scrim gradient guarantees contrast regardless of what's rendering. */
+#nx-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  display: block;
+}
+.nx-hero::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 45%, rgba(5, 7, 10, 0.92) 0%, rgba(5, 7, 10, 0.55) 45%, transparent 75%),
+    linear-gradient(to bottom, rgba(5, 7, 10, 0.85) 0%, transparent 25%, transparent 65%, var(--nx-bg) 100%);
+}
+/* Static fallback when WebGL is unavailable — still looks intentional. */
+.nx-hero.no-webgl #nx-canvas { display: none; }
+.nx-hero.no-webgl {
+  background:
+    radial-gradient(circle at 75% 35%, rgba(23, 224, 138, 0.14), transparent 55%),
+    radial-gradient(circle at 25% 70%, rgba(77, 157, 255, 0.10), transparent 55%),
+    var(--nx-bg);
+}
+
+.nx-hero-inner { position: relative; z-index: 2; width: 100%; }
+.nx-hero-copy { max-width: 640px; }
+
+.nx-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 14px; border-radius: 999px;
+  background: rgba(23, 224, 138, 0.10);
+  border: 1px solid rgba(23, 224, 138, 0.24);
+  color: var(--nx-ride);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  margin-bottom: 26px;
+}
+.nx-eyebrow .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--nx-ride);
+  animation: nx-live 2s ease-in-out infinite;
+}
+@keyframes nx-live { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+.nx-h1 {
+  font-family: "Sora", "Inter", sans-serif;
+  font-size: clamp(56px, 12vw, 132px);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+  margin-bottom: 22px;
+}
+.nx-h1 .glow {
+  background: linear-gradient(120deg, #ffffff 20%, var(--nx-ride) 60%, #7df0bd 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nx-lead {
+  font-size: clamp(17px, 2.2vw, 21px);
+  color: var(--nx-dim);
+  max-width: 30ch;
+  margin-bottom: 40px;
+  line-height: 1.55;
+}
+
+/* ------------------------------------------------------- CTA cluster --- */
+
+.nx-ctas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 560px;
+}
+.nx-cta {
+  position: relative;
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--nx-panel);
+  border: 1px solid var(--nx-border);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+  transition: transform 300ms var(--nx-ease), border-color 300ms, background 300ms;
+}
+.nx-cta::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--accent-c) 0%, transparent 65%);
+  opacity: 0;
+  transition: opacity 300ms;
+}
+.nx-cta:hover { transform: translateY(-3px); border-color: var(--accent-c); }
+.nx-cta:hover::before { opacity: 0.13; }
+.nx-cta:active { transform: translateY(-1px) scale(0.99); }
+
+.nx-cta-icon {
+  position: relative; z-index: 1;
+  width: 40px; height: 40px; flex: none;
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent-c) 15%, transparent);
+  color: var(--accent-c);
+}
+.nx-cta-text { position: relative; z-index: 1; min-width: 0; }
+.nx-cta-title { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+.nx-cta-sub { font-size: 12.5px; color: var(--nx-faint); margin-top: 2px; }
+.nx-cta-arrow {
+  position: relative; z-index: 1;
+  margin-left: auto; color: var(--nx-faint);
+  transition: transform 300ms var(--nx-ease), color 300ms;
+}
+.nx-cta:hover .nx-cta-arrow { transform: translateX(4px); color: var(--accent-c); }
+
+/* Primary CTA spans both columns — the customer app is the main door. */
+.nx-cta.primary {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, rgba(23, 224, 138, 0.16), rgba(23, 224, 138, 0.05));
+  border-color: rgba(23, 224, 138, 0.35);
+}
+
+.nx-scroll-hint {
+  position: absolute; bottom: 28px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  color: var(--nx-faint); font-size: 11px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.nx-scroll-hint .line {
+  width: 1px; height: 34px;
+  background: linear-gradient(to bottom, var(--nx-faint), transparent);
+  animation: nx-scroll 2.4s ease-in-out infinite;
+}
+@keyframes nx-scroll { 0%,100% { opacity: 0.25; transform: scaleY(0.7); } 50% { opacity: 1; transform: scaleY(1); } }
+
+/* ----------------------------------------------------------- Sections --- */
+
+.nx-section { padding: clamp(80px, 12vw, 140px) 0; position: relative; }
+.nx-section.alt { background: var(--nx-bg-2); border-top: 1px solid var(--nx-border); border-bottom: 1px solid var(--nx-border); }
+
+.nx-section-head { max-width: 620px; margin-bottom: 56px; }
+.nx-kicker {
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--nx-ride); margin-bottom: 16px;
+}
+.nx-h2 {
+  font-family: "Sora", "Inter", sans-serif;
+  font-size: clamp(30px, 5vw, 50px);
+  font-weight: 800; line-height: 1.06;
+  letter-spacing: -0.035em; margin-bottom: 16px;
+}
+.nx-sub { font-size: 17px; color: var(--nx-dim); line-height: 1.6; }
+
+/* Four experiences */
+.nx-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+.nx-card {
+  position: relative;
+  padding: 30px 26px 26px;
+  border-radius: 20px;
+  background: var(--nx-panel);
+  border: 1px solid var(--nx-border);
+  overflow: hidden;
+  transition: transform 380ms var(--nx-ease), border-color 380ms;
+}
+.nx-card::after {
+  content: "";
+  position: absolute; top: 0; left: 26px; right: 26px; height: 2px;
+  background: var(--accent-c); opacity: 0.55;
+  border-radius: 0 0 2px 2px;
+}
+.nx-card:hover { transform: translateY(-5px); border-color: color-mix(in srgb, var(--accent-c) 45%, transparent); }
+.nx-card-icon {
+  width: 46px; height: 46px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent-c) 14%, transparent);
+  color: var(--accent-c); margin-bottom: 20px;
+}
+.nx-card h3 { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px; }
+.nx-card p { font-size: 14.5px; color: var(--nx-dim); line-height: 1.6; margin-bottom: 18px; }
+.nx-card ul { list-style: none; margin-bottom: 22px; }
+.nx-card li {
+  font-size: 13.5px; color: var(--nx-faint);
+  padding-left: 18px; position: relative; margin-bottom: 7px;
+}
+.nx-card li::before {
+  content: ""; position: absolute; left: 0; top: 8px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent-c); opacity: 0.6;
+}
+.nx-card-link {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 14px; font-weight: 700; color: var(--accent-c);
+  transition: gap 260ms var(--nx-ease);
+}
+.nx-card:hover .nx-card-link { gap: 12px; }
+
+/* Trust / operations strip */
+.nx-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px;
+  background: var(--nx-border);
+  border: 1px solid var(--nx-border);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.nx-stat { background: var(--nx-bg); padding: 30px 26px; }
+.nx-stat-value {
+  font-family: "Sora", "Inter", sans-serif;
+  font-size: 30px; font-weight: 800; letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+.nx-stat-label { font-size: 13.5px; color: var(--nx-faint); line-height: 1.5; }
+
+.nx-ops-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 26px; }
+.nx-ops-item {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 20px; border-radius: 14px;
+  background: var(--nx-panel); border: 1px solid var(--nx-border);
+}
+.nx-ops-item .tick {
+  width: 22px; height: 22px; flex: none; border-radius: 50%;
+  background: rgba(23, 224, 138, 0.14); color: var(--nx-ride);
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+  margin-top: 1px;
+}
+.nx-ops-item strong { display: block; font-size: 14.5px; margin-bottom: 4px; }
+.nx-ops-item span { font-size: 13px; color: var(--nx-faint); line-height: 1.55; }
+
+/* Final CTA band */
+.nx-band {
+  position: relative;
+  padding: clamp(64px, 9vw, 100px) clamp(28px, 6vw, 72px);
+  border-radius: 28px;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(23, 224, 138, 0.16), transparent 60%),
+    radial-gradient(ellipse at 85% 100%, rgba(77, 157, 255, 0.12), transparent 60%),
+    var(--nx-bg-2);
+  border: 1px solid var(--nx-border);
+  overflow: hidden;
+}
+.nx-band-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.nx-btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 15px 26px; border-radius: 999px;
+  font-size: 15px; font-weight: 700;
+  transition: transform 260ms var(--nx-ease), box-shadow 260ms, background 260ms;
+}
+.nx-btn-primary {
+  background: linear-gradient(135deg, var(--nx-ride), #0fae6c);
+  color: #04120b;
+  box-shadow: 0 8px 30px rgba(23, 224, 138, 0.28);
+}
+.nx-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(23, 224, 138, 0.4); }
+.nx-btn-ghost { border: 1px solid var(--nx-border); color: var(--nx-text); }
+.nx-btn-ghost:hover { border-color: var(--nx-ride); background: rgba(23, 224, 138, 0.07); transform: translateY(-2px); }
+
+/* -------------------------------------------------------------- Footer --- */
+
+.nx-footer { padding: 56px 0 44px; border-top: 1px solid var(--nx-border); }
+.nx-footer-inner { display: flex; flex-wrap: wrap; gap: 28px; justify-content: space-between; align-items: flex-start; }
+.nx-footer-links { display: flex; flex-wrap: wrap; gap: 22px; }
+.nx-footer-links a { font-size: 13.5px; color: var(--nx-faint); transition: color 220ms; }
+.nx-footer-links a:hover { color: var(--nx-ride); }
+.nx-footer-note { font-size: 12.5px; color: var(--nx-faint); margin-top: 14px; max-width: 42ch; line-height: 1.6; }
+
+/* --------------------------------------------------------- Scroll-in --- */
+
+.nx-reveal { opacity: 0; transform: translateY(26px); transition: opacity 800ms var(--nx-ease), transform 800ms var(--nx-ease); }
+.nx-reveal.in { opacity: 1; transform: none; }
+
+/* ------------------------------------------------------------ Mobile --- */
+
+@media (max-width: 720px) {
+  .nx-hero { min-height: 92svh; padding: 100px 0 60px; align-items: flex-end; }
+  .nx-hero::after {
+    /* On small screens the copy sits low, so the scrim has to protect the
+       BOTTOM of the viewport rather than the left third. */
+    background:
+      linear-gradient(to bottom, rgba(5,7,10,0.55) 0%, rgba(5,7,10,0.15) 30%, rgba(5,7,10,0.88) 62%, var(--nx-bg) 100%);
+  }
+  .nx-ctas { grid-template-columns: 1fr; max-width: none; }
+  .nx-cta.primary { grid-column: auto; }
+  .nx-lead { max-width: none; margin-bottom: 30px; }
+  .nx-scroll-hint { display: none; }
+  .nx-band-actions .nx-btn { flex: 1 1 100%; justify-content: center; }
+}
+
+/* ----------------------------------------------------- Reduced motion --- */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .nx-reveal { opacity: 1; transform: none; }
+}

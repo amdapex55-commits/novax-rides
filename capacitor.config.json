@@ -1,10 +1,11 @@
 {
-  "appId": "com.novax.rides",
-  "appName": "Nova X Rides",
+  "appId": "com.novax.app",
+  "appName": "Nova X",
   "webDir": ".",
   "backgroundColor": "#ffffff",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "iosScheme": "https"
   },
   "plugins": {
     "SplashScreen": {

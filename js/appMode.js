@@ -37,7 +37,7 @@ const CONFIGS = {
       "/errand/details", "/errand/tracking",
       "/wallet", "/history", "/profile", "/settings",
       "/loyalty", "/refer", "/business",
-      "/chat", "/support", "/chat-thread",
+      "/chat", "/support", "/help", "/chat-thread",
       "/legal/terms", "/legal/privacy", "/legal/cancellation",
     ],
     nav: [
@@ -63,7 +63,7 @@ const CONFIGS = {
       "/driver/errand-offer", "/driver/errand-progress",
       "/driver/earnings", "/driver/profile", "/driver/vehicle",
       "/driver/notifications", "/driver/incentives",
-      "/chat", "/support", "/chat-thread",
+      "/chat", "/support", "/help", "/chat-thread", "/earnings-explained",
       "/legal/terms", "/legal/privacy", "/legal/driver-agreement",
     ],
     nav: [
@@ -85,7 +85,7 @@ const CONFIGS = {
       "/splash", "/welcome", "/phone", "/otp",
       "/restaurant/onboarding", "/restaurant/pending",
       "/restaurant/orders", "/restaurant/menu", "/restaurant/profile",
-      "/chat", "/support",
+      "/chat", "/support", "/help", "/commission-explained",
       "/legal/terms", "/legal/privacy", "/legal/restaurant-agreement",
     ],
     nav: [
@@ -108,13 +108,15 @@ const CONFIGS = {
     routes: [
       "/splash", "/welcome", "/phone", "/otp",
       "/ops/command", "/ops/dashboard", "/ops/approvals", "/ops/users",
-      "/support",
+      "/ops/live", "/ops/cancellations", "/ops/balances", "/ops/tickets",
+      "/support", "/help",
       "/legal/terms", "/legal/privacy",
     ],
     nav: [
       { tab: "command", icon: "bolt", label: "Command", path: "/ops/command" },
-      { tab: "dashboard", icon: "dashboard", label: "Stats", path: "/ops/dashboard" },
-      { tab: "approvals", icon: "check-circle", label: "Approvals", path: "/ops/approvals" },
+      { tab: "live", icon: "car", label: "Live", path: "/ops/live" },
+      { tab: "approvals", icon: "check-circle", label: "Approve", path: "/ops/approvals" },
+      { tab: "tickets", icon: "chat", label: "Support", path: "/ops/tickets" },
       { tab: "users", icon: "users", label: "Users", path: "/ops/users" },
     ],
   },

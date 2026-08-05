@@ -1,31 +1,22 @@
-// Nova X Rides — hash router. A true SPA: view modules mount into
-// #view-container, the previous view's cleanup() runs first (clears
-// intervals/geolocation watches/socket listeners so nothing leaks across
-// navigation), then the new view renders with a fade-rise transition.
+// Nova X — hash router.
+//
+// Views are LAZY: each route holds `() => import("./views/x.js")` rather than
+// a static import, so a module is fetched the first time its route is
+// visited and never otherwise. That's what makes the four apps real rather
+// than cosmetic — the customer bundle never downloads driver, merchant or
+// ops screens (or their copy: "KYC", "approvals", "dispatch"), because the
+// browser is never asked for those files.
+//
+// Route shape: { view: () => import(...), fn: "exportName", auth, nav, tab }
+// `wrap: true` marks the handful of routes whose export is a factory
+// (renderPhoneEntry(role) returns the actual render function).
+//
+// The previous view's cleanup() still runs before the next renders, so
+// intervals / geolocation watches / socket listeners never leak across
+// navigation.
 import { Token } from "./api.js";
 import { state } from "./state.js";
 import { APP_CONFIG, routeAllowed } from "./appMode.js";
-import * as Auth from "./views/auth.js";
-import * as RiderHome from "./views/riderHome.js";
-import * as RiderTrip from "./views/riderTrip.js";
-import * as RiderAccount from "./views/riderAccount.js";
-import * as RiderExtras from "./views/riderExtras.js";
-import * as DriverAuth from "./views/driverAuth.js";
-import * as DriverHome from "./views/driverHome.js";
-import * as DriverAccount from "./views/driverAccount.js";
-import * as Parcel from "./views/parcel.js";
-import * as Ops from "./views/ops.js";
-import * as Support from "./views/support.js";
-import * as Food from "./views/food.js";
-import * as Errand from "./views/errand.js";
-import * as Restaurant from "./views/restaurant.js";
-import * as DriverFoodErrand from "./views/driverFoodErrand.js";
-import * as ChatThread from "./views/chatThread.js";
-import * as RideFlow from "./views/rideFlow.js";
-import * as RideTracking from "./views/rideTracking.js";
-import * as Legal from "./views/legal.js";
-import * as OpsCommand from "./views/opsCommand.js";
-import * as DriverOnboarding from "./views/driverOnboarding.js";
 
 // auth: "none" (public) | "guest" (public, but bounces a logged-in
 // non-rider to their own home) | "any" (any logged-in role) | "RIDER" |
@@ -33,89 +24,91 @@ import * as DriverOnboarding from "./views/driverOnboarding.js";
 // they have an account — OTP is only required at the point of an action
 // that actually needs one (booking, wallet, profile, etc.).
 export const ROUTES = {
-  "/splash": { render: Auth.renderSplash, auth: "none", nav: false },
-  "/welcome": { render: Auth.renderWelcome, auth: "guest", nav: false },
+  "/splash": { view: () => import("./views/auth.js"), fn: "renderSplash", auth: "none", nav: false },
+  "/welcome": { view: () => import("./views/auth.js"), fn: "renderWelcome", auth: "guest", nav: false },
   // One phone-entry route per build. Which role a brand-new number becomes
   // is decided by WHICH APP they downloaded (see appMode.js signupRole) —
   // there's no in-app role picker any more, because a customer app that asks
   // "are you a driver?" isn't a consumer product.
-  "/phone": { render: (root) => Auth.renderPhoneEntry(APP_CONFIG.signupRole || "RIDER")(root), auth: "none", nav: false },
-  "/otp": { render: Auth.renderOtp, auth: "none", nav: false },
-
-  "/home": { render: RiderHome.renderHome, auth: "guest", nav: true, tab: "home" },
+  // `wrap: true` — renderPhoneEntry is a factory: it takes the role and
+  // returns the actual render function.
+  "/phone": { view: () => import("./views/auth.js"), fn: "renderPhoneEntry", wrap: true, auth: "none", nav: false },
+  "/otp": { view: () => import("./views/auth.js"), fn: "renderOtp", auth: "none", nav: false },
+  "/home": { view: () => import("./views/riderHome.js"), fn: "renderHome", auth: "guest", nav: true, tab: "home" },
   // Map-first booking — one screen with a docked sheet, replacing the old
   // /set-locations → /fare page-per-step flow (both kept as aliases so any
   // saved postAuthRedirect or bookmark still lands somewhere sane).
-  "/ride": { render: RideFlow.renderRideBooking, auth: "guest", nav: false },
-  "/set-locations": { render: RideFlow.renderRideBooking, auth: "guest", nav: false },
-  "/fare": { render: RideFlow.renderRideBooking, auth: "guest", nav: false },
-  "/tracking": { render: RideTracking.renderRideTracking, auth: "RIDER", nav: false },
+  "/ride": { view: () => import("./views/rideFlow.js"), fn: "renderRideBooking", auth: "guest", nav: false },
+  "/set-locations": { view: () => import("./views/rideFlow.js"), fn: "renderRideBooking", auth: "guest", nav: false },
+  "/fare": { view: () => import("./views/rideFlow.js"), fn: "renderRideBooking", auth: "guest", nav: false },
+  "/tracking": { view: () => import("./views/rideTracking.js"), fn: "renderRideTracking", auth: "RIDER", nav: false },
   // Public live-tracking view opened from a shared link — no account needed.
-  "/shared": { render: RideTracking.renderSharedTrip, auth: "none", nav: false },
+  "/shared": { view: () => import("./views/rideTracking.js"), fn: "renderSharedTrip", auth: "none", nav: false },
+  "/legal/terms": { view: () => import("./views/legal.js"), fn: "renderTerms", auth: "none", nav: false },
+  "/legal/privacy": { view: () => import("./views/legal.js"), fn: "renderPrivacy", auth: "none", nav: false },
+  "/legal/cancellation": { view: () => import("./views/legal.js"), fn: "renderCancellation", auth: "none", nav: false },
+  "/legal/driver-agreement": { view: () => import("./views/legal.js"), fn: "renderDriverAgreement", auth: "none", nav: false },
+  "/legal/restaurant-agreement": { view: () => import("./views/legal.js"), fn: "renderRestaurantAgreement", auth: "none", nav: false },
+  "/rate": { view: () => import("./views/riderTrip.js"), fn: "renderRateTrip", auth: "RIDER", nav: false },
+  "/wallet": { view: () => import("./views/riderAccount.js"), fn: "renderWallet", auth: "guest", nav: true, tab: "wallet" },
+  "/history": { view: () => import("./views/riderAccount.js"), fn: "renderTripHistory", auth: "guest", nav: true, tab: "history" },
+  "/profile": { view: () => import("./views/riderAccount.js"), fn: "renderProfile", auth: "guest", nav: true, tab: "profile" },
+  "/settings": { view: () => import("./views/riderAccount.js"), fn: "renderSettings", auth: "RIDER", nav: false },
+  "/loyalty": { view: () => import("./views/riderExtras.js"), fn: "renderLoyalty", auth: "guest", nav: false },
+  "/refer": { view: () => import("./views/riderExtras.js"), fn: "renderRefer", auth: "guest", nav: false },
+  "/business": { view: () => import("./views/riderExtras.js"), fn: "renderBusiness", auth: "guest", nav: false },
+  "/driver/pending": { view: () => import("./views/driverAuth.js"), fn: "renderPendingApproval", auth: "DRIVER", nav: false },
+  "/driver/kyc": { view: () => import("./views/driverAuth.js"), fn: "renderKycUpload", auth: "DRIVER", nav: false },
+  "/driver/onboarding": { view: () => import("./views/driverOnboarding.js"), fn: "renderDriverOnboarding", auth: "DRIVER", nav: false },
+  "/driver/home": { view: () => import("./views/driverHome.js"), fn: "renderDriverHome", auth: "DRIVER", nav: true, tab: "home" },
+  "/driver/offer": { view: () => import("./views/driverHome.js"), fn: "renderIncomingOffer", auth: "DRIVER", nav: false },
+  "/driver/progress": { view: () => import("./views/driverHome.js"), fn: "renderTripProgress", auth: "DRIVER", nav: false },
+  "/driver/earnings": { view: () => import("./views/driverAccount.js"), fn: "renderEarnings", auth: "DRIVER", nav: true, tab: "earnings" },
+  "/driver/profile": { view: () => import("./views/driverAccount.js"), fn: "renderDriverProfile", auth: "DRIVER", nav: true, tab: "profile" },
+  "/driver/vehicle": { view: () => import("./views/driverAccount.js"), fn: "renderVehicle", auth: "DRIVER", nav: false },
+  "/driver/notifications": { view: () => import("./views/driverAccount.js"), fn: "renderDriverNotifications", auth: "DRIVER", nav: true, tab: "alerts" },
+  "/driver/incentives": { view: () => import("./views/driverAccount.js"), fn: "renderIncentives", auth: "DRIVER", nav: false },
+  "/parcel/service": { view: () => import("./views/parcel.js"), fn: "renderParcelService", auth: "guest", nav: false },
+  "/parcel/details": { view: () => import("./views/parcel.js"), fn: "renderParcelDetails", auth: "guest", nav: false },
+  "/parcel/contact": { view: () => import("./views/parcel.js"), fn: "renderParcelContact", auth: "guest", nav: false },
+  "/parcel/tracking": { view: () => import("./views/parcel.js"), fn: "renderParcelTracking", auth: "RIDER", nav: false },
+  "/errand/details": { view: () => import("./views/errand.js"), fn: "renderErrandDetails", auth: "guest", nav: false },
+  "/errand/tracking": { view: () => import("./views/errand.js"), fn: "renderErrandTracking", auth: "RIDER", nav: false },
+  "/food/browse": { view: () => import("./views/food.js"), fn: "renderFoodBrowse", auth: "guest", nav: false },
+  "/food/restaurant": { view: () => import("./views/food.js"), fn: "renderRestaurantMenu", auth: "guest", nav: false },
+  "/food/cart": { view: () => import("./views/food.js"), fn: "renderFoodCart", auth: "guest", nav: false },
+  "/food/tracking": { view: () => import("./views/food.js"), fn: "renderFoodTracking", auth: "RIDER", nav: false },
+  "/ops/command": { view: () => import("./views/opsCommand.js"), fn: "renderOpsCommand", auth: "ADMIN", nav: true, tab: "command" },
+  "/ops/dashboard": { view: () => import("./views/ops.js"), fn: "renderOpsDashboard", auth: "ADMIN", nav: true, tab: "dashboard" },
+  "/ops/approvals": { view: () => import("./views/ops.js"), fn: "renderOpsApprovals", auth: "ADMIN", nav: true, tab: "approvals" },
+  "/ops/users": { view: () => import("./views/ops.js"), fn: "renderOpsUsers", auth: "ADMIN", nav: true, tab: "users" },
+  "/ops/live": { view: () => import("./views/opsLive.js"), fn: "renderOpsLiveDrivers", auth: "ADMIN", nav: true, tab: "live" },
+  "/ops/cancellations": { view: () => import("./views/opsLive.js"), fn: "renderOpsCancellations", auth: "ADMIN", nav: false },
+  "/ops/balances": { view: () => import("./views/opsLive.js"), fn: "renderOpsBalances", auth: "ADMIN", nav: false },
+  "/ops/tickets": { view: () => import("./views/opsLive.js"), fn: "renderOpsTickets", auth: "ADMIN", nav: true, tab: "tickets" },
 
-  "/legal/terms": { render: Legal.renderTerms, auth: "none", nav: false },
-  "/legal/privacy": { render: Legal.renderPrivacy, auth: "none", nav: false },
-  "/legal/cancellation": { render: Legal.renderCancellation, auth: "none", nav: false },
-  "/legal/driver-agreement": { render: Legal.renderDriverAgreement, auth: "none", nav: false },
-  "/legal/restaurant-agreement": { render: Legal.renderRestaurantAgreement, auth: "none", nav: false },
-  "/rate": { render: RiderTrip.renderRateTrip, auth: "RIDER", nav: false },
-  "/wallet": { render: RiderAccount.renderWallet, auth: "guest", nav: true, tab: "wallet" },
-  "/history": { render: RiderAccount.renderTripHistory, auth: "guest", nav: true, tab: "history" },
-  "/profile": { render: RiderAccount.renderProfile, auth: "guest", nav: true, tab: "profile" },
-  "/settings": { render: RiderAccount.renderSettings, auth: "RIDER", nav: false },
-  "/loyalty": { render: RiderExtras.renderLoyalty, auth: "guest", nav: false },
-  "/refer": { render: RiderExtras.renderRefer, auth: "guest", nav: false },
-  "/business": { render: RiderExtras.renderBusiness, auth: "guest", nav: false },
-
-  "/driver/pending": { render: DriverAuth.renderPendingApproval, auth: "DRIVER", nav: false },
-  "/driver/kyc": { render: DriverAuth.renderKycUpload, auth: "DRIVER", nav: false },
-  "/driver/onboarding": { render: DriverOnboarding.renderDriverOnboarding, auth: "DRIVER", nav: false },
-  "/driver/home": { render: DriverHome.renderDriverHome, auth: "DRIVER", nav: true, tab: "home" },
-  "/driver/offer": { render: DriverHome.renderIncomingOffer, auth: "DRIVER", nav: false },
-  "/driver/progress": { render: DriverHome.renderTripProgress, auth: "DRIVER", nav: false },
-  "/driver/earnings": { render: DriverAccount.renderEarnings, auth: "DRIVER", nav: true, tab: "earnings" },
-  "/driver/profile": { render: DriverAccount.renderDriverProfile, auth: "DRIVER", nav: true, tab: "profile" },
-  "/driver/vehicle": { render: DriverAccount.renderVehicle, auth: "DRIVER", nav: false },
-  "/driver/notifications": { render: DriverAccount.renderDriverNotifications, auth: "DRIVER", nav: true, tab: "alerts" },
-  "/driver/incentives": { render: DriverAccount.renderIncentives, auth: "DRIVER", nav: false },
-
-  "/parcel/service": { render: Parcel.renderParcelService, auth: "guest", nav: false },
-  "/parcel/details": { render: Parcel.renderParcelDetails, auth: "guest", nav: false },
-  "/parcel/contact": { render: Parcel.renderParcelContact, auth: "guest", nav: false },
-  "/parcel/tracking": { render: Parcel.renderParcelTracking, auth: "RIDER", nav: false },
-
-  "/errand/details": { render: Errand.renderErrandDetails, auth: "guest", nav: false },
-  "/errand/tracking": { render: Errand.renderErrandTracking, auth: "RIDER", nav: false },
-
-  "/food/browse": { render: Food.renderFoodBrowse, auth: "guest", nav: false },
-  "/food/restaurant": { render: Food.renderRestaurantMenu, auth: "guest", nav: false },
-  "/food/cart": { render: Food.renderFoodCart, auth: "guest", nav: false },
-  "/food/tracking": { render: Food.renderFoodTracking, auth: "RIDER", nav: false },
-
-  "/ops/command": { render: OpsCommand.renderOpsCommand, auth: "ADMIN", nav: true, tab: "command" },
-  "/ops/dashboard": { render: Ops.renderOpsDashboard, auth: "ADMIN", nav: true, tab: "dashboard" },
-  "/ops/approvals": { render: Ops.renderOpsApprovals, auth: "ADMIN", nav: true, tab: "approvals" },
-  "/ops/users": { render: Ops.renderOpsUsers, auth: "ADMIN", nav: true, tab: "users" },
-
-  "/restaurant/onboarding": { render: Restaurant.renderRestaurantOnboarding, auth: "RESTAURANT", nav: false },
-  "/restaurant/pending": { render: Restaurant.renderRestaurantPending, auth: "RESTAURANT", nav: false },
-  "/restaurant/orders": { render: Restaurant.renderRestaurantOrders, auth: "RESTAURANT", nav: true, tab: "orders" },
-  "/restaurant/menu": { render: Restaurant.renderRestaurantMenuManage, auth: "RESTAURANT", nav: true, tab: "menu" },
-  "/restaurant/profile": { render: Restaurant.renderRestaurantProfile, auth: "RESTAURANT", nav: true, tab: "profile" },
-
-  "/driver/food-offer": { render: DriverFoodErrand.renderFoodOfferIncoming, auth: "DRIVER", nav: false },
-  "/driver/food-progress": { render: DriverFoodErrand.renderFoodOrderProgress, auth: "DRIVER", nav: false },
-  "/driver/errand-offer": { render: DriverFoodErrand.renderErrandOfferIncoming, auth: "DRIVER", nav: false },
-  "/driver/errand-progress": { render: DriverFoodErrand.renderErrandProgress, auth: "DRIVER", nav: false },
-
+  // "How the money works" — the question every driver and restaurant asks
+  // before signing up. Answering it in-app removes the most common call.
+  "/earnings-explained": { view: () => import("./views/explainers.js"), fn: "renderDriverEarningsExplainer", auth: "none", nav: false },
+  "/commission-explained": { view: () => import("./views/explainers.js"), fn: "renderRestaurantCommissionExplainer", auth: "none", nav: false },
+  "/help": { view: () => import("./views/explainers.js"), fn: "renderSupportContact", auth: "none", nav: false },
+  "/restaurant/onboarding": { view: () => import("./views/restaurant.js"), fn: "renderRestaurantOnboarding", auth: "RESTAURANT", nav: false },
+  "/restaurant/pending": { view: () => import("./views/restaurant.js"), fn: "renderRestaurantPending", auth: "RESTAURANT", nav: false },
+  "/restaurant/orders": { view: () => import("./views/restaurant.js"), fn: "renderRestaurantOrders", auth: "RESTAURANT", nav: true, tab: "orders" },
+  "/restaurant/menu": { view: () => import("./views/restaurant.js"), fn: "renderRestaurantMenuManage", auth: "RESTAURANT", nav: true, tab: "menu" },
+  "/restaurant/profile": { view: () => import("./views/restaurant.js"), fn: "renderRestaurantProfile", auth: "RESTAURANT", nav: true, tab: "profile" },
+  "/driver/food-offer": { view: () => import("./views/driverFoodErrand.js"), fn: "renderFoodOfferIncoming", auth: "DRIVER", nav: false },
+  "/driver/food-progress": { view: () => import("./views/driverFoodErrand.js"), fn: "renderFoodOrderProgress", auth: "DRIVER", nav: false },
+  "/driver/errand-offer": { view: () => import("./views/driverFoodErrand.js"), fn: "renderErrandOfferIncoming", auth: "DRIVER", nav: false },
+  "/driver/errand-progress": { view: () => import("./views/driverFoodErrand.js"), fn: "renderErrandProgress", auth: "DRIVER", nav: false },
   // "none" here (not "guest") — support should be reachable by anyone
   // regardless of role, including a logged-in DRIVER/ADMIN, with no
   // role-based bounce. "guest" would incorrectly redirect them away.
-  "/chat": { render: Support.renderChat, auth: "none", nav: false },
-  "/support": { render: Support.renderSupport, auth: "none", nav: false },
+  "/chat": { view: () => import("./views/support.js"), fn: "renderChat", auth: "none", nav: false },
+  "/support": { view: () => import("./views/support.js"), fn: "renderSupport", auth: "none", nav: false },
   // In-app chat with the other party on an active job — separate from
   // /chat above, which is customer-support ticket messaging, not this.
-  "/chat-thread": { render: ChatThread.renderChatThread, auth: "any", nav: false },
+  "/chat-thread": { view: () => import("./views/chatThread.js"), fn: "renderChatThread", auth: "any", nav: false },
 };
 
 let currentCleanup = null;
@@ -189,19 +182,13 @@ async function renderRoute(path) {
   const container = document.getElementById("view-container");
   const nav = document.getElementById("bottom-nav");
 
-  // App-scope guard, BEFORE the auth guard. Each build (customer / driver /
-  // merchant / ops) only exposes its own routes — see js/appMode.js. A
-  // customer typing /ops/command into the URL bar gets sent home, and more
-  // importantly the customer app contains no path that leads there, so the
-  // words "KYC", "approvals" and "dispatch" never appear in their world.
-  if (route && !routeAllowed(path)) {
-    navigate(Token.user ? roleHome(Token.user.role) : APP_CONFIG.home);
-    return;
-  }
-
-  if (!route) { navigate("/splash"); return; }
-
-  // Wrong-app guard: this account's role isn't served by this build.
+  // ---- Guard order matters ----
+  //
+  // WRONG-APP FIRST. Previously scope ran first and caused an infinite loop:
+  // a signed-in DRIVER opening the customer app at #/driver/home hit
+  // routeAllowed() === false, got redirected to roleHome("DRIVER") — which is
+  // /driver/home — and round it went forever. Checking the account before the
+  // path means that user lands on a clear explanation instead of a spin.
   const signedInUser = Token.user;
   if (Token.access && signedInUser && !APP_CONFIG.allowedRoles.includes(signedInUser.role)) {
     if (currentCleanup) { try { currentCleanup(); } catch { /* noop */ } currentCleanup = null; }
@@ -209,6 +196,16 @@ async function renderRoute(path) {
     renderWrongApp(container, signedInUser.role);
     return;
   }
+
+  // App-scope guard. Each build only exposes its own routes (js/appMode.js).
+  // Redirect target is ALWAYS this build's own home — never roleHome(), which
+  // can point outside this app and re-trigger this very guard.
+  if (route && !routeAllowed(path)) {
+    navigate(APP_CONFIG.home);
+    return;
+  }
+
+  if (!route) { navigate(APP_CONFIG.home); return; }
 
   // Auth guard
   if (route.auth === "guest") {
@@ -234,7 +231,13 @@ async function renderRoute(path) {
   if (route.nav) renderNavActive(route.tab);
 
   try {
-    currentCleanup = (await route.render(wrap)) || null;
+    // Fetch the view module on demand. The browser caches it after the first
+    // visit, so this costs one small network request per screen at most —
+    // and never a byte for screens this app doesn't have.
+    const mod = await route.view();
+    const exported = mod[route.fn];
+    const render = route.wrap ? exported(APP_CONFIG.signupRole || "RIDER") : exported;
+    currentCleanup = (await render(wrap)) || null;
   } catch (e) {
     console.error("[NovaX] render error on", path, e);
     wrap.innerHTML = `<div class="page text-center"><p class="text-secondary">Something broke loading this screen.</p><p class="text-xs text-muted mt-2">${(e && e.message) || e}</p></div>`;

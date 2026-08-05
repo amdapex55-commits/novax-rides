@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
+<meta name="theme-color" content="#ffffff"/>
+<title>Nova X — Rides, Food, Parcels & Errands</title>
+<meta name="description" content="Book a bike, rickshaw or car, order food, send a parcel, or get something picked up — across Karachi."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/tokens.css"/>
+<link rel="stylesheet" href="css/base.css"/>
+<link rel="stylesheet" href="css/components.css"/>
+<link rel="stylesheet" href="css/animations.css"/>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  // Which of the four Nova X apps this page is. Read by js/appMode.js before
+  // anything else boots — it decides the routes, the nav, the signup role and
+  // the entire visible surface. See js/appMode.js for the full explanation.
+  window.NOVAX_APP = "customer";
+</script>
+</head>
+<body>
+<div id="app-root"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

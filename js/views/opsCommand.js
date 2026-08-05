@@ -42,6 +42,12 @@ export function renderOpsCommand(root) {
       </div>
       <div id="stuckBlock" class="mb-5">${skeletonRows(2)}</div>
 
+      <div class="flex gap-2 mb-5">
+        <button class="btn btn-secondary btn-sm" style="flex:1;" data-go="/ops/cancellations">Cancellations</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;" data-go="/ops/balances">Balances</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;" data-go="/ops/live">Live drivers</button>
+      </div>
+
       <h3 class="text-sm text-secondary mb-2" style="text-transform:uppercase; letter-spacing:0.04em;">Funnel — last 7 days</h3>
       <div id="funnelBlock" class="mb-6">${skeletonRows(2)}</div>
     </div>
@@ -227,6 +233,7 @@ export function renderOpsCommand(root) {
     }
   }
 
+  root.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => navigate(b.dataset.go)));
   root.querySelector("#minsSelect").addEventListener("change", loadStuck);
 
   loadIncidents();

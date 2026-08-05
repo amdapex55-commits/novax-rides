@@ -115,6 +115,8 @@ const PARTNER_COPY = {
       { icon: "bike", label: "Bike, rickshaw or car", sub: "Use what you already own" },
     ],
     cta: "Start driving",
+    explainerPath: "/earnings-explained",
+    explainerLabel: "See exactly how you get paid",
     legalPath: "/legal/driver-agreement",
     legalLabel: "Driver Agreement",
   },
@@ -128,6 +130,8 @@ const PARTNER_COPY = {
       { icon: "bike", label: "We handle delivery", sub: "Nova X riders collect and deliver" },
     ],
     cta: "Partner with Nova X",
+    explainerPath: "/commission-explained",
+    explainerLabel: "See exactly how payments work",
     legalPath: "/legal/restaurant-agreement",
     legalLabel: "Restaurant Partner Agreement",
   },
@@ -169,6 +173,7 @@ function renderPartnerWelcome(root) {
       <button id="startBtn" class="btn btn-primary btn-block" style="height:56px; font-size:16px;">
         ${c.cta} ${icon("arrow-forward", 18)}
       </button>
+      ${c.explainerPath ? `<button id="explainerBtn" class="btn btn-ghost btn-block mt-2">${c.explainerLabel}</button>` : ""}
 
       ${c.legalPath ? `
         <p class="text-xs text-muted text-center mt-6">
@@ -181,6 +186,7 @@ function renderPartnerWelcome(root) {
     track("welcome_role_selected", { role: APP_CONFIG.signupRole || "ADMIN" });
     navigate("/phone");
   });
+  root.querySelector("#explainerBtn")?.addEventListener("click", () => navigate(c.explainerPath));
 }
 
 export function renderWelcome(root) {

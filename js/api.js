@@ -234,6 +234,13 @@ export const api = {
   manuallyAssign: (jobType, jobId, driverId) =>
     request("/admin/assign", { method: "POST", body: { jobType, jobId, driverId } }),
   getFunnel: (days) => request(`/analytics/funnel${days ? `?days=${days}` : ""}`),
+  getLiveDrivers: () => request("/admin/drivers/live"),
+  suspendUser: (id, reason) => request(`/admin/users/${id}/suspend`, { method: "POST", body: { reason } }),
+  reactivateUser: (id) => request(`/admin/users/${id}/reactivate`, { method: "POST" }),
+  getCancellations: (hours) => request(`/admin/cancellations${hours ? `?hours=${hours}` : ""}`),
+  getBalances: () => request("/admin/balances"),
+  getTickets: (status) => request(`/admin/tickets${status ? `?status=${status}` : ""}`),
+  resolveTicket: (id) => request(`/admin/tickets/${id}/resolve`, { method: "POST" }),
   adminTopUp: (userId, amount) => request(`/wallet/admin/topup/${userId}`, { method: "POST", body: { amount } }),
 
   // --- Errands (Pick & Deliver to Me) ---
