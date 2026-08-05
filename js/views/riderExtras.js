@@ -32,7 +32,7 @@ function backBtn(root) {
 
 export function renderLoyalty(root) {
   if (!Token.access) {
-    root.innerHTML = `<div class="page">
+    root.innerHTML = `<div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-4">Loyalty & Rewards</h1>
       ${signInPrompt("Sign in to see your points", "You earn points automatically on every completed ride and delivery.")}
@@ -43,7 +43,7 @@ export function renderLoyalty(root) {
   }
 
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-4">Loyalty & Rewards</h1>
       <div id="loyaltyCard">${skeletonRows(1)}</div>
@@ -74,7 +74,7 @@ export function renderLoyalty(root) {
 
 export function renderRefer(root) {
   if (!Token.access) {
-    root.innerHTML = `<div class="page">
+    root.innerHTML = `<div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-4">Refer & Earn</h1>
       ${signInPrompt("Sign in to get your code", "Every account gets its own referral code — share it and earn points when friends sign up.")}
@@ -85,7 +85,7 @@ export function renderRefer(root) {
   }
 
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-4">Refer & Earn</h1>
       <div id="referCard">${skeletonRows(1)}</div>
@@ -126,7 +126,7 @@ export function renderRefer(root) {
 
 export function renderBusiness(root) {
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-4">Nova X for Business</h1>
       <div class="card mb-4">

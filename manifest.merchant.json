@@ -1,0 +1,19 @@
+{
+  "name": "Nova X Merchant",
+  "short_name": "Nova X Merchant",
+  "description": "Orders, menu, prep time",
+  "start_url": "merchant.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#e2960a",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

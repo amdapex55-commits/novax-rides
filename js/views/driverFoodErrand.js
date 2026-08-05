@@ -69,7 +69,7 @@ export function renderFoodOrderProgress(root) {
   const orderId = state.activeFoodOrderId;
   let stepIndex = 0;
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <h1 class="text-xl mb-6">Food Delivery in Progress</h1>
       <div class="radar-field" style="height:180px; border-radius:var(--r-lg); margin-bottom:24px; display:flex; align-items:center; justify-content:center;">
         <div class="radar-sweep"></div>
@@ -176,7 +176,7 @@ export function renderErrandProgress(root) {
   let phase = "SHOPPING"; // SHOPPING -> ON_THE_WAY -> DELIVERED
 
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <h1 class="text-xl mb-6">Errand in Progress</h1>
       <div class="radar-field" style="height:200px; border-radius:var(--r-lg); margin-bottom:24px; display:flex; align-items:center; justify-content:center;">
         <div class="radar-sweep"></div>

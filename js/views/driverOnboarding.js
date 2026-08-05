@@ -21,7 +21,7 @@ const DOCS = [
 ];
 
 export function renderDriverOnboarding(root) {
-  root.innerHTML = `<div class="page"><div id="wrap">${skeletonRows(4)}</div></div>`;
+  root.innerHTML = `<div class="page nx-stagger"><div id="wrap">${skeletonRows(4)}</div></div>`;
   let cancelled = false;
   let profile = {};
 

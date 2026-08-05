@@ -14,7 +14,7 @@ import { geocode, getCurrentCoords } from "../geocode.js";
 export function renderErrandDetails(root) {
   const draft = state.errandDraft || {};
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-1">Pick & Deliver to Me</h1>
       <p class="text-secondary mb-6">Tell a driver what to buy — they'll shop and bring it to you.</p>

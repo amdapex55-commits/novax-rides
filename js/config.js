@@ -35,4 +35,15 @@ function resolve() {
   return isLocal ? LOCAL : PRODUCTION;
 }
 
-export const CONFIG = resolve();
+// Map/geo providers. All three default to keyless public endpoints so the app
+// runs with zero billing setup. Each can be repointed independently — at
+// volume you'd move ROUTING_URL to your own OSRM box and GEOCODE_URL to a
+// paid geocoder, without touching a single screen.
+const GEO = {
+  // OSRM-compatible directions endpoint. Self-host: docker run osrm/osrm-backend
+  ROUTING_URL: (typeof window !== "undefined" && window.NOVAX_ROUTING_URL) || "",
+  // Nominatim-compatible search endpoint.
+  GEOCODE_URL: (typeof window !== "undefined" && window.NOVAX_GEOCODE_URL) || "",
+};
+
+export const CONFIG = { ...resolve(), ...GEO };

@@ -14,7 +14,7 @@ import { restaurantCardHtml } from "./riderHome.js";
 
 export function renderFoodBrowse(root) {
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-1">Food</h1>
       <p class="text-secondary text-sm mb-4">Delivered by Nova X riders</p>
@@ -97,19 +97,61 @@ export function renderFoodBrowse(root) {
     );
   }
 
-  api.browseRestaurants().then((restaurants) => {
-    if (cancelled) return;
-    all = Array.isArray(restaurants) ? restaurants : [];
-    drawCuisines();
-    draw();
-  }).catch(() => {
-    if (cancelled) return;
-    list.innerHTML = emptyRich({
-      icon: icon("bolt", 26),
-      title: "Couldn't load restaurants",
-      body: "Check your connection and try again.",
+  // Load, with a retry that's part of the screen rather than an error dump.
+  //
+  // A customer who opens Food and sees "Couldn't load restaurants" concludes
+  // the app is broken and doesn't come back. But the two reasons this fails
+  // are completely different problems and deserve different screens: their
+  // connection dropped (their side, retryable) versus we have no kitchens
+  // live yet (our side, and an invitation rather than a failure).
+  let attempts = 0;
+
+  function loadRestaurants() {
+    attempts++;
+    api.browseRestaurants().then((restaurants) => {
+      if (cancelled) return;
+      all = Array.isArray(restaurants) ? restaurants : [];
+      drawCuisines();
+      draw();
+    }).catch((err) => {
+      if (cancelled) return;
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      list.innerHTML = `
+        <div class="nx-empty">
+          <div class="nx-empty-art">${icon(offline ? "bolt" : "utensils", 26)}</div>
+          <h3>${offline ? "You're offline" : "Kitchens are coming online"}</h3>
+          <p>
+            ${offline
+              ? "Reconnect and we'll load the kitchens near you."
+              : "We're signing up restaurants across Karachi right now. Try again in a moment — or tell us which one you want first."}
+          </p>
+          <button class="btn btn-primary btn-block" id="retryFood">
+            ${icon("refresh", 16)} Try again
+          </button>
+          ${offline ? "" : `
+            <button class="btn btn-ghost btn-block mt-2" id="suggestFood">
+              Suggest a restaurant
+            </button>
+            <p class="text-xs text-muted mt-4" style="margin-bottom:0;">
+              Run a kitchen? <a href="merchant.html" style="color:var(--accent);font-weight:600;">Partner with Nova X</a>
+            </p>`}
+        </div>`;
+
+      list.querySelector("#retryFood")?.addEventListener("click", (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner"></span>`;
+        // Back off a little on repeated failures so a down backend doesn't
+        // get hammered by someone tapping retry.
+        setTimeout(loadRestaurants, Math.min(attempts * 400, 2000));
+      });
+      list.querySelector("#suggestFood")?.addEventListener("click", () => navigate("/support"));
+
+      console.warn("[NovaX] food browse failed:", err?.message);
     });
-  });
+  }
+
+  loadRestaurants();
 
   let debounce;
   root.querySelector("#searchInput").addEventListener("input", (e) => {
@@ -284,7 +326,7 @@ export function renderFoodCart(root) {
   const itemsTotal = cart.items.reduce((s, i) => s + i.price * i.quantity, 0);
 
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-1">Your Cart</h1>
       <p class="text-secondary mb-6">${esc(cart.restaurantName) || "No restaurant selected"}</p>

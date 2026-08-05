@@ -19,7 +19,7 @@ const SERVICES = [
 export function renderParcelService(root) {
   let selected = "standard";
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-6">Send a Parcel</h1>
       <div class="flex-col gap-3 mb-6">
@@ -55,7 +55,7 @@ export function renderParcelService(root) {
 export function renderParcelDetails(root) {
   const draft = state.parcelDraft || {};
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-6">Package Details</h1>
       <label class="field-label">Weight (kg)</label>
@@ -82,7 +82,7 @@ export function renderParcelDetails(root) {
 export function renderParcelContact(root) {
   const draft = state.parcelDraft || {};
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-6">Pickup & Receiver</h1>
 

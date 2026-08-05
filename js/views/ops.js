@@ -3,43 +3,114 @@
 // approve-by-id action, so this dashboard is genuinely wired.
 import { api } from "../api.js";
 import { icon } from "../icons.js";
-import { toast, fmtDate, skeletonRows, esc } from "../ui.js";
+import { toast, fmtDate, skeletonRows, esc, countUp } from "../ui.js";
+import { createMap, mapSkeleton, KARACHI } from "../map.js";
+
+const STAT_CARDS = [
+  ["statActiveTrips", "Active trips", "activeTrips", "var(--accent)"],
+  ["statOnlineDrivers", "Drivers online", "onlineDrivers", "var(--accent)"],
+  ["statPendingKyc", "Pending KYC", "pendingKyc", "var(--warning)"],
+  ["statActiveDeliveries", "Active deliveries", "activeDeliveries", "var(--accent-2)"],
+  ["statTotalDrivers", "Total drivers", "totalDrivers", "var(--text-primary)"],
+  ["statTotalUsers", "Total users", "totalUsers", "var(--text-primary)"],
+];
 
 export function renderOpsDashboard(root) {
   root.innerHTML = `
-    <div class="page">
-      <h1 class="text-xl mb-4">Live Operations</h1>
-      <div class="flex gap-3 mb-6" id="statsRow">
-        <div class="card text-center" style="flex:1;"><p class="text-xs text-secondary mb-1">Active Trips</p><p class="font-bold text-lg" id="statActiveTrips">—</p></div>
-        <div class="card text-center" style="flex:1;"><p class="text-xs text-secondary mb-1">Online Drivers</p><p class="font-bold text-lg" id="statOnlineDrivers">—</p></div>
-        <div class="card text-center" style="flex:1;"><p class="text-xs text-secondary mb-1">Pending KYC</p><p class="font-bold text-lg" id="statPendingKyc">—</p></div>
+    <div class="page nx-stagger">
+      <div class="flex items-center gap-3 mb-1">
+        <h1 class="text-xl">Live operations</h1>
+        <span class="nx-live-dot" style="background:#2563eb;"></span>
       </div>
-      <div class="flex gap-3 mb-6">
-        <div class="card text-center" style="flex:1;"><p class="text-xs text-secondary mb-1">Total Users</p><p class="font-bold text-lg" id="statTotalUsers">—</p></div>
-        <div class="card text-center" style="flex:1;"><p class="text-xs text-secondary mb-1">Total Drivers</p><p class="font-bold text-lg" id="statTotalDrivers">—</p></div>
-        <div class="card text-center" style="flex:1;"><p class="text-xs text-secondary mb-1">Active Deliveries</p><p class="font-bold text-lg" id="statActiveDeliveries">—</p></div>
+      <p class="text-secondary text-sm mb-5">Everything moving in Karachi right now.</p>
+
+      <div class="nx-desk-grid nx-stat-grid mb-5">
+        ${STAT_CARDS.map(([id, label, , color]) => `
+          <div class="card nx-lift" style="padding:16px 18px;">
+            <p class="text-xs text-secondary mb-1">${label}</p>
+            <p class="font-bold nx-stat-num" id="${id}" style="color:${color};">—</p>
+          </div>`).join("")}
       </div>
-      <div class="radar-field" style="height:200px; border-radius:var(--r-lg); display:flex; align-items:center; justify-content:center;">
-        <div class="radar-sweep"></div>
-        <p class="text-xs text-muted" style="position:relative; z-index:1;">Live fleet map needs a Maps API key — not wired yet</p>
+
+      <!-- The fleet map. Real Leaflet, real driver positions from the admin
+           live-drivers endpoint — dispatchers were previously being shown a
+           decorative radar sweep with an apology written across it. -->
+      <div class="card nx-desk-wide" style="padding:0; overflow:hidden;">
+        <div class="flex items-center justify-between" style="padding:14px 18px;">
+          <div>
+            <p class="font-bold text-sm">Fleet map</p>
+            <p class="text-xs text-muted" id="fleetCount">Loading drivers…</p>
+          </div>
+          <div class="flex gap-3 text-xs text-secondary">
+            <span class="flex items-center gap-1"><i class="nx-key-dot" style="--dot:#0fa968;"></i>Idle</span>
+            <span class="flex items-center gap-1"><i class="nx-key-dot" style="--dot:#e2960a;"></i>Busy</span>
+          </div>
+        </div>
+        <div id="fleetMap" style="height:340px;">${mapSkeleton("340px")}</div>
       </div>
     </div>
   `;
+
   api.getAdminStats()
     .then((s) => {
-      root.querySelector("#statActiveTrips").textContent = s.activeTrips;
-      root.querySelector("#statOnlineDrivers").textContent = s.onlineDrivers;
-      root.querySelector("#statPendingKyc").textContent = s.pendingKyc;
-      root.querySelector("#statTotalUsers").textContent = s.totalUsers;
-      root.querySelector("#statTotalDrivers").textContent = s.totalDrivers;
-      root.querySelector("#statActiveDeliveries").textContent = s.activeDeliveries;
+      STAT_CARDS.forEach(([id, , key]) => {
+        const el = root.querySelector(`#${id}`);
+        const value = Number(s?.[key] ?? 0);
+        countUp(el, value);
+      });
     })
     .catch(() => toast("Couldn't load stats", true));
+
+  // Map + fleet. Both are best-effort: a dispatcher must still get their
+  // numbers if the tile CDN or the drivers endpoint is having a bad minute.
+  let mapHandle = null;
+  let poll = 0;
+
+  (async () => {
+    const container = root.querySelector("#fleetMap");
+    try {
+      container.innerHTML = "";
+      mapHandle = await createMap(container, { center: KARACHI, zoom: 12, scrollWheelZoom: true });
+    } catch {
+      container.innerHTML = `
+        <div class="nx-empty" style="margin:16px;">
+          <div class="nx-empty-art">${icon("location", 26)}</div>
+          <h3>Map didn't load</h3>
+          <p>Check the connection — your figures above are still live.</p>
+        </div>`;
+      return;
+    }
+
+    async function refreshFleet() {
+      try {
+        const drivers = await api.getLiveDrivers();
+        const points = (Array.isArray(drivers) ? drivers : [])
+          .filter((d) => d?.lat != null && d?.lng != null)
+          .map((d) => ({
+            lat: Number(d.lat), lng: Number(d.lng),
+            status: d.busy ? "busy" : "idle",
+            label: d.name || d.phone || "Driver",
+          }));
+        mapHandle.setFleet(points);
+        const idle = points.filter((p) => p.status === "idle").length;
+        root.querySelector("#fleetCount").textContent = points.length
+          ? `${points.length} online · ${idle} available now`
+          : "No drivers online right now";
+      } catch {
+        root.querySelector("#fleetCount").textContent = "Driver positions unavailable";
+      }
+    }
+
+    await refreshFleet();
+    poll = setInterval(refreshFleet, 15000);
+  })();
+
+  return () => { clearInterval(poll); mapHandle?.destroy(); };
 }
 
 export function renderOpsApprovals(root) {
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <h1 class="text-xl mb-4">Driver Approvals</h1>
       <div id="approvalsList">${skeletonRows(3)}</div>
     </div>
@@ -94,7 +165,7 @@ const ROLE_BADGE = { ADMIN: "badge-accent", DRIVER: "badge-warning", RIDER: "bad
 
 export function renderOpsUsers(root) {
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <h1 class="text-xl mb-4">User Management</h1>
       <div id="usersList">${skeletonRows(5)}</div>
     </div>

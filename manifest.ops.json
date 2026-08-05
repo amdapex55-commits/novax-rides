@@ -1,0 +1,19 @@
+{
+  "name": "Nova X Ops",
+  "short_name": "Nova X Ops",
+  "description": "Dispatch & control",
+  "start_url": "ops.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

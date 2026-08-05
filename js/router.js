@@ -92,7 +92,10 @@ export const ROUTES = {
   "/earnings-explained": { view: () => import("./views/explainers.js"), fn: "renderDriverEarningsExplainer", auth: "none", nav: false },
   "/commission-explained": { view: () => import("./views/explainers.js"), fn: "renderRestaurantCommissionExplainer", auth: "none", nav: false },
   "/help": { view: () => import("./views/explainers.js"), fn: "renderSupportContact", auth: "none", nav: false },
-  "/restaurant/onboarding": { view: () => import("./views/restaurant.js"), fn: "renderRestaurantOnboarding", auth: "RESTAURANT", nav: false },
+  // Onboarding lives in its own module: it's the heaviest screen in the
+  // merchant app and only ever runs once per restaurant, so there's no reason
+  // for a kitchen checking today's orders to download the whole wizard.
+  "/restaurant/onboarding": { view: () => import("./views/restaurantOnboarding.js"), fn: "renderRestaurantOnboarding", auth: "RESTAURANT", nav: false },
   "/restaurant/pending": { view: () => import("./views/restaurant.js"), fn: "renderRestaurantPending", auth: "RESTAURANT", nav: false },
   "/restaurant/orders": { view: () => import("./views/restaurant.js"), fn: "renderRestaurantOrders", auth: "RESTAURANT", nav: true, tab: "orders" },
   "/restaurant/menu": { view: () => import("./views/restaurant.js"), fn: "renderRestaurantMenuManage", auth: "RESTAURANT", nav: true, tab: "menu" },

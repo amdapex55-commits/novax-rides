@@ -24,7 +24,7 @@ function wireSignInPrompt(root, resumePath) {
 
 export function renderWallet(root) {
   if (!Token.access) {
-    root.innerHTML = `<div class="page">
+    root.innerHTML = `<div class="page nx-stagger">
       <h1 class="text-xl mb-6">Wallet</h1>
       ${signInPrompt("Sign in to see your wallet", "Your balance and transaction history live on your account — takes a phone number and a code, no password.")}
     </div>`;
@@ -33,7 +33,7 @@ export function renderWallet(root) {
   }
 
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <h1 class="text-xl mb-6">Wallet</h1>
       <div class="glow-card mb-4 text-center" style="padding:32px 20px;">
         <p class="text-secondary text-sm mb-2">Available Balance</p>
@@ -100,7 +100,7 @@ const TRIP_STATUS_BADGE = {
 
 export function renderTripHistory(root) {
   if (!Token.access) {
-    root.innerHTML = `<div class="page">
+    root.innerHTML = `<div class="page nx-stagger">
       <h1 class="text-xl mb-6">Trip History</h1>
       ${signInPrompt("Sign in to see your trips", "Your past rides and receipts show up here once you're signed in.")}
     </div>`;
@@ -108,7 +108,7 @@ export function renderTripHistory(root) {
     return;
   }
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <h1 class="text-xl mb-6">Trip History</h1>
       <div id="list">${skeletonRows(4)}</div>
     </div>
@@ -142,7 +142,7 @@ export function renderTripHistory(root) {
 
 export function renderProfile(root) {
   if (!Token.access) {
-    root.innerHTML = `<div class="page">
+    root.innerHTML = `<div class="page nx-stagger">
       <h1 class="text-xl mb-6">Profile</h1>
       ${signInPrompt("Sign in to see your profile", "Your name, rating, and account settings live here once you're signed in.")}
     </div>`;
@@ -151,7 +151,7 @@ export function renderProfile(root) {
   }
   const cached = Token.user || {};
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <h1 class="text-xl mb-6">Profile</h1>
       <div class="card-elevated text-center mb-6" style="padding:28px 20px;">
         <div class="avatar" style="width:80px;height:80px;font-size:28px;margin:0 auto 12px;">${esc((cached.name || "N").charAt(0))}</div>
@@ -219,7 +219,7 @@ export function renderProfile(root) {
 
 export function renderSettings(root) {
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-6">Settings</h1>
       <div class="flex-col gap-1 mb-6">

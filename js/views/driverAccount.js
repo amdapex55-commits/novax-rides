@@ -5,7 +5,7 @@ import { toast, fmtMoney, fmtDate, countUp, skeletonRows } from "../ui.js";
 
 export function renderEarnings(root) {
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <h1 class="text-xl mb-6">Earnings</h1>
       <div class="glow-card mb-6 text-center" style="padding:32px 20px;">
         <p class="text-secondary text-sm mb-2">Total Balance</p>
@@ -44,7 +44,7 @@ export function renderEarnings(root) {
 export function renderDriverProfile(root) {
   const cached = Token.user || {};
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <h1 class="text-xl mb-6">Driver Profile</h1>
       <div class="card-elevated text-center mb-6" style="padding:28px 20px;">
         <div class="avatar" style="width:80px;height:80px;font-size:28px;margin:0 auto 12px;">${(cached.name || "N").charAt(0)}</div>
@@ -107,7 +107,7 @@ const VEHICLE_TYPES = [
 
 export function renderVehicle(root) {
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-4">Vehicle Management</h1>
       <div id="vehicleForm">${skeletonRows(3)}</div>
@@ -162,7 +162,7 @@ export function renderVehicle(root) {
 
 export function renderDriverNotifications(root) {
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <h1 class="text-xl mb-4">Notifications</h1>
       <div id="notifList">${skeletonRows(3)}</div>
     </div>
@@ -191,7 +191,7 @@ export function renderDriverNotifications(root) {
 
 export function renderIncentives(root) {
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-4">Incentives & Rewards</h1>
       <div id="incentiveCard">${skeletonRows(1)}</div>

@@ -1,0 +1,19 @@
+{
+  "name": "Nova X",
+  "short_name": "Nova X",
+  "description": "Rides, food, parcels & errands",
+  "start_url": "customer.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0fa968",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

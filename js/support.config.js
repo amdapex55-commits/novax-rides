@@ -15,9 +15,76 @@ export const SUPPORT = {
   hours: "8am – 11pm, every day", // TODO: when someone actually answers
 };
 
+/* ---------------------------------------------------------------------------
+   Placeholder guard.
+
+   The danger with TODO contact details isn't that they're missing — it's that
+   they LOOK real. A "Chat on WhatsApp" button wired to 923000000000 sends a
+   stranded customer to a number that either doesn't exist or belongs to some
+   unrelated person. That's worse than showing no button at all.
+
+   So rather than trusting whoever deploys to remember, the app detects
+   unconfigured values and every support surface degrades on its own: live
+   channels disappear, the in-app ticket form (which always works, because it
+   posts to your own backend) becomes the primary path, and a loud warning
+   prints to the console for whoever is testing.
+
+   Fill in the four values above and every channel switches itself back on.
+   Nothing else needs editing.
+   --------------------------------------------------------------------------- */
+
+const PLACEHOLDERS = {
+  whatsapp: [/^92300{0,1}0{6,}$/, /^0+$/, /^$/],
+  phone: [/0{6,}/, /^$/],
+  email: [/^support@novax\.pk$/i, /example\.com$/i, /^$/],
+};
+
+function isPlaceholder(field) {
+  const value = String(SUPPORT[field] ?? "").replace(/[\s\-()+]/g, "");
+  return (PLACEHOLDERS[field] || []).some((re) => re.test(value));
+}
+
+/** Which live channels are safe to show a real user right now. */
+export const SUPPORT_STATUS = {
+  whatsapp: !isPlaceholder("whatsapp"),
+  phone: !isPlaceholder("phone"),
+  email: !isPlaceholder("email"),
+};
+
+SUPPORT_STATUS.anyLive =
+  SUPPORT_STATUS.whatsapp || SUPPORT_STATUS.phone || SUPPORT_STATUS.email;
+SUPPORT_STATUS.configured = SUPPORT_STATUS.whatsapp && SUPPORT_STATUS.phone && SUPPORT_STATUS.email;
+
+if (!SUPPORT_STATUS.configured && typeof console !== "undefined") {
+  const missing = ["whatsapp", "phone", "email"].filter((k) => !SUPPORT_STATUS[k]);
+  console.warn(
+    `[NovaX] Support contacts not configured: ${missing.join(", ")}. ` +
+      `Those buttons are hidden from users until you set real values in js/support.config.js. ` +
+      `The in-app ticket form still works.`,
+  );
+}
+
+/**
+ * WhatsApp deep link, or null when unconfigured.
+ * Callers MUST handle null by not rendering the button — that's the whole
+ * point. `whatsappLink() && renderButton()` is the pattern.
+ */
 export function whatsappLink(prefillText = "") {
+  if (!SUPPORT_STATUS.whatsapp) return null;
   const t = prefillText ? `?text=${encodeURIComponent(prefillText)}` : "";
   return `https://wa.me/${SUPPORT.whatsapp}${t}`;
+}
+
+/** tel: link, or null when unconfigured. */
+export function phoneLink() {
+  if (!SUPPORT_STATUS.phone) return null;
+  return `tel:${SUPPORT.phone.replace(/[\s()-]/g, "")}`;
+}
+
+/** mailto: link, or null when unconfigured. */
+export function emailLink(subject = "Nova X support") {
+  if (!SUPPORT_STATUS.email) return null;
+  return `mailto:${SUPPORT.email}?subject=${encodeURIComponent(subject)}`;
 }
 
 // The commercial terms. Kept here rather than hardcoded into screens so the

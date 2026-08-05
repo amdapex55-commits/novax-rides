@@ -520,21 +520,40 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 @media (max-width: 980px) {
   .nx-hero-inner { grid-template-columns: 1fr; gap: 42px; }
-  .nx-phone-stage { order: -1; }
+  /* The headline and CTA lead. The phone is proof, not the pitch — it must
+     never push "Book a ride" below the fold on a handset. */
+  .nx-hero-copy { order: 0; }
+  .nx-phone-stage { order: 1; }
   .nx-phone { transform: none; width: 268px; height: 545px; }
   .nx-switch { grid-template-columns: 1fr; gap: 36px; }
+  .nx-switch .nx-phone-stage { order: 1; }
   .nx-bento-cell.w3, .nx-bento-cell.w2 { grid-column: span 6; }
 }
 @media (max-width: 720px) {
-  .nx-hero { min-height: auto; padding: 108px 0 56px; }
+  /* Budget for a 390x844 viewport: nav 64 + hero padding 92 + eyebrow 30
+     + h1 ~168 + lead 52 + buttons 108 = ~514px. Both CTAs sit above the
+     fold with room to spare, and the phone peeks in to invite a scroll. */
+  .nx-hero { min-height: auto; padding: 92px 0 48px; }
+  .nx-hero-inner { gap: 30px; }
   .nx-hero::after { background: linear-gradient(to bottom, rgba(5,7,10,0.7) 0%, rgba(5,7,10,0.3) 35%, rgba(5,7,10,0.9) 72%, var(--nx-bg) 100%); }
-  .nx-phone { width: 244px; height: 496px; border-radius: 36px; }
+  .nx-h1 { font-size: clamp(38px, 12vw, 52px); }
+  .nx-lead { font-size: 16px; margin-bottom: 22px; }
+  .nx-hero-actions { margin-bottom: 24px; gap: 10px; }
   .nx-hero-actions .nx-btn { flex: 1 1 100%; justify-content: center; }
-  .nx-hero-proof { gap: 22px; }
+  .nx-hero-proof { gap: 20px; padding-top: 20px; }
+  /* Scaled so the whole device fits one screen once scrolled to. */
+  .nx-phone { width: 228px; height: 464px; border-radius: 34px; }
+  .nx-phone::before { width: 92px; height: 21px; }
   .nx-band-actions .nx-btn { flex: 1 1 100%; justify-content: center; }
   .nx-journey { grid-template-columns: 1fr; gap: 22px; }
   .nx-jstep::before, .nx-jstep i.fill { display: none; }
   .nx-calc { padding: 24px; }
+  .nx-tab { padding: 15px 14px; gap: 12px; }
+}
+/* Short handsets in landscape, and small phones like the SE. */
+@media (max-width: 480px) {
+  .nx-phone { width: 208px; height: 424px; }
+  .nx-hero-proof .nx-proof-item .v { font-size: 22px; }
 }
 
 /* -------------------------------------------------- Reduced motion ---- */

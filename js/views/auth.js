@@ -11,6 +11,7 @@ import { toast, e164 } from "../ui.js";
 import { navigate } from "../router.js";
 import { track } from "../analytics.js";
 import { APP, APP_CONFIG, isCustomerApp } from "../appMode.js";
+import { COMMERCIALS } from "../support.config.js";
 
 export function renderSplash(root) {
   root.innerHTML = `
@@ -62,27 +63,44 @@ const CUSTOMER_SERVICES = [
   { icon: "basket", label: "Errand", sub: "We'll pick it up for you" },
 ];
 
+// Accent per service so the four tiles read as four things, not one list.
+const SERVICE_THEME = {
+  Ride:   { color: "var(--accent)",   soft: "var(--brand-ride-soft)", glow: "rgba(15,169,104,0.14)" },
+  Food:   { color: "var(--accent-2)", soft: "var(--brand-food-soft)", glow: "rgba(226,150,10,0.16)" },
+  Parcel: { color: "#2563eb",         soft: "rgba(37,99,235,0.10)",   glow: "rgba(37,99,235,0.14)" },
+  Errand: { color: "var(--accent-2)", soft: "var(--brand-food-soft)", glow: "rgba(226,150,10,0.16)" },
+};
+
 function renderCustomerWelcome(root) {
   root.innerHTML = `
-    <div class="page flex-col" style="min-height:100dvh; justify-content:center;">
-      <div class="text-center mb-6">
-        <div style="width:64px;height:64px;border-radius:20px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;box-shadow:var(--accent-glow);margin:0 auto 18px;">
-          ${icon("bolt", 30, 2)}
-        </div>
-        <span class="badge badge-accent mb-3">${icon("map-pin", 11)} Available in Karachi</span>
-        <h1 class="text-xl" style="font-size:30px; line-height:1.15;">Anything you need,<br/>on its way</h1>
+    <div class="page nx-welcome nx-stagger" style="min-height:100dvh; display:flex; flex-direction:column; justify-content:center;">
+      <!-- Ambient brand glow. Cheap (two blurred radial gradients, no JS) but
+           it's the difference between "form on white" and "a product". -->
+      <div class="nx-welcome-glow" aria-hidden="true"></div>
+
+      <div class="text-center mb-5" style="position:relative;">
+        <div class="nx-welcome-mark">${icon("bolt", 30, 2)}</div>
+        <span class="badge badge-accent mb-3">
+          <span class="nx-live-dot" style="width:6px;height:6px;"></span> Live in Karachi
+        </span>
+        <h1 class="text-xl" style="font-size:32px; line-height:1.12; letter-spacing:-0.03em;">
+          Anything you need,<br/>on its way
+        </h1>
         <p class="text-secondary mt-2">Rides, food, parcels &amp; errands — one app.</p>
       </div>
 
-      <div class="flex-col gap-2 mb-6">
-        ${CUSTOMER_SERVICES.map((s) => `
-          <div class="list-row" style="background:var(--surface); border-radius:var(--r-md);">
-            <div class="list-row-icon" style="color:var(--accent);">${icon(s.icon, 20)}</div>
-            <div style="flex:1;">
-              <p class="font-bold text-sm">${s.label}</p>
-              <p class="text-secondary text-xs">${s.sub}</p>
-            </div>
-          </div>`).join("")}
+      <!-- Two-up tiles instead of four stacked rows: the whole offer is
+           visible at once, and each one looks tappable. -->
+      <div class="nx-welcome-grid mb-5">
+        ${CUSTOMER_SERVICES.map((s) => {
+          const t = SERVICE_THEME[s.label] || SERVICE_THEME.Ride;
+          return `
+            <div class="nx-service-tile" style="--tile-color:${t.color}; --tile-soft:${t.soft}; --tile-glow:${t.glow};">
+              <span class="nx-tile-icon">${icon(s.icon, 21)}</span>
+              <span class="nx-tile-title">${s.label}</span>
+              <span class="nx-tile-sub">${s.sub}</span>
+            </div>`;
+        }).join("")}
       </div>
 
       <button id="startBtn" class="btn btn-primary btn-block mb-3" style="height:56px; font-size:16px;">
@@ -90,13 +108,25 @@ function renderCustomerWelcome(root) {
       </button>
       <button id="guestBtn" class="btn btn-ghost btn-block">Look around first</button>
 
-      <p class="text-xs text-muted text-center mt-6">
+      <div class="nx-welcome-trust">
+        <span>${icon("shield", 13)} Verified drivers</span>
+        <span>${icon("wallet", 13)} Pay cash</span>
+        <span>${icon("locate", 13)} Live tracking</span>
+      </div>
+
+      <p class="text-xs text-muted text-center mt-4">
         By continuing you agree to our
         <a href="#/legal/terms" style="color:var(--accent);">Terms</a> and
         <a href="#/legal/privacy" style="color:var(--accent);">Privacy Policy</a>.
       </p>
     </div>
   `;
+  // Tiles are a preview of the offer, not navigation — a customer who hasn't
+  // signed in yet has nowhere to go. Tapping one starts the same flow the
+  // primary button does, rather than doing nothing (which reads as broken).
+  root.querySelectorAll(".nx-service-tile").forEach((tile) =>
+    tile.addEventListener("click", () => root.querySelector("#startBtn").click()));
+
   root.querySelector("#startBtn").addEventListener("click", () => {
     track("welcome_role_selected", { role: "RIDER" });
     navigate("/phone");
@@ -148,21 +178,45 @@ const PARTNER_COPY = {
 
 function renderPartnerWelcome(root) {
   const c = PARTNER_COPY[APP] || PARTNER_COPY.driver;
+  // Each partner app owns its accent, so a driver and a restaurant owner
+  // aren't looking at the identical green screen with different words.
+  const theme = APP === "merchant"
+    ? { grad: "linear-gradient(135deg,#c07f04,#f0a91b)", color: "var(--accent-2)", soft: "var(--brand-food-soft)" }
+    : APP === "ops"
+      ? { grad: "linear-gradient(135deg,#16324f,#2563eb)", color: "#2563eb", soft: "rgba(37,99,235,0.10)" }
+      : { grad: "var(--accent-gradient)", color: "var(--accent)", soft: "var(--brand-ride-soft)" };
+
+  // The single number that answers "is this worth my time?" — shown before
+  // the feature list, because that's the order people actually decide in.
+  const headline = APP === "driver"
+    ? { value: `${100 - COMMERCIALS.driverCommissionPct}%`, label: "of every fare is yours" }
+    : APP === "merchant"
+      ? { value: `${100 - COMMERCIALS.restaurantCommissionPct}%`, label: "of every order subtotal is yours" }
+      : null;
+
   root.innerHTML = `
-    <div class="page flex-col" style="min-height:100dvh; justify-content:center;">
-      <div class="text-center mb-6">
-        <div style="width:64px;height:64px;border-radius:20px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;box-shadow:var(--accent-glow);margin:0 auto 18px;">
-          ${icon(c.icon, 30, 2)}
-        </div>
-        <h1 class="text-xl" style="font-size:28px;">${c.heading}</h1>
+    <div class="page nx-welcome nx-stagger" style="min-height:100dvh; display:flex; flex-direction:column; justify-content:center;">
+      <div class="nx-welcome-glow" aria-hidden="true" style="--glow-a:${theme.color};"></div>
+
+      <div class="text-center mb-5" style="position:relative;">
+        <div class="nx-welcome-mark" style="background:${theme.grad};">${icon(c.icon, 30, 2)}</div>
+        <h1 class="text-xl" style="font-size:29px; letter-spacing:-0.03em;">${c.heading}</h1>
         <p class="text-secondary mt-2">${c.sub}</p>
       </div>
 
+      ${headline ? `
+        <div class="nx-hero-card ${APP === "merchant" ? "food" : ""} mb-4 text-center">
+          <p style="font-size:44px;font-weight:800;font-family:var(--font-display);letter-spacing:-0.04em;line-height:1;">
+            ${headline.value}
+          </p>
+          <p style="font-size:13.5px;opacity:0.9;margin-top:6px;">${headline.label}</p>
+        </div>` : ""}
+
       ${c.points.length ? `
-        <div class="flex-col gap-2 mb-6">
+        <div class="flex-col gap-2 mb-5">
           ${c.points.map((p) => `
-            <div class="list-row" style="background:var(--surface); border-radius:var(--r-md);">
-              <div class="list-row-icon" style="color:var(--accent);">${icon(p.icon, 20)}</div>
+            <div class="list-row nx-lift" style="background:var(--surface); border-radius:var(--r-md);">
+              <div class="list-row-icon" style="color:${theme.color}; background:${theme.soft};">${icon(p.icon, 20)}</div>
               <div style="flex:1;">
                 <p class="font-bold text-sm">${p.label}</p>
                 <p class="text-secondary text-xs">${p.sub}</p>

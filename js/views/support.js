@@ -74,7 +74,7 @@ const FAQS = [
 
 export function renderSupport(root) {
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-6">Help & Support</h1>
       <div class="card flex items-center gap-3 mb-6" id="chatCard" style="cursor:pointer;">

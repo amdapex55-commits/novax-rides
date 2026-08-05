@@ -17,7 +17,7 @@ const ADDRESS = "[REGISTERED OFFICE ADDRESS, KARACHI]";
 function page(title, updated, bodyHtml) {
   return (root) => {
     root.innerHTML = `
-      <div class="page">
+      <div class="page nx-stagger">
         <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
         <h1 class="text-xl mb-1">${title}</h1>
         <p class="text-xs text-muted mb-5">Last updated: ${updated}</p>

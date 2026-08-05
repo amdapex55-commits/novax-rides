@@ -5,26 +5,45 @@
 // numbers, is the cheapest trust you can buy — and it removes the single
 // most common support call.
 import { icon } from "../icons.js";
-import { COMMERCIALS, SUPPORT, whatsappLink } from "../support.config.js";
+import {
+  COMMERCIALS, SUPPORT, SUPPORT_STATUS, whatsappLink, phoneLink, emailLink,
+} from "../support.config.js";
 
 const { driverCommissionPct, foodDeliveryFeePct, restaurantCommissionPct, payoutSchedule } = COMMERCIALS;
+
+/**
+ * "Ask a human" block. Every channel is conditional on being configured —
+ * if WhatsApp isn't set up yet the button simply isn't there, and the
+ * in-app ticket (which posts to our own backend, so it always works)
+ * takes over as the primary route.
+ */
+function askBlock(prefill, { title = "Still not clear?", note = "We'd rather explain it than have you guess." } = {}) {
+  const wa = whatsappLink(prefill);
+  return `
+    <div class="card mt-6">
+      <p class="font-bold text-sm mb-1">${title}</p>
+      <p class="text-secondary text-sm mb-3">${note}</p>
+      ${wa ? `<a href="${wa}" target="_blank" rel="noopener"
+             class="btn btn-secondary btn-block">${icon("chat", 18)} Ask on WhatsApp</a>`
+           : `<button class="btn btn-secondary btn-block" data-support-ticket>
+                ${icon("chat", 18)} Message the Nova X team
+              </button>`}
+    </div>`;
+}
 
 function page(title, bodyHtml) {
   return (root) => {
     root.innerHTML = `
-      <div class="page">
+      <div class="page nx-stagger">
         <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
         <h1 class="text-xl mb-4">${title}</h1>
         ${bodyHtml}
-        <div class="card mt-6">
-          <p class="font-bold text-sm mb-1">Still not clear?</p>
-          <p class="text-secondary text-sm mb-3">We'd rather explain it than have you guess.</p>
-          <a href="${whatsappLink("Hi Nova X — I have a question about payments")}" target="_blank" rel="noopener"
-             class="btn btn-secondary btn-block">${icon("chat", 18)} Ask on WhatsApp</a>
-        </div>
+        ${askBlock("Hi Nova X — I have a question about payments")}
       </div>
     `;
     root.querySelector("#backBtn").addEventListener("click", () => history.back());
+    root.querySelectorAll("[data-support-ticket]").forEach((b) =>
+      b.addEventListener("click", () => { location.hash = "/chat"; }));
   };
 }
 
@@ -128,23 +147,45 @@ export const renderRestaurantCommissionExplainer = page("How payments work", `
 // --------------------------------------------------------------------------
 
 export function renderSupportContact(root) {
+  const wa = whatsappLink("Hi Nova X, I need help with:");
+  const tel = phoneLink();
+  const mail = emailLink("Nova X — I need help");
+
+  // With no live channel configured, the written ticket is the ONLY honest
+  // option — so it gets promoted from a footnote to the primary button
+  // rather than leaving the screen looking like support doesn't exist.
+  const ticketIsPrimary = !SUPPORT_STATUS.anyLive;
+
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-1">Help</h1>
-      <p class="text-secondary text-sm mb-5">We answer ${SUPPORT.hours}.</p>
+      <p class="text-secondary text-sm mb-5">
+        ${SUPPORT_STATUS.anyLive
+          ? `We answer ${SUPPORT.hours}.`
+          : "Send us a message and the team replies in the app."}
+      </p>
 
-      <a href="${whatsappLink("Hi Nova X, I need help with:")}" target="_blank" rel="noopener"
+      ${wa ? `<a href="${wa}" target="_blank" rel="noopener"
          class="btn btn-primary btn-block mb-3" style="height:56px;">
         ${icon("chat", 20)} WhatsApp us
-      </a>
-      <a href="tel:${SUPPORT.phone.replace(/\s/g, "")}" class="btn btn-secondary btn-block mb-3" style="height:52px;">
-        ${icon("phone", 18)} Call ${SUPPORT.phone}
-      </a>
+      </a>` : ""}
 
-      <div class="card mb-5">
+      ${tel ? `<a href="${tel}" class="btn btn-secondary btn-block mb-3" style="height:52px;">
+        ${icon("phone", 18)} Call ${SUPPORT.phone}
+      </a>` : ""}
+
+      ${ticketIsPrimary ? `
+        <button id="ticketPrimary" class="btn btn-primary btn-block mb-3" style="height:56px;">
+          ${icon("chat", 20)} Message the Nova X team
+        </button>
+        <p class="text-secondary text-xs mb-5" style="text-align:center;">
+          Usually answered the same day.
+        </p>` : ""}
+
+      ${mail ? `<div class="card mb-5">
         <p class="text-secondary text-sm">Or email <a href="mailto:${SUPPORT.email}" style="color:var(--accent);">${SUPPORT.email}</a></p>
-      </div>
+      </div>` : ""}
 
       <h3 class="text-sm text-secondary mb-2" style="text-transform:uppercase; letter-spacing:0.04em;">Common questions</h3>
       <div class="flex-col gap-1">
@@ -159,11 +200,12 @@ export function renderSupportContact(root) {
         </div>
       </div>
 
-      <button id="ticketBtn" class="btn btn-ghost btn-block mt-5">Raise a written ticket instead</button>
+      ${ticketIsPrimary ? "" : `<button id="ticketBtn" class="btn btn-ghost btn-block mt-5">Raise a written ticket instead</button>`}
     </div>
   `;
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
   root.querySelectorAll("[data-nav]").forEach((el) =>
     el.addEventListener("click", () => { location.hash = el.dataset.nav; }));
-  root.querySelector("#ticketBtn").addEventListener("click", () => { location.hash = "/chat"; });
+  root.querySelectorAll("#ticketBtn, #ticketPrimary").forEach((b) =>
+    b.addEventListener("click", () => { location.hash = "/chat"; }));
 }

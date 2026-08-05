@@ -5,7 +5,9 @@ import { state } from "../state.js";
 import { icon } from "../icons.js";
 import { toast, fmtMoney, skeletonRows, esc } from "../ui.js";
 import { navigate } from "../router.js";
-import { resolveRoute } from "../geocode.js";
+import { resolveRoute, geocode, getCurrentCoords, createSuggester } from "../geocode.js";
+import { createMap, mapSkeleton } from "../map.js";
+import { getRoute, routeSummary } from "../routing.js";
 
 const TABS = [
   { key: "FOOD", label: "Food", icon: "utensils" },
@@ -291,51 +293,165 @@ const KARACHI = { lat: 24.8607, lng: 67.0011 };
 export function renderSetLocations(root) {
   const pickup = state.pickup || { label: "Current Location" };
   const dropoff = state.dropoff || { label: "" };
-  root.innerHTML = `
-    <div class="page">
-      <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
-      <h1 class="text-xl mb-6">Set your route</h1>
 
-      <div class="card mb-6">
-        <div class="flex gap-3 mb-4">
-          <div class="flex-col items-center" style="gap:4px; padding-top:8px;">
+  root.innerHTML = `
+    <div class="page nx-route-page">
+      <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
+      <h1 class="text-xl mb-4">Set your route</h1>
+
+      <div class="card mb-4" style="overflow:visible;">
+        <div class="flex gap-3">
+          <div class="flex-col items-center" style="gap:4px; padding-top:30px;">
             <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);"></div>
-            <div style="width:2px;height:32px;background:var(--surface-border);"></div>
+            <div style="width:2px;height:44px;background:var(--surface-border);"></div>
             <div style="width:10px;height:10px;border-radius:2px;background:var(--accent-2);"></div>
           </div>
-          <div class="flex-col gap-3" style="flex:1;">
-            <div>
+          <div class="flex-col gap-3" style="flex:1; min-width:0;">
+            <div class="nx-autocomplete">
               <label class="field-label">Pickup</label>
-              <input id="pickupInput" class="input" type="text" value="${pickup.label || ""}" placeholder="Current location"/>
+              <input id="pickupInput" class="input" type="text" autocomplete="off"
+                     value="${esc(pickup.label || "")}" placeholder="Current location"/>
+              <div class="nx-suggest" id="pickupSuggest" hidden></div>
             </div>
-            <div>
+            <div class="nx-autocomplete">
               <label class="field-label">Drop-off</label>
-              <input id="dropoffInput" class="input" type="text" value="${dropoff.label || ""}" placeholder="Where to?" autofocus/>
+              <input id="dropoffInput" class="input" type="text" autocomplete="off"
+                     value="${esc(dropoff.label || "")}" placeholder="Where to?"/>
+              <div class="nx-suggest" id="dropoffSuggest" hidden></div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="radar-field" style="height:180px; border-radius:var(--r-lg); margin-bottom:24px; display:flex; align-items:center; justify-content:center;">
-        <div class="radar-sweep"></div>
-        <div style="position:relative; z-index:1;" class="text-center">
-          ${icon("locate", 28)}
-          <p class="text-xs text-muted mt-2">Live map needs a Maps API key — not wired yet</p>
-        </div>
+      <!-- A real map with the real road route. This used to be a decorative
+           radar sweep captioned "not wired yet" — the customer's first
+           impression of whether this app knows where anything is. -->
+      <div id="routeMap" class="mb-2" style="height:220px;border-radius:var(--r-lg);overflow:hidden;">
+        ${mapSkeleton("220px")}
       </div>
+      <p class="text-xs text-muted mb-4" id="routeInfo" style="min-height:16px;"></p>
 
-      <button id="confirmLocationBtn" class="btn btn-primary btn-block">Confirm Route ${icon("arrow-forward", 18)}</button>
+      <button id="confirmLocationBtn" class="btn btn-primary btn-block">Confirm route ${icon("arrow-forward", 18)}</button>
     </div>
   `;
+
+  const $ = (s) => root.querySelector(s);
+  let mapHandle = null;
+  let here = null;
+  let pickupCoords = null;
+  let dropoffCoords = null;
+  const suggesters = [];
+
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
-  root.querySelector("#confirmLocationBtn").addEventListener("click", () => {
-    const pickupVal = root.querySelector("#pickupInput").value.trim() || "Current Location";
-    const dropoffVal = root.querySelector("#dropoffInput").value.trim();
+
+  /** Redraw pins + road route whenever either end changes. */
+  async function refreshRoute() {
+    if (!mapHandle) return;
+    mapHandle.setPickup(pickupCoords);
+    mapHandle.setDropoff(dropoffCoords);
+
+    if (!pickupCoords || !dropoffCoords) {
+      mapHandle.setRoute(null);
+      mapHandle.fit([pickupCoords, dropoffCoords].filter(Boolean));
+      $("#routeInfo").textContent = "";
+      return;
+    }
+    $("#routeInfo").textContent = "Finding the best road route…";
+    const route = await getRoute(pickupCoords, dropoffCoords);
+    mapHandle.setRoute(route.coordinates);
+    mapHandle.fit(route.coordinates, [40, 40]);
+    $("#routeInfo").textContent = routeSummary(route) +
+      (route.estimated ? " (estimated)" : "");
+    // Cache it — the fare screen would otherwise ask the router all over again.
+    state.route = route;
+  }
+
+  /** Wire one address field: typeahead, selection, and pin sync. */
+  function wireField(inputId, listId, onPick) {
+    const input = $(`#${inputId}`);
+    const list = $(`#${listId}`);
+    const suggester = createSuggester((results, { pending }) => {
+      if (!results.length) { list.hidden = true; return; }
+      list.hidden = false;
+      list.innerHTML =
+        results.map((r) => `
+          <button type="button" class="nx-suggest-row" data-lat="${r.lat}" data-lng="${r.lng}">
+            ${icon("location", 15)}<span>${esc(r.displayName)}</span>
+          </button>`).join("") +
+        (pending ? `<div class="nx-suggest-row muted"><span>Searching…</span></div>` : "");
+
+      list.querySelectorAll("[data-lat]").forEach((row) => {
+        row.addEventListener("mousedown", (e) => e.preventDefault()); // keep focus
+        row.addEventListener("click", () => {
+          const label = row.textContent.trim();
+          input.value = label;
+          list.hidden = true;
+          onPick({ lat: Number(row.dataset.lat), lng: Number(row.dataset.lng), label });
+          refreshRoute();
+        });
+      });
+    }, { near: here });
+
+    suggesters.push(suggester);
+    input.addEventListener("input", () => {
+      onPick(null);              // typing invalidates the previous pin
+      suggester.query(input.value);
+    });
+    input.addEventListener("blur", () => setTimeout(() => { list.hidden = true; }, 180));
+    return input;
+  }
+
+  (async () => {
+    // Boot the map and the device position together — neither blocks the other.
+    const container = $("#routeMap");
+    here = await getCurrentCoords();
+    container.innerHTML = "";
+    try {
+      mapHandle = await createMap(container, { center: here, zoom: 13 });
+    } catch {
+      // Tiles blocked or offline. The addresses still work, so say that
+      // rather than leaving a broken grey rectangle on the screen.
+      container.innerHTML = `<div class="nx-empty" style="padding:26px;">
+        <p style="margin:0;">Map didn't load — you can still type your addresses.</p></div>`;
+    }
+
+    // "Current Location" is the default pickup, so resolve it up front.
+    if (!pickup.label || /current location/i.test(pickup.label)) {
+      pickupCoords = { lat: coords.lat, lng: coords.lng };
+    }
+
+    wireField("pickupInput", "pickupSuggest", (hit) => { pickupCoords = hit; });
+    wireField("dropoffInput", "dropoffSuggest", (hit) => { dropoffCoords = hit; });
+
+    refreshRoute();
+    $("#dropoffInput").focus();
+  })();
+
+  $("#confirmLocationBtn").addEventListener("click", async (e) => {
+    const pickupVal = $("#pickupInput").value.trim() || "Current Location";
+    const dropoffVal = $("#dropoffInput").value.trim();
     if (!dropoffVal) { toast("Enter a drop-off location", true); return; }
-    state.pickup = { label: pickupVal };
-    state.dropoff = { label: dropoffVal };
+
+    // If they typed instead of picking a suggestion, resolve before moving on.
+    // Sending an unresolved label to the fare screen is how a driver ends up
+    // dispatched to the wrong side of the city.
+    const btn = e.currentTarget;
+    if (!dropoffCoords) {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span>`;
+      const hit = await geocode(dropoffVal, here);
+      btn.disabled = false;
+      btn.innerHTML = `Confirm route ${icon("arrow-forward", 18)}`;
+      if (hit.resolved) dropoffCoords = { lat: hit.lat, lng: hit.lng };
+      else { toast("Couldn't find that address — pick one from the list", true); return; }
+    }
+
+    state.pickup = { label: pickupVal, ...(pickupCoords || {}) };
+    state.dropoff = { label: dropoffVal, ...(dropoffCoords || {}) };
     navigate("/fare");
   });
+
+  return () => { suggesters.forEach((s) => s.destroy()); mapHandle?.destroy(); };
 }
 
 const VEHICLES = [
@@ -354,7 +470,7 @@ export function renderFareSelection(root) {
   const selectedVehicleMeta = () => VEHICLES.find((v) => v.type === selected) || VEHICLES[0];
 
   root.innerHTML = `
-    <div class="page">
+    <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-1">Choose a ride</h1>
       <p class="text-secondary mb-6">${state.pickup?.label || "Pickup"} → ${state.dropoff?.label || "Drop-off"}</p>

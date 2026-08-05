@@ -20,62 +20,27 @@ function getDeviceCoords() {
   });
 }
 
-export function renderRestaurantOnboarding(root) {
-  root.innerHTML = `
-    <div class="page">
-      <h1 class="text-xl mb-1">Set Up Your Storefront</h1>
-      <p class="text-secondary mb-6">This is what customers see on Nova X Food.</p>
-
-      <label class="field-label">Restaurant Name</label>
-      <input id="nameInput" class="input mb-4" placeholder="e.g. Karachi Karahi House"/>
-
-      <label class="field-label">Description <span class="text-muted" style="text-transform:none; font-weight:400;">(optional)</span></label>
-      <textarea id="descInput" class="input mb-4" placeholder="What makes your food great?"></textarea>
-
-      <label class="field-label">Address</label>
-      <input id="addressInput" class="input mb-4" placeholder="Shop #, Street, Area"/>
-
-      <label class="field-label">Cuisine Tags <span class="text-muted" style="text-transform:none; font-weight:400;">(comma separated)</span></label>
-      <input id="tagsInput" class="input mb-6" placeholder="e.g. Pakistani, BBQ, Fast Food"/>
-
-      <p class="text-xs text-muted mb-6">We'll use your device's current location to place your store on the map — you can fine-tune this later.</p>
-
-      <button id="submitBtn" class="btn btn-primary btn-block">Submit for Approval ${icon("arrow-forward", 18)}</button>
-    </div>
-  `;
-
-  root.querySelector("#submitBtn").addEventListener("click", async (e) => {
-    const name = root.querySelector("#nameInput").value.trim();
-    const description = root.querySelector("#descInput").value.trim();
-    const address = root.querySelector("#addressInput").value.trim();
-    const cuisineTags = root.querySelector("#tagsInput").value.split(",").map((t) => t.trim()).filter(Boolean);
-    if (!name || !address) { toast("Enter at least a name and address", true); return; }
-
-    const btn = e.currentTarget;
-    btn.disabled = true;
-    btn.innerHTML = `<span class="spinner"></span>`;
-    try {
-      const coords = await getDeviceCoords();
-      await api.createRestaurant({ name, description: description || undefined, address, lat: coords.lat, lng: coords.lng, cuisineTags });
-      toast("Submitted! We'll review it shortly.");
-      navigate("/restaurant/pending");
-    } catch (err) {
-      toast(err.message || "Couldn't submit — try again", true);
-      btn.disabled = false;
-      btn.innerHTML = `Submit for Approval ${icon("arrow-forward", 18)}`;
-    }
-  });
-}
+// Storefront onboarding now lives in views/restaurantOnboarding.js — a
+// five-step wizard with a live preview. Kept out of this file because it's
+// large, runs exactly once per restaurant, and every kitchen loading their
+// order queue would otherwise pay to download it.
 
 export function renderRestaurantPending(root) {
   root.innerHTML = `
-    <div class="page flex-col items-center text-center" style="height:100dvh; justify-content:center;">
-      <div style="width:88px;height:88px;border-radius:50%;background:rgba(255,181,71,0.12);display:flex;align-items:center;justify-content:center;color:var(--warning);margin-bottom:24px;">
+    <div class="page flex-col items-center text-center nx-stagger" style="min-height:100dvh; justify-content:center;">
+      <div class="nx-empty-art" style="width:96px;height:96px;border-radius:28px;color:var(--warning);background:var(--brand-food-soft);">
         ${icon("store", 40)}
       </div>
-      <h1 class="text-xl mb-2">Awaiting Approval</h1>
-      <p class="text-secondary mb-8">Our team is reviewing your storefront. This usually takes 24-48 hours.</p>
-      <button id="checkStatusBtn" class="btn btn-primary btn-block">${icon("refresh", 18)} Check Status</button>
+      <h1 class="text-xl mb-2">We're reviewing your storefront</h1>
+      <p class="text-secondary mb-2" style="max-width:34ch;">
+        Someone on our team is checking your details. This usually takes
+        24–48 hours, and we'll call if anything's missing.
+      </p>
+      <p class="text-xs text-muted mb-8" style="display:flex;align-items:center;gap:7px;">
+        <span class="nx-live-dot" style="background:var(--warning);"></span>
+        Checking for updates automatically
+      </p>
+      <button id="checkStatusBtn" class="btn btn-primary btn-block">${icon("refresh", 18)} Check now</button>
     </div>
   `;
   const checkBtn = root.querySelector("#checkStatusBtn");
@@ -358,13 +323,13 @@ export function renderRestaurantMenuManage(root) {
 }
 
 export function renderRestaurantProfile(root) {
-  root.innerHTML = `<div class="page">${skeletonRows(3)}</div>`;
+  root.innerHTML = `<div class="page nx-stagger">${skeletonRows(3)}</div>`;
   let cancelled = false;
 
   api.getMyRestaurant().then((r) => {
     if (cancelled) return;
     root.innerHTML = `
-      <div class="page">
+      <div class="page nx-stagger">
         <div class="flex justify-between items-center mb-6">
           <h1 class="text-xl">Store Profile</h1>
           <button id="logoutBtn" class="btn-icon">${icon("logout", 20)}</button>
@@ -413,7 +378,7 @@ export function renderRestaurantProfile(root) {
         toast(r.isOpen ? "You're now open for orders" : "You're now closed");
       } catch (err) { toast(err.message || "Couldn't update", true); }
     });
-  }).catch(() => { if (!cancelled) root.innerHTML = `<div class="page"><div class="empty-state"><p class="text-sm">Couldn't load your store profile.</p></div></div>`; });
+  }).catch(() => { if (!cancelled) root.innerHTML = `<div class="page nx-stagger"><div class="empty-state"><p class="text-sm">Couldn't load your store profile.</p></div></div>`; });
 
   return () => { cancelled = true; };
 }

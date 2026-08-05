@@ -94,6 +94,9 @@ export async function createMap(container, opts = {}) {
   let dropoffMarker = null;
   let driverMarker = null;
   let routeLine = null;
+  let routeCasing = null;
+  let driverAnim = 0;
+  let extraMarkers = [];
 
   function setMarker(existing, coords, icon) {
     if (!coords) {
@@ -116,24 +119,73 @@ export async function createMap(container, opts = {}) {
     setDropoff(coords) {
       dropoffMarker = setMarker(dropoffMarker, coords, pinIcon(L, { color: "var(--accent-2)" }));
     },
-    setDriver(coords) {
-      driverMarker = setMarker(driverMarker, coords, vehicleIcon(L));
+    /** Move the driver marker. Leaflet snaps by default, which looks like
+     * teleporting between GPS pings; we interpolate so the vehicle glides
+     * along the road the way riders expect from Uber/Careem. */
+    setDriver(coords, { animate = true } = {}) {
+      if (!coords) { driverMarker = setMarker(driverMarker, null); return; }
+      if (!driverMarker || !animate) {
+        driverMarker = setMarker(driverMarker, coords, vehicleIcon(L));
+        return;
+      }
+      const from = driverMarker.getLatLng();
+      const to = L.latLng(coords.lat, coords.lng);
+      // Beyond ~2km it's a GPS jump, not movement — snap rather than glide.
+      if (from.distanceTo(to) > 2000) { driverMarker.setLatLng(to); return; }
+
+      // Point the marker along its heading so it reads as a vehicle.
+      const bearing =
+        (Math.atan2(to.lng - from.lng, to.lat - from.lat) * 180) / Math.PI;
+      const el = driverMarker.getElement()?.querySelector(".nx-driver-marker");
+      if (el) el.style.setProperty("--bearing", `${bearing}deg`);
+
+      const t0 = performance.now();
+      const dur = 900;
+      cancelAnimationFrame(driverAnim);
+      const tick = (now) => {
+        const p = Math.min((now - t0) / dur, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        driverMarker.setLatLng([
+          from.lat + (to.lat - from.lat) * eased,
+          from.lng + (to.lng - from.lng) * eased,
+        ]);
+        if (p < 1) driverAnim = requestAnimationFrame(tick);
+      };
+      driverAnim = requestAnimationFrame(tick);
     },
 
-    /** Straight line between points. Honest about what it is: we have no
-     * routing engine, so this is the direct path, not the road path. Swap
-     * for a real polyline the moment a routing provider exists. */
+    /**
+     * Draw a route. Pass the `coordinates` array from routing.js `getRoute()`
+     * and this renders the actual road path; pass just two pins and it falls
+     * back to a dashed direct line that is visibly provisional, so a straight
+     * line can never masquerade as a real route.
+     */
     setRoute(points) {
+      if (routeCasing) { map.removeLayer(routeCasing); routeCasing = null; }
       if (routeLine) { map.removeLayer(routeLine); routeLine = null; }
       const valid = (points || []).filter(Boolean);
       if (valid.length < 2) return;
-      routeLine = L.polyline(valid.map((p) => [p.lat, p.lng]), {
-        color: getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#0fa968",
-        weight: 4,
-        opacity: 0.75,
-        dashArray: "1 8",
-        lineCap: "round",
-      }).addTo(map);
+
+      const latlngs = valid.map((p) => [p.lat, p.lng]);
+      const accent =
+        getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#0fa968";
+      const isRealRoute = valid.length > 2;
+
+      if (isRealRoute) {
+        // Casing underneath gives the line depth against busy map detail —
+        // the trick every mapping app uses to keep a route legible.
+        routeCasing = L.polyline(latlngs, {
+          color: "#ffffff", weight: 9, opacity: 0.9, lineCap: "round", lineJoin: "round",
+        }).addTo(map);
+        routeLine = L.polyline(latlngs, {
+          color: accent, weight: 5, opacity: 1, lineCap: "round", lineJoin: "round",
+          className: "nx-route-line",
+        }).addTo(map);
+      } else {
+        routeLine = L.polyline(latlngs, {
+          color: accent, weight: 4, opacity: 0.7, dashArray: "1 8", lineCap: "round",
+        }).addTo(map);
+      }
     },
 
     /** Fit everything currently on the map, with room for the bottom sheet. */
@@ -148,6 +200,31 @@ export async function createMap(container, opts = {}) {
       if (coords) map.setView([coords.lat, coords.lng], zoom ?? map.getZoom());
     },
 
+    /**
+     * Plot a whole fleet — what the ops dashboard needs. Each entry is
+     * { lat, lng, status, label }, and status drives colour so a dispatcher
+     * can read availability from the map alone without clicking anything.
+     */
+    setFleet(drivers = []) {
+      extraMarkers.forEach((m) => map.removeLayer(m));
+      extraMarkers = [];
+      const colors = { idle: "#0fa968", busy: "#e2960a", offline: "#98a5ad" };
+      drivers.forEach((d) => {
+        if (typeof d?.lat !== "number" || typeof d?.lng !== "number") return;
+        const color = colors[d.status] || colors.idle;
+        const marker = L.marker([d.lat, d.lng], {
+          icon: L.divIcon({
+            className: "nx-pin-wrap",
+            html: `<div class="nx-fleet-dot" style="--dot:${color};"></div>`,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9],
+          }),
+        }).addTo(map);
+        if (d.label) marker.bindTooltip(String(d.label), { direction: "top", offset: [0, -8] });
+        extraMarkers.push(marker);
+      });
+    },
+
     /** Leaflet mis-sizes itself when its container was hidden/resized while
      * it wasn't looking — every sheet-over-map screen needs this. */
     refresh() {
@@ -155,6 +232,7 @@ export async function createMap(container, opts = {}) {
     },
 
     destroy() {
+      cancelAnimationFrame(driverAnim);
       try { map.remove(); } catch { /* already torn down */ }
     },
   };

@@ -1,0 +1,741 @@
+/* Nova X — the premium layer.
+   ===========================================================================
+   Two jobs, both about the gap between the landing page and the product.
+
+   1. LAYOUT. The apps were all locked to a 480px phone column. That's right
+      for a customer booking a ride one-handed. It is wrong for an ops
+      dispatcher watching a fleet on a 27" monitor, and wrong for a restaurant
+      running orders on a counter tablet — both of those were being handed a
+      phone-shaped strip with an ocean of grey either side. This file lets
+      those two apps breathe on desktop while leaving the customer and driver
+      apps exactly as they were.
+
+   2. SURFACE. The landing page is cinematic and the app screens were flat
+      rows on white. Same brand, two different price points. This adds the
+      depth, motion and hierarchy the marketing promised — without a redesign,
+      because these are additive classes the views opt into.
+
+   Loaded AFTER components.css so it can win on specificity where it needs to.
+   =========================================================================== */
+
+/* ===========================================================================
+   1. DESKTOP SHELLS
+   Driven by data-app on <html>, set by each entry point before boot.
+   =========================================================================== */
+
+/* Ops and merchant get real desktop room. Everything else keeps the phone
+   column, because for a customer that IS the correct shape. */
+@media (min-width: 900px) {
+  html[data-app="ops"] body,
+  html[data-app="merchant"] body {
+    background: #f2f5f3;
+  }
+
+  html[data-app="ops"] #app-root,
+  html[data-app="merchant"] #app-root {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+    /* Sidebar + content. The bottom nav becomes a left rail. */
+    display: grid;
+    grid-template-columns: 232px 1fr;
+    grid-template-areas: "nav view";
+    overflow: visible;
+  }
+
+  html[data-app="ops"] #view-container,
+  html[data-app="merchant"] #view-container {
+    grid-area: view;
+    min-width: 0;
+    padding: 0;
+  }
+
+  /* Bottom nav → left rail. Same markup, same links, different geometry:
+     no view had to change to get a desktop sidebar. */
+  html[data-app="ops"] .bottom-nav,
+  html[data-app="merchant"] .bottom-nav {
+    grid-area: nav;
+    position: sticky;
+    top: 0;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    transform: none;
+    width: 232px;
+    height: 100vh;
+    max-width: none;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 4px;
+    padding: 76px 14px 20px;
+    border-radius: 0;
+    border: none;
+    border-right: 1px solid var(--surface-border);
+    background: #ffffff;
+    box-shadow: none;
+  }
+
+  /* Brand lockup at the top of the rail — pure CSS, no markup needed. */
+  html[data-app="ops"] .bottom-nav::before,
+  html[data-app="merchant"] .bottom-nav::before {
+    content: "Nova X";
+    position: absolute;
+    top: 26px; left: 22px;
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+  }
+  html[data-app="ops"] .bottom-nav::after {
+    content: "OPS";
+    position: absolute;
+    top: 31px; left: 96px;
+    font-size: 9.5px; font-weight: 800; letter-spacing: 0.14em;
+    color: #2563eb;
+    background: rgba(37, 99, 235, 0.11);
+    padding: 3px 7px; border-radius: 5px;
+  }
+  html[data-app="merchant"] .bottom-nav::after {
+    content: "MERCHANT";
+    position: absolute;
+    top: 31px; left: 96px;
+    font-size: 9.5px; font-weight: 800; letter-spacing: 0.14em;
+    color: #a86c05;
+    background: var(--brand-food-soft);
+    padding: 3px 7px; border-radius: 5px;
+  }
+
+  html[data-app="ops"] .bottom-nav .nav-item,
+  html[data-app="merchant"] .bottom-nav .nav-item {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 11px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background var(--dur-fast), color var(--dur-fast);
+  }
+  html[data-app="ops"] .bottom-nav .nav-item span,
+  html[data-app="merchant"] .bottom-nav .nav-item span {
+    font-size: 14px;
+  }
+  html[data-app="ops"] .bottom-nav .nav-item:hover,
+  html[data-app="merchant"] .bottom-nav .nav-item:hover {
+    background: var(--surface);
+  }
+  html[data-app="ops"] .bottom-nav .nav-item.active,
+  html[data-app="merchant"] .bottom-nav .nav-item.active {
+    background: var(--brand-ride-soft);
+    color: var(--accent);
+  }
+  html[data-app="merchant"] .bottom-nav .nav-item.active {
+    background: var(--brand-food-soft);
+    color: #a86c05;
+  }
+
+  /* Content gets a real page width and generous gutters. */
+  html[data-app="ops"] .page,
+  html[data-app="merchant"] .page {
+    max-width: 1240px;
+    padding: 34px 40px 60px;
+    /* No bottom-nav to clear on desktop. */
+    padding-bottom: 60px;
+  }
+
+  /* Data-dense screens go multi-column instead of one endless scroll. */
+  html[data-app="ops"] .nx-desk-grid,
+  html[data-app="merchant"] .nx-desk-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  html[data-app="ops"] .nx-desk-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+  }
+  html[data-app="ops"] .nx-desk-wide { grid-column: 1 / -1; }
+}
+
+@media (min-width: 1400px) {
+  html[data-app="ops"] #app-root { grid-template-columns: 260px 1fr; }
+  html[data-app="ops"] .bottom-nav { width: 260px; }
+}
+
+/* Merchant on a counter tablet in portrait: keep the bottom bar (thumbs are
+   at the bottom of a propped tablet) but widen the content. */
+@media (min-width: 640px) and (max-width: 899px) {
+  html[data-app="merchant"] #app-root,
+  html[data-app="ops"] #app-root {
+    max-width: 760px;
+  }
+}
+
+/* ===========================================================================
+   2. MOTION SYSTEM
+   The landing page moves. The app should too — but purposefully: motion here
+   means "something arrived", "this is live", "you're making progress".
+   =========================================================================== */
+
+/* Children fade up in sequence when a screen renders. Applied by adding
+   .nx-stagger to a container; no per-item classes needed. */
+.nx-stagger > * {
+  animation: nx-rise 560ms var(--ease-spring) both;
+}
+.nx-stagger > *:nth-child(1) { animation-delay: 20ms; }
+.nx-stagger > *:nth-child(2) { animation-delay: 70ms; }
+.nx-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.nx-stagger > *:nth-child(4) { animation-delay: 170ms; }
+.nx-stagger > *:nth-child(5) { animation-delay: 215ms; }
+.nx-stagger > *:nth-child(6) { animation-delay: 255ms; }
+.nx-stagger > *:nth-child(7) { animation-delay: 290ms; }
+.nx-stagger > *:nth-child(n+8) { animation-delay: 320ms; }
+
+@keyframes nx-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* A card that lifts toward the finger/cursor. */
+.nx-lift {
+  transition: transform 280ms var(--ease-spring), box-shadow 280ms var(--ease-spring);
+  will-change: transform;
+}
+.nx-lift:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(14, 29, 22, 0.11); }
+.nx-lift:active { transform: translateY(0) scale(0.99); }
+
+/* "This number is live" — a soft breathing dot. */
+.nx-live-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); position: relative; flex: none;
+}
+.nx-live-dot::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  border: 1.5px solid var(--accent); opacity: 0;
+  animation: nx-halo 2.1s ease-out infinite;
+}
+@keyframes nx-halo {
+  0%   { transform: scale(0.6); opacity: 0.75; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* Shimmer for loading placeholders that should feel like content arriving
+   rather than a spinner apologising. */
+.nx-shimmer {
+  background: linear-gradient(100deg, var(--surface) 30%, var(--surface-2) 48%, var(--surface) 66%);
+  background-size: 300% 100%;
+  animation: nx-shim 1.5s linear infinite;
+  border-radius: var(--r-sm);
+}
+@keyframes nx-shim {
+  from { background-position: 160% 0; }
+  to   { background-position: -60% 0; }
+}
+
+/* Numbers that matter get a subtle count-in on first paint. */
+.nx-pop { animation: nx-pop 520ms var(--ease-bounce) both; }
+@keyframes nx-pop {
+  from { opacity: 0; transform: scale(0.86); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ===========================================================================
+   3. PREMIUM SURFACES
+   =========================================================================== */
+
+/* The hero card at the top of a home screen — gradient, depth, and a light
+   sweep so it reads as the most important thing on the page. */
+.nx-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  padding: 22px;
+  color: #fff;
+  background: linear-gradient(135deg, #0b8a54 0%, #12b673 55%, #0fa968 100%);
+  box-shadow: 0 14px 38px rgba(15, 169, 104, 0.26);
+}
+.nx-hero-card.food {
+  background: linear-gradient(135deg, #c07f04 0%, #f0a91b 55%, #e2960a 100%);
+  box-shadow: 0 14px 38px rgba(226, 150, 10, 0.26);
+}
+.nx-hero-card.ops {
+  background: linear-gradient(135deg, #16324f 0%, #2563eb 60%, #1d4ed8 100%);
+  box-shadow: 0 14px 38px rgba(37, 99, 235, 0.24);
+}
+/* Slow light sweep — the detail that separates "gradient" from "designed". */
+.nx-hero-card::after {
+  content: "";
+  position: absolute; top: -60%; left: -30%;
+  width: 55%; height: 220%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+  transform: rotate(18deg);
+  animation: nx-sweep 5.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes nx-sweep {
+  0%, 100% { transform: translateX(-40%) rotate(18deg); opacity: 0; }
+  40%      { opacity: 1; }
+  70%      { transform: translateX(320%) rotate(18deg); opacity: 0; }
+}
+.nx-hero-card > * { position: relative; z-index: 1; }
+
+/* Big tappable service tile — the customer home's main event. */
+.nx-service-tile {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px;
+  border-radius: var(--r-md);
+  background: var(--bg);
+  border: 1px solid var(--surface-border);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 300ms var(--ease-spring), box-shadow 300ms var(--ease-spring), border-color 300ms;
+}
+.nx-service-tile::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(120% 90% at 100% 0%, var(--tile-glow, rgba(15,169,104,0.14)), transparent 62%);
+  opacity: 0;
+  transition: opacity 320ms var(--ease-out);
+}
+.nx-service-tile:hover,
+.nx-service-tile:focus-visible {
+  transform: translateY(-4px);
+  border-color: transparent;
+  box-shadow: 0 16px 36px rgba(14, 29, 22, 0.13);
+}
+.nx-service-tile:hover::before { opacity: 1; }
+.nx-service-tile:active { transform: translateY(-1px) scale(0.985); }
+.nx-service-tile > * { position: relative; z-index: 1; }
+.nx-tile-icon {
+  width: 42px; height: 42px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--tile-soft, var(--brand-ride-soft));
+  color: var(--tile-color, var(--accent));
+  margin-bottom: 8px;
+  transition: transform 340ms var(--ease-bounce);
+}
+.nx-service-tile:hover .nx-tile-icon { transform: scale(1.09) rotate(-4deg); }
+.nx-tile-title { font-size: 15.5px; font-weight: 700; letter-spacing: -0.01em; }
+.nx-tile-sub { font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+
+/* ===========================================================================
+   4. RICH EMPTY / ERROR STATES
+   An empty screen is a conversation, not a dead end. These make "nothing
+   here yet" look like a young product doing something, not broken software.
+   =========================================================================== */
+
+.nx-empty {
+  text-align: center;
+  padding: 40px 24px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px dashed var(--surface-border);
+  animation: nx-rise 520ms var(--ease-spring) both;
+}
+.nx-empty-art {
+  width: 74px; height: 74px; margin: 0 auto 16px;
+  border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  box-shadow: 0 8px 22px rgba(14, 29, 22, 0.08);
+  color: var(--accent);
+  position: relative;
+}
+.nx-empty-art::before {
+  content: ""; position: absolute; inset: -8px; border-radius: 28px;
+  border: 1.5px solid var(--accent); opacity: 0.16;
+  animation: nx-halo 2.6s ease-out infinite;
+}
+.nx-empty h3 { font-size: 17px; font-weight: 700; margin-bottom: 7px; letter-spacing: -0.02em; }
+.nx-empty p { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; max-width: 34ch; margin: 0 auto 18px; }
+.nx-empty .btn { max-width: 280px; margin: 0 auto; }
+
+/* A launch-phase banner: honest, warm, and clearly temporary. */
+.nx-launch-note {
+  display: flex; gap: 11px; align-items: flex-start;
+  padding: 13px 15px;
+  border-radius: var(--r-md);
+  background: var(--brand-ride-soft);
+  border: 1px solid rgba(15, 169, 104, 0.2);
+  font-size: 12.5px; line-height: 1.55;
+  color: var(--text-secondary);
+}
+.nx-launch-note strong { color: var(--text-primary); font-weight: 700; }
+
+/* ===========================================================================
+   5. MAP CHROME
+   =========================================================================== */
+
+/* Route line gets a slow dash-march so a live trip reads as moving even when
+   the driver is stopped at a light. */
+.nx-route-line {
+  stroke-dasharray: 1 0;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.18));
+}
+
+/* Fleet dot for the ops map. */
+.nx-fleet-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--dot, var(--accent));
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.28);
+}
+.nx-fleet-dot::after {
+  content: ""; position: absolute; inset: -5px; border-radius: 50%;
+  border: 1.5px solid var(--dot, var(--accent)); opacity: 0;
+  animation: nx-halo 2.4s ease-out infinite;
+}
+
+/* Driver marker points along its heading — set by map.js as it interpolates. */
+.nx-driver-marker { transform: rotate(var(--bearing, 0deg)); transition: transform 500ms var(--ease-out); }
+
+/* A map that's still loading shouldn't be a grey box. */
+.nx-map-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e8edea;
+  border-radius: var(--r-md);
+}
+.nx-map-skeleton::after {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 38px, rgba(255,255,255,0.55) 38px 40px),
+    repeating-linear-gradient(90deg, transparent 0 46px, rgba(255,255,255,0.55) 46px 48px);
+  animation: nx-mapdrift 9s linear infinite;
+}
+@keyframes nx-mapdrift {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(-48px, -40px); }
+}
+
+/* ===========================================================================
+   6. PROGRESS
+   =========================================================================== */
+
+.nx-steps { display: flex; align-items: center; gap: 6px; margin-bottom: 20px; }
+.nx-steps i {
+  flex: 1; height: 4px; border-radius: 3px; background: var(--surface-2);
+  overflow: hidden; position: relative;
+}
+.nx-steps i.done::after,
+.nx-steps i.now::after {
+  content: ""; position: absolute; inset: 0;
+  background: var(--accent); border-radius: 3px;
+  transform-origin: left;
+  animation: nx-fillbar 480ms var(--ease-out) both;
+}
+.nx-steps i.now::after { background: linear-gradient(90deg, var(--accent), rgba(15,169,104,0.35)); }
+@keyframes nx-fillbar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.nx-step-label { font-size: 12px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.02em; }
+
+/* ===========================================================================
+   7. REDUCED MOTION
+   Every animation above is decorative. None of them carry information that
+   isn't also in the markup, so they can all be switched off safely.
+   =========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-stagger > *,
+  .nx-pop,
+  .nx-empty { animation: none; opacity: 1; transform: none; }
+  .nx-hero-card::after,
+  .nx-live-dot::after,
+  .nx-empty-art::before,
+  .nx-fleet-dot::after,
+  .nx-shimmer,
+  .nx-map-skeleton::after { animation: none; }
+  .nx-lift:hover, .nx-service-tile:hover { transform: none; }
+}
+
+/* ===========================================================================
+   8. ONBOARDING WIZARD (merchant storefront, driver KYC)
+   A multi-step form that has to feel like an opportunity, not paperwork.
+   =========================================================================== */
+
+.nx-onboard-head {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 22px;
+}
+.nx-onboard-head .nx-steps { flex: 1; margin-bottom: 0; }
+.nx-onboard-actions {
+  display: flex; gap: 10px; align-items: center;
+  margin-top: 28px;
+  /* Sticks above the bottom nav so "Continue" is always reachable without
+     scrolling to the end of a long step. */
+  position: sticky; bottom: calc(var(--safe-bottom) + 12px);
+  padding: 12px 0 4px;
+  background: linear-gradient(to top, var(--bg) 62%, transparent);
+}
+
+/* ---- Live storefront preview ---- */
+
+.nx-store-preview {
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 8px 26px rgba(14, 29, 22, 0.09);
+  animation: nx-rise 460ms var(--ease-spring) both;
+}
+.nx-store-banner {
+  position: relative;
+  height: 118px;
+  background: linear-gradient(135deg, #f4d9a4, #e9b562);
+  background-size: cover; background-position: center;
+  display: flex; align-items: center; justify-content: center;
+}
+.nx-store-banner-hint {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  color: rgba(120, 84, 20, 0.7); font-size: 11.5px; font-weight: 600;
+}
+.nx-store-openpill {
+  position: absolute; top: 10px; left: 10px;
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.05em;
+  background: rgba(255,255,255,0.95); color: #0b8a54;
+  padding: 4px 9px; border-radius: 99px;
+}
+.nx-store-logo {
+  position: absolute; bottom: -20px; left: 16px;
+  width: 52px; height: 52px; border-radius: 15px;
+  border: 3px solid #fff; object-fit: cover;
+  background: var(--surface-2);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.14);
+}
+.nx-store-logo.placeholder {
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 21px; font-weight: 800;
+  color: var(--text-muted);
+}
+.nx-store-body { padding: 28px 16px 15px; }
+.nx-store-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.nx-store-row h4 { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+.nx-store-row h4.muted { color: var(--text-muted); font-weight: 600; }
+.nx-store-rating {
+  font-size: 11px; font-weight: 800; flex: none;
+  background: var(--brand-ride-soft); color: #0b8a54;
+  padding: 3px 8px; border-radius: 99px;
+}
+.nx-store-tags { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+.nx-store-meta {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  font-size: 11.5px; color: var(--text-muted); margin-top: 9px;
+}
+.nx-store-min { font-size: 11.5px; color: var(--text-muted); margin-top: 5px; }
+.nx-preview-caption {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 11.5px; color: var(--text-muted); margin-top: 9px;
+}
+
+/* ---- Image upload ---- */
+
+.nx-upload-row { display: flex; align-items: center; gap: 13px; }
+.nx-upload-thumb {
+  width: 60px; height: 60px; flex: none;
+  border-radius: 15px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1.5px dashed var(--surface-border);
+  color: var(--text-muted);
+  transition: border-color 240ms, transform 240ms var(--ease-spring);
+}
+.nx-upload-thumb.wide { width: 96px; height: 60px; }
+.nx-upload-thumb.has { border-style: solid; border-color: var(--accent); }
+.nx-upload-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---- Chips / segments / payout ---- */
+
+.nx-chip-pick { display: flex; flex-wrap: wrap; gap: 7px; }
+.nx-chip-opt {
+  font-size: 12.5px; font-weight: 600;
+  padding: 8px 13px; border-radius: 99px;
+  background: var(--surface); color: var(--text-secondary);
+  border: 1px solid transparent;
+  transition: all 200ms var(--ease-out);
+}
+.nx-chip-opt:hover { background: var(--surface-2); }
+.nx-chip-opt.on {
+  background: var(--brand-ride-soft); color: var(--accent);
+  border-color: rgba(15,169,104,0.32); transform: scale(1.03);
+}
+
+.nx-seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.nx-seg-btn {
+  flex: 1; min-width: 62px;
+  font-size: 13px; font-weight: 700; padding: 11px 8px;
+  border-radius: 11px; background: var(--surface); color: var(--text-secondary);
+  border: 1.5px solid transparent; transition: all 200ms var(--ease-out);
+}
+.nx-seg-btn.on { background: var(--bg); border-color: var(--accent); color: var(--accent); box-shadow: 0 3px 12px rgba(15,169,104,0.15); }
+
+.nx-pay-grid { display: flex; flex-direction: column; gap: 8px; }
+.nx-pay-opt {
+  display: flex; flex-direction: column; gap: 2px; text-align: left;
+  padding: 13px 15px; border-radius: 13px;
+  background: var(--surface); border: 1.5px solid transparent;
+  transition: all 220ms var(--ease-out);
+}
+.nx-pay-opt.on { background: var(--bg); border-color: var(--accent); box-shadow: 0 4px 16px rgba(15,169,104,0.14); }
+.nx-pay-name { font-size: 14.5px; font-weight: 700; }
+.nx-pay-hint { font-size: 11.5px; color: var(--text-muted); }
+
+/* ---- Range ---- */
+
+.nx-range-row { display: flex; align-items: center; gap: 14px; }
+.nx-range {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 5px; border-radius: 3px; background: var(--surface-2); outline: none;
+}
+.nx-range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--accent); cursor: grab;
+  box-shadow: 0 3px 10px rgba(15,169,104,0.32);
+  transition: transform 180ms var(--ease-bounce);
+}
+.nx-range::-webkit-slider-thumb:active { transform: scale(1.16); cursor: grabbing; }
+.nx-range::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--accent); cursor: grab;
+}
+.nx-range-out {
+  font-family: var(--font-display); font-size: 16px; font-weight: 800;
+  color: var(--accent); min-width: 56px; text-align: right;
+}
+
+/* ---- Opening hours ---- */
+
+.nx-hours { display: flex; flex-direction: column; gap: 3px; }
+.nx-hours-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; border-radius: 11px;
+  transition: background 200ms, opacity 200ms;
+}
+.nx-hours-row:hover { background: var(--surface); }
+.nx-hours-row.closed { opacity: 0.45; }
+.nx-hours-day { display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.nx-hours-day input { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
+.nx-hours-times { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.nx-time { width: 92px; padding: 7px 9px; font-size: 12.5px; margin: 0; }
+
+/* ---- Address autocomplete ---- */
+
+.nx-autocomplete { position: relative; }
+.nx-suggest {
+  position: absolute; top: calc(100% + 5px); left: 0; right: 0;
+  background: var(--bg); border-radius: 13px;
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 14px 38px rgba(14,29,22,0.15);
+  overflow: hidden; z-index: 40;
+  animation: nx-rise 200ms var(--ease-out) both;
+}
+.nx-suggest-row {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 12px 14px; text-align: left; font-size: 13.5px;
+  color: var(--text-primary); background: transparent;
+  transition: background 160ms;
+}
+.nx-suggest-row:hover { background: var(--surface); }
+.nx-suggest-row + .nx-suggest-row { border-top: 1px solid var(--surface); }
+.nx-suggest-row.muted { color: var(--text-muted); font-size: 12px; cursor: default; }
+.nx-suggest-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- Menu draft rows ---- */
+
+.nx-menu-draft {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 12px;
+  background: var(--surface); animation: nx-rise 340ms var(--ease-spring) both;
+}
+
+/* ===========================================================================
+   9. WELCOME SCREENS
+   The first screen anyone sees in any of the four apps. It was a logo, a
+   heading and four grey list rows — indistinguishable from a settings page.
+   =========================================================================== */
+
+.nx-welcome { position: relative; overflow: hidden; }
+
+/* Two soft brand glows behind the content. No JS, no images, and it's the
+   single cheapest thing that makes a white screen look designed. */
+.nx-welcome-glow {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(46% 32% at 18% 8%, var(--glow-a, rgba(15,169,104,0.16)), transparent 70%),
+    radial-gradient(40% 28% at 92% 22%, rgba(226,150,10,0.13), transparent 70%);
+  filter: blur(6px);
+  animation: nx-breathe 9s ease-in-out infinite;
+}
+@keyframes nx-breathe {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.06); }
+}
+.nx-welcome > *:not(.nx-welcome-glow) { position: relative; z-index: 1; }
+
+.nx-welcome-mark {
+  width: 64px; height: 64px; border-radius: 20px;
+  background: var(--accent-gradient);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  margin: 0 auto 18px;
+  box-shadow: 0 10px 30px rgba(15,169,104,0.32);
+  animation: nx-mark-in 780ms var(--ease-bounce) both;
+}
+@keyframes nx-mark-in {
+  from { opacity: 0; transform: scale(0.6) rotate(-14deg); }
+  to   { opacity: 1; transform: none; }
+}
+
+.nx-welcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.nx-welcome-trust {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 16px;
+  margin-top: 20px; padding-top: 18px;
+  border-top: 1px solid var(--surface);
+}
+.nx-welcome-trust span {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 600; color: var(--text-muted);
+}
+
+/* Very short screens (iPhone SE, split-screen Android): drop to a single
+   column so the CTA never falls below the fold. */
+@media (max-height: 700px) {
+  .nx-welcome-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .nx-service-tile { padding: 13px; }
+  .nx-tile-icon { width: 34px; height: 34px; border-radius: 11px; margin-bottom: 5px; }
+  .nx-tile-sub { display: none; }
+  .nx-welcome-mark { width: 54px; height: 54px; margin-bottom: 12px; }
+  .nx-welcome-trust { margin-top: 14px; padding-top: 13px; }
+}
+
+/* ===========================================================================
+   10. OPS DASHBOARD BITS
+   =========================================================================== */
+
+.nx-stat-num { font-size: 26px; font-family: var(--font-display); letter-spacing: -0.03em; line-height: 1.1; }
+.nx-key-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--dot, var(--accent)); display: inline-block;
+}
+/* Stat grid is 2-up on a phone, auto-fill on desktop (see section 1). */
+.nx-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ===========================================================================
+   11. ROUTE PICKER
+   =========================================================================== */
+
+/* The suggestion dropdown must escape the card it sits in. */
+.nx-route-page .card { overflow: visible; }
+
+/* Wizard page wrapper — extra bottom room so the sticky action bar never
+   covers the last field of a step. */
+.nx-onboard { padding-bottom: 40px; }

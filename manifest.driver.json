@@ -1,0 +1,19 @@
+{
+  "name": "Nova X Driver",
+  "short_name": "Nova X Driver",
+  "description": "Drive. Deliver. Earn.",
+  "start_url": "driver.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0fa968",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
