@@ -85,12 +85,25 @@ export const PRICING = {
    --------------------------------------------------------------------------- */
 
 export const ZONE = {
-  enabled: false,               // ← flip to true once you've chosen
-  name: "Karachi",              // e.g. "Clifton & DHA"
-  center: { lat: 24.8607, lng: 67.0011 },
-  radiusKm: 7,
-  // Message shown when someone tries to book outside the circle.
-  outsideMessage: "We're not in your area yet — we're starting in one zone and expanding weekly.",
+  // ON BY DEFAULT, deliberately.
+  //
+  // Leaving this off was the more dangerous choice: with no geofence the app
+  // silently accepts a booking from anywhere in a 3,500 km² city, and a
+  // customer in Malir waits for a rider who is 40 minutes away and never
+  // comes. "We don't serve your area yet" is a disappointment; a rider who
+  // never arrives is a lost customer and a public complaint.
+  //
+  // Clifton + DHA is the default because it's where a first bike pilot works
+  // best: high smartphone penetration, short dense trips, and the easiest
+  // area to recruit riders who already work it. Change the three values
+  // below if you pick differently — nothing else needs touching.
+  enabled: true,
+  name: "Clifton & DHA",
+  center: { lat: 24.8138, lng: 67.0300 },
+  // 6km from Clifton covers Zamzama, Boat Basin, DHA 1–6 and Sea View
+  // without stretching into areas you have no riders in.
+  radiusKm: 6,
+  outsideMessage: "We're starting in Clifton & DHA and expanding weekly — we're not in your area yet.",
 };
 
 /** Is this point inside the launch zone? Returns true when zoning is off. */

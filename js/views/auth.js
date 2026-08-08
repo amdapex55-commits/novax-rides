@@ -7,11 +7,12 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, e164 } from "../ui.js";
+import { toast, e164, esc } from "../ui.js";
 import { navigate } from "../router.js";
 import { track } from "../analytics.js";
 import { APP, APP_CONFIG, isCustomerApp } from "../appMode.js";
 import { COMMERCIALS } from "../support.config.js";
+import { ZONE, PRICING } from "../launch.config.js";
 
 export function renderSplash(root) {
   root.innerHTML = `
@@ -56,19 +57,23 @@ export function renderSplash(root) {
 // public login.
 // ---------------------------------------------------------------------------
 
-const CUSTOMER_SERVICES = [
-  { icon: "bike", label: "Ride", sub: "Bike, rickshaw or car" },
-  { icon: "utensils", label: "Food", sub: "From restaurants near you" },
-  { icon: "package", label: "Parcel", sub: "Send it across town" },
-  { icon: "basket", label: "Errand", sub: "We'll pick it up for you" },
+// The FIRST screen a customer ever sees. It used to advertise four services
+// and "one app" — three of which can't take an order, and a vehicle choice
+// (rickshaw, car) that doesn't exist in the pilot. That's not ambition, it's
+// a promise the product breaks two taps later.
+//
+// Now it sells the one thing Nova X actually does, with the four reasons to
+// trust it. "Coming next" lives further down, small, where it belongs.
+const CUSTOMER_PROOF = [
+  { icon: "bolt",   label: "Beat traffic",   sub: "A bike gets through where a car can't" },
+  { icon: "wallet", label: "Fare locked",    sub: "See the price before you book" },
+  { icon: "shield", label: "Verified rider", sub: "CNIC & licence checked by a person" },
+  { icon: "locate", label: "Live tracking",  sub: "Watch them arrive, share your ride" },
 ];
 
-// Accent per service so the four tiles read as four things, not one list.
-const SERVICE_THEME = {
-  Ride:   { color: "var(--accent)",   soft: "var(--brand-ride-soft)", glow: "rgba(15,169,104,0.14)" },
-  Food:   { color: "var(--accent-2)", soft: "var(--brand-food-soft)", glow: "rgba(226,150,10,0.16)" },
-  Parcel: { color: "#2563eb",         soft: "rgba(37,99,235,0.10)",   glow: "rgba(37,99,235,0.14)" },
-  Errand: { color: "var(--accent-2)", soft: "var(--brand-food-soft)", glow: "rgba(226,150,10,0.16)" },
+// One accent. A single-service app shouldn't look like four products.
+const PROOF_THEME = {
+  color: "var(--accent)", soft: "var(--brand-ride-soft)", glow: "rgba(15,169,104,0.14)",
 };
 
 function renderCustomerWelcome(root) {
@@ -79,51 +84,48 @@ function renderCustomerWelcome(root) {
       <div class="nx-welcome-glow" aria-hidden="true"></div>
 
       <div class="text-center mb-5" style="position:relative;">
-        <div class="nx-welcome-mark">${icon("bolt", 30, 2)}</div>
+        <div class="nx-welcome-mark">${icon("bike", 30, 2)}</div>
         <span class="badge badge-accent mb-3">
-          <span class="nx-live-dot" style="width:6px;height:6px;"></span> Live in Karachi
+          <span class="nx-live-dot" style="width:6px;height:6px;"></span> Live in ${esc(ZONE.name)}
         </span>
-        <h1 class="text-xl" style="font-size:32px; line-height:1.12; letter-spacing:-0.03em;">
-          Anything you need,<br/>on its way
+        <h1 class="text-xl" style="font-size:34px; line-height:1.1; letter-spacing:-0.035em;">
+          Beat the traffic.<br/>Pay in cash.
         </h1>
-        <p class="text-secondary mt-2">Rides, food, parcels &amp; errands — one app.</p>
+        <p class="text-secondary mt-2">
+          Bike rides across ${esc(ZONE.name)} — from Rs. ${PRICING.BIKE.minimum}.
+        </p>
       </div>
 
-      <!-- Two-up tiles instead of four stacked rows: the whole offer is
-           visible at once, and each one looks tappable. -->
       <div class="nx-welcome-grid mb-5">
-        ${CUSTOMER_SERVICES.map((s) => {
-          const t = SERVICE_THEME[s.label] || SERVICE_THEME.Ride;
-          return `
-            <div class="nx-service-tile" style="--tile-color:${t.color}; --tile-soft:${t.soft}; --tile-glow:${t.glow};">
-              <span class="nx-tile-icon">${icon(s.icon, 21)}</span>
-              <span class="nx-tile-title">${s.label}</span>
-              <span class="nx-tile-sub">${s.sub}</span>
-            </div>`;
-        }).join("")}
+        ${CUSTOMER_PROOF.map((s) => `
+          <div class="nx-service-tile" style="--tile-color:${PROOF_THEME.color}; --tile-soft:${PROOF_THEME.soft}; --tile-glow:${PROOF_THEME.glow};">
+            <span class="nx-tile-icon">${icon(s.icon, 21)}</span>
+            <span class="nx-tile-title">${s.label}</span>
+            <span class="nx-tile-sub">${s.sub}</span>
+          </div>`).join("")}
       </div>
 
       <button id="startBtn" class="btn btn-primary btn-block mb-3" style="height:56px; font-size:16px;">
-        Get started ${icon("arrow-forward", 18)}
+        Book a bike ${icon("arrow-forward", 18)}
       </button>
       <button id="guestBtn" class="btn btn-ghost btn-block">Look around first</button>
 
-      <div class="nx-welcome-trust">
-        <span>${icon("shield", 13)} Verified drivers</span>
-        <span>${icon("wallet", 13)} Pay cash</span>
-        <span>${icon("locate", 13)} Live tracking</span>
-      </div>
+      <!-- Coming next: small, below the action, honest. This is the ONLY
+           mention of the other services on the first screen. -->
+      <p class="nx-welcome-next">
+        Food, parcels &amp; errands coming to ${esc(ZONE.name)} soon
+      </p>
 
-      <p class="text-xs text-muted text-center mt-4">
+      <p class="text-xs text-muted text-center mt-3">
         By continuing you agree to our
-        <a href="#/legal/terms" style="color:var(--accent);">Terms</a> and
-        <a href="#/legal/privacy" style="color:var(--accent);">Privacy Policy</a>.
+        <a href="#/legal/terms" style="color:var(--accent);">Terms</a>,
+        <a href="#/legal/privacy" style="color:var(--accent);">Privacy Policy</a> and
+        <a href="#/legal/safety" style="color:var(--accent);">Safety Policy</a>.
       </p>
     </div>
   `;
-  // Tiles are a preview of the offer, not navigation — a customer who hasn't
-  // signed in yet has nowhere to go. Tapping one starts the same flow the
-  // primary button does, rather than doing nothing (which reads as broken).
+  // The tiles are reasons to trust us, not navigation — tapping one starts
+  // the same booking flow rather than doing nothing (which reads as broken).
   root.querySelectorAll(".nx-service-tile").forEach((tile) =>
     tile.addEventListener("click", () => root.querySelector("#startBtn").click()));
 
@@ -136,15 +138,18 @@ function renderCustomerWelcome(root) {
 
 const PARTNER_COPY = {
   driver: {
-    icon: "car",
-    heading: "Earn on your schedule",
-    sub: "Accept rides, deliveries and errands. Get paid in cash, keep what you earn.",
+    // Bike-only, because that is the only vehicle the pilot dispatches.
+    // Telling a car owner "use what you already own" and then never sending
+    // them a job wastes their time and burns a recruit you may want later.
+    icon: "bike",
+    heading: "Your bike. Your hours.",
+    sub: "Carry passengers across Karachi and keep 85% of every fare, in cash, the same day.",
     points: [
-      { icon: "bolt", label: "Work when you want", sub: "Go online and offline any time" },
-      { icon: "wallet", label: "Cash in hand", sub: "Riders pay you directly" },
-      { icon: "bike", label: "Bike, rickshaw or car", sub: "Use what you already own" },
+      { icon: "wallet", label: "Cash in your hand", sub: "Passengers pay you directly, every trip" },
+      { icon: "bolt", label: "Work when you want", sub: "Go online and offline any time — no shifts" },
+      { icon: "bike", label: "Just your motorcycle", sub: "Licence, registration and a helmet is all you need" },
     ],
-    cta: "Start driving",
+    cta: "Start riding",
     explainerPath: "/earnings-explained",
     explainerLabel: "See exactly how you get paid",
     legalPath: "/legal/driver-agreement",

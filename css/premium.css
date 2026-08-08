@@ -327,7 +327,7 @@
 }
 .nx-service-tile:hover .nx-tile-icon { transform: scale(1.09) rotate(-4deg); }
 .nx-tile-title { font-size: 15.5px; font-weight: 700; letter-spacing: -0.01em; }
-.nx-tile-sub { font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+.nx-tile-sub { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
 
 /* ===========================================================================
    4. RICH EMPTY / ERROR STATES
@@ -534,7 +534,7 @@
 .nx-store-min { font-size: 11.5px; color: var(--text-muted); margin-top: 5px; }
 .nx-preview-caption {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  font-size: 11.5px; color: var(--text-muted); margin-top: 9px;
+  font-size: 12px; color: var(--text-muted); margin-top: 9px;
 }
 
 /* ---- Image upload ---- */
@@ -874,11 +874,12 @@
 .nx-soon-tile:active { transform: scale(0.96); }
 .nx-soon-tile:hover { background: var(--surface-2); }
 .nx-soon-icon { opacity: 0.75; }
-.nx-soon-label { font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+.nx-soon-label { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
 .nx-soon-badge {
-  font-size: 8.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  /* Was 8.5px — unreadable outdoors, which is where this app is used. */
+  font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
   color: #8a5a04; background: var(--brand-food-soft);
-  padding: 2px 6px; border-radius: 99px;
+  padding: 3px 8px; border-radius: 99px;
 }
 
 .nx-bike-trust {
@@ -886,8 +887,11 @@
   padding-top: 12px; border-top: 1px solid var(--surface);
 }
 .nx-bike-trust span {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 10.5px; font-weight: 600; color: var(--text-muted);
+  display: flex; align-items: center; gap: 6px;
+  /* Was 10.5px in --text-muted: too small AND too low-contrast. These are
+     trust signals — the things that make someone comfortable getting on a
+     stranger's motorcycle — so they get real size and real contrast. */
+  font-size: 12.5px; font-weight: 700; color: var(--text-secondary);
 }
 
 /* Short screens: drop the coming-soon row rather than pushing the booking
@@ -914,3 +918,191 @@
   font-size: 30px; font-weight: 800; letter-spacing: -0.035em;
   color: var(--accent); line-height: 1.1;
 }
+
+/* ===========================================================================
+   14. NOVA PULSE — the signature map layer
+   The thing that should make someone screenshot this app. Every element
+   below is tied to a real fact (GPS accuracy, live rider positions, road
+   route), never decoration pretending to be data.
+   =========================================================================== */
+
+/* Accuracy halo: how well we know where you are, drawn to scale. */
+.nx-accuracy-ring {
+  animation: nx-breathe-ring 3.2s ease-in-out infinite;
+  transform-origin: center;
+}
+@keyframes nx-breathe-ring {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+
+/* Real online riders near you. Small, quiet, and truthful. */
+.nx-rider-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.25);
+  opacity: 0.9;
+  animation: nx-rider-in 420ms var(--ease-bounce) both;
+}
+@keyframes nx-rider-in {
+  from { opacity: 0; transform: scale(0.3); }
+  to   { opacity: 0.9; transform: none; }
+}
+
+/* Route line already animates its draw from map.js. This adds the subtle
+   travelling sheen that makes a static route feel live. */
+.nx-route-line { filter: drop-shadow(0 1px 4px rgba(15,169,104,0.35)); }
+
+/* ===========================================================================
+   15. BOOKING COCKPIT
+   Replaces the plain white sheet. One control surface carrying every fact a
+   customer needs to commit: the locked fare, the ETA, how confident we are
+   about the pickup, and how many riders are actually nearby.
+   =========================================================================== */
+
+.nx-cockpit {
+  border-radius: var(--r-lg);
+  padding: 16px 17px;
+  background: linear-gradient(160deg, #0e1d16 0%, #14261d 100%);
+  color: #fff;
+  box-shadow: 0 16px 44px rgba(14,29,22,0.30);
+  position: relative;
+  overflow: hidden;
+  animation: nx-pop 520ms var(--ease-bounce) both;
+}
+/* Slow sheen — the detail that reads as "expensive". */
+.nx-cockpit::after {
+  content: "";
+  position: absolute; top: -60%; left: -30%;
+  width: 45%; height: 220%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+  transform: rotate(18deg);
+  animation: nx-sweep 6s ease-in-out infinite;
+  pointer-events: none;
+}
+.nx-cockpit > * { position: relative; z-index: 1; }
+
+.nx-cockpit-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 14px; padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+.nx-cockpit-fare-label {
+  font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(255,255,255,0.55);
+}
+.nx-cockpit-fare {
+  font-family: var(--font-display);
+  font-size: 38px; font-weight: 800; letter-spacing: -0.04em;
+  line-height: 1.05; color: #fff; margin-top: 2px;
+}
+/* "Fare locked" — the single most reassuring thing in a cash market. */
+.nx-lock {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  color: #17e08a; background: rgba(23,224,138,0.14);
+  border: 1px solid rgba(23,224,138,0.28);
+  padding: 5px 10px; border-radius: 99px;
+  flex: none;
+}
+
+.nx-cockpit-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; padding-top: 13px;
+}
+.nx-cockpit-cell { min-width: 0; }
+.nx-cockpit-cell .k {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45);
+}
+.nx-cockpit-cell .v {
+  font-size: 14.5px; font-weight: 700; color: #fff; margin-top: 3px;
+  display: flex; align-items: center; gap: 5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nx-cockpit-cell .v.good { color: #17e08a; }
+.nx-cockpit-cell .v.warn { color: #ffc45c; }
+
+/* ===========================================================================
+   16. SAFETY, MADE DOMINANT
+   These were small grey labels. They are the reason someone is willing to
+   get on a stranger's motorcycle, so they get colour, weight and space.
+   =========================================================================== */
+
+.nx-safety-bar {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 9px; margin-top: 13px;
+}
+.nx-safety-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px 12px; border-radius: 13px;
+  font-size: 13.5px; font-weight: 700;
+  border: 1.5px solid transparent;
+  transition: transform 200ms var(--ease-spring), background 200ms, border-color 200ms;
+}
+.nx-safety-btn:active { transform: scale(0.96); }
+.nx-safety-btn.share {
+  background: var(--brand-ride-soft); color: var(--accent);
+  border-color: rgba(15,169,104,0.26);
+}
+.nx-safety-btn.sos {
+  background: rgba(225,29,72,0.09); color: #e11d48;
+  border-color: rgba(225,29,72,0.3);
+}
+.nx-safety-btn.sos::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%;
+  background: #e11d48; animation: nx-live 1.8s ease-in-out infinite;
+}
+
+/* Verified-rider card: the plate is the thing to check, so it's the biggest
+   element after the name. */
+.nx-verified {
+  display: flex; align-items: center; gap: 13px;
+  padding: 14px; border-radius: var(--r-md);
+  background: var(--bg); border: 1.5px solid rgba(15,169,104,0.24);
+  box-shadow: 0 6px 22px rgba(15,169,104,0.10);
+}
+.nx-verified-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.05em;
+  color: #0b8a54; background: var(--brand-ride-soft);
+  padding: 3px 8px; border-radius: 99px;
+}
+.nx-plate-big {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 15px; font-weight: 800; letter-spacing: 0.06em;
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border: 1.5px solid var(--surface-border);
+  padding: 7px 11px; border-radius: 9px;
+  flex: none;
+}
+.nx-plate-hint {
+  font-size: 11.5px; color: var(--text-muted); margin-top: 7px; text-align: center;
+}
+
+/* "Coming next" line on the welcome screen — present, small, honest. */
+.nx-welcome-next {
+  margin-top: 16px; text-align: center;
+  font-size: 12.5px; font-weight: 600; color: var(--text-muted);
+  padding: 9px 12px; border-radius: 10px; background: var(--surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-accuracy-ring, .nx-rider-dot, .nx-cockpit, .nx-cockpit::after,
+  .nx-safety-btn.sos::before { animation: none; }
+}
+
+/* Live supply line on the bike home — a true count, or an honest silence. */
+.nx-bike-supply {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; font-weight: 600; color: var(--accent);
+  padding: 8px 12px; border-radius: 10px;
+  background: var(--brand-ride-soft);
+  margin-bottom: 12px;
+  animation: nx-rise 420ms var(--ease-spring) both;
+}
+.nx-bike-supply b { font-weight: 800; }
+.nx-bike-supply.none { color: var(--warning); background: rgba(217,119,6,0.09); }
+.nx-bike-supply.hidden { display: none; }

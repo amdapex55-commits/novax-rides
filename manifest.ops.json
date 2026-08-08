@@ -1,6 +1,6 @@
 {
   "name": "Nova X Ops",
-  "short_name": "Nova X Ops",
+  "short_name": "Nova Ops",
   "description": "Dispatch & control",
   "start_url": "ops.html",
   "scope": ".",
@@ -8,12 +8,32 @@
   "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
+  "categories": [
+    "business"
+  ],
   "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "favicon.svg",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/svg+xml"
     }
   ]
 }

@@ -1,19 +1,40 @@
 {
-  "name": "Nova X Driver",
-  "short_name": "Nova X Driver",
-  "description": "Drive. Deliver. Earn.",
+  "name": "Nova X Rider",
+  "short_name": "Nova Rider",
+  "description": "Your bike. Your hours. Keep 85% of every fare.",
   "start_url": "driver.html",
   "scope": ".",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#0fa968",
+  "categories": [
+    "travel",
+    "navigation"
+  ],
   "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "favicon.svg",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/svg+xml"
     }
   ]
 }

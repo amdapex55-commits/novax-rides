@@ -170,6 +170,11 @@ export const api = {
   getDriverEarnings: () => request("/wallet/earnings"),
   getWalletHistory: () => request("/wallet/history"),
 
+  // Anonymised nearby-rider positions for the supply indicator on the
+  // customer home. Public (a guest browsing needs it) and deliberately
+  // coarse — see location.controller.ts for the privacy reasoning.
+  getNearbyRiders: (lat, lng) => request(`/location/nearby?lat=${lat}&lng=${lng}`),
+
   // --- Uploads ---
   // purpose must be one of the backend's UploadPurpose enum values
   // ("kyc-doc" | "proof-of-delivery" | "profile-photo"), and fileName is

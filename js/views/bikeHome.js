@@ -15,7 +15,7 @@
 // demand signal for which service to switch on next. Hiding them entirely
 // would throw that away.
 
-import { Token } from "../api.js";
+import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
 import { toast, esc } from "../ui.js";
@@ -77,6 +77,8 @@ export function renderBikeHome(root) {
         <!-- Pickup status. This line is the GPS accuracy gate made visible:
              the customer always knows whether we actually know where they
              are, instead of finding out when nobody arrives. -->
+        <div class="nx-bike-supply hidden" id="supplyLine"></div>
+
         <div class="nx-pickup-row" id="pickupRow">
           <span class="nx-pickup-dot"></span>
           <span class="nx-pickup-label" id="pickupLabel">Finding your location…</span>
@@ -139,7 +141,11 @@ export function renderBikeHome(root) {
         row.classList.add("warn");
         label.textContent = ZONE.outsideMessage;
         fixBtn.hidden = false;
-        fixBtn.textContent = "Book anyway";
+        // NOT "Book anyway" — that promised something the geofence then
+        // refuses, which is worse than saying no. This offers the only
+        // thing that actually helps: pick a different pickup point, one
+        // that might be inside the zone.
+        fixBtn.textContent = "Use another pickup";
         pickup = null;
         mapHandle?.center(fix, 13);
         mapHandle?.setPickup(fix);
@@ -155,7 +161,12 @@ export function renderBikeHome(root) {
       fixBtn.textContent = "Change";
 
       mapHandle?.setPickup(pickup);
+      // NOVA PULSE: draw how confident we are, to scale, in metres. The
+      // customer can see the difference between "they've got me" and "they're
+      // guessing" without reading a word.
+      mapHandle?.setAccuracy(pickup, fix.accuracy);
       mapHandle?.center(pickup, 16);
+      loadNearbyRiders(pickup);
 
       // Turn the pin into a street name in the background — nice to have,
       // never blocking.
@@ -191,6 +202,38 @@ export function renderBikeHome(root) {
     // A vague fix is still fine for centring the map so they can see roughly
     // where they are while they correct it.
     if (fix.lat) { mapHandle?.center(fix, 14); }
+  }
+
+  /**
+   * Real supply near the customer.
+   *
+   * Most ride apps scatter fake vehicles across the map. These are the
+   * actual online riders the matching service can reach — so the number is
+   * true, and an empty map honestly says nobody is available rather than
+   * animating a car that doesn't exist. Best-effort: a failure here must
+   * never stop someone booking.
+   */
+  async function loadNearbyRiders(at) {
+    const el = $("#supplyLine");
+    if (!el) return;
+    try {
+      const riders = await api.getNearbyRiders(at.lat, at.lng);
+      const list = Array.isArray(riders) ? riders : [];
+      mapHandle?.setNearbyRiders(list);
+      if (list.length === 0) {
+        el.className = "nx-bike-supply none";
+        el.innerHTML = `${icon("info", 13)} <span>No riders online near you right now</span>`;
+      } else {
+        el.className = "nx-bike-supply";
+        el.innerHTML =
+          `<span class="nx-live-dot"></span>` +
+          `<span><b>${list.length}</b> rider${list.length === 1 ? "" : "s"} near you</span>`;
+      }
+    } catch {
+      // Endpoint unavailable — say nothing rather than guess a number.
+      el.innerHTML = "";
+      el.className = "nx-bike-supply hidden";
+    }
   }
 
   $("#pickupFix").addEventListener("click", () => {

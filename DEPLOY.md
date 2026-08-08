@@ -180,6 +180,7 @@ Config → Twilio → backend push → Railway variables → frontend push → v
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| `Cannot find module '/app/dist/main'` | Build tools were devDependencies, skipped by `NODE_ENV=production` | **Already fixed** — the Nest CLI and TypeScript are now regular dependencies. Deploy the latest backend zip. |
 | "Application failed to respond" | Backend won't boot | Read the deploy log — config validation names the variable |
 | App loads, everything fails | CORS | `CORS_ORIGINS` must match your Pages URL exactly |
 | No OTP arrives | Twilio | Check Railway logs; on trial, verify the recipient number first |

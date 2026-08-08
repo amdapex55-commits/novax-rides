@@ -9,15 +9,31 @@
   align-items: center;
   justify-content: center;
   gap: var(--sp-2);
-  height: 52px;
-  padding: 0 var(--sp-6);
+  /* min-height, not height. A fixed height plus overflow:hidden plus
+     white-space:nowrap silently CLIPS any label that doesn't fit — so
+     "Request Business Account" or a longer Urdu translation would render
+     as "Request Business Acc…" with no warning at build time. The button
+     now grows instead of truncating, which is the right failure mode: a
+     slightly taller button is a cosmetic issue, an unreadable one is a
+     dead end. */
+  min-height: 52px;
+  padding: 12px var(--sp-6);
   border-radius: var(--r-md);
   font-weight: 700;
   font-size: 15px;
-  overflow: hidden;
+  line-height: 1.3;
+  text-align: center;
+  /* Wrap rather than clip. `balance` keeps two-line labels evenly split
+     instead of leaving one orphan word. */
+  white-space: normal;
+  text-wrap: balance;
+  /* Long unbroken strings (a URL, a pasted address) still can't burst the
+     button — they break instead of overflowing. */
+  overflow-wrap: anywhere;
   transition: transform var(--dur-fast) var(--ease-bounce), box-shadow var(--dur-fast), opacity var(--dur-fast), filter var(--dur-fast);
-  white-space: nowrap;
 }
+/* Icons inside a button must never shrink or wrap away from their label. */
+.btn > svg { flex: none; }
 .btn:active { transform: scale(0.96); filter: brightness(0.94); }
 .btn:disabled { opacity: 0.45; pointer-events: none; }
 .btn-block { width: 100%; }

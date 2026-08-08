@@ -23,6 +23,11 @@ const KARACHI = { lat: 24.8607, lng: 67.0011 };
 
 let leafletReady = null;
 
+/** Respect the OS "reduce motion" setting for every animation in this file. */
+function prefersReducedMotion() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
 /** Load Leaflet once, lazily — no reason to pay for it on screens with no map. */
 function ensureLeaflet() {
   if (leafletReady) return leafletReady;
@@ -97,6 +102,8 @@ export async function createMap(container, opts = {}) {
   let routeCasing = null;
   let driverAnim = 0;
   let extraMarkers = [];
+  let accuracyRing = null;
+  let nearbyMarkers = [];
 
   function setMarker(existing, coords, icon) {
     if (!coords) {
@@ -115,6 +122,61 @@ export async function createMap(container, opts = {}) {
 
     setPickup(coords) {
       pickupMarker = setMarker(pickupMarker, coords, pinIcon(L, { color: "var(--accent)" }));
+    },
+
+    /**
+     * NOVA PULSE — the accuracy halo.
+     *
+     * Browser geolocation gives a confidence radius in metres, and until now
+     * we used it only to allow or block a booking. Drawing it does something
+     * no competitor here does: it shows the customer *how well we know where
+     * they are*, in the same units the rider will experience. A tight 15m
+     * ring reads as "they've got me". An 800m ring explains, without words,
+     * why we're asking them to type an address.
+     *
+     * It's a real circle in map units, so it scales correctly as you zoom —
+     * not a fixed-pixel decoration.
+     */
+    setAccuracy(coords, meters) {
+      if (accuracyRing) { map.removeLayer(accuracyRing); accuracyRing = null; }
+      if (!coords || !meters) return;
+      const good = meters <= 120;
+      accuracyRing = L.circle([coords.lat, coords.lng], {
+        radius: meters,
+        color: good ? "#0fa968" : "#d97706",
+        weight: 1.5,
+        opacity: 0.55,
+        fillColor: good ? "#0fa968" : "#d97706",
+        fillOpacity: 0.10,
+        className: "nx-accuracy-ring",
+        interactive: false,
+      }).addTo(map);
+    },
+
+    /**
+     * Live rider density near a point — supply, made visible.
+     *
+     * Ride-hailing apps show ghost cars that mean nothing. These are the
+     * real online riders from the matching service, so "4 riders nearby"
+     * is a fact the customer can trust, and an empty map honestly says
+     * we can't serve them right now instead of pretending.
+     */
+    setNearbyRiders(riders = []) {
+      nearbyMarkers.forEach((m) => map.removeLayer(m));
+      nearbyMarkers = riders
+        .filter((r) => typeof r?.lat === "number" && typeof r?.lng === "number")
+        .map((r) =>
+          L.marker([r.lat, r.lng], {
+            icon: L.divIcon({
+              className: "nx-pin-wrap",
+              html: `<div class="nx-rider-dot"></div>`,
+              iconSize: [16, 16],
+              iconAnchor: [8, 8],
+            }),
+            interactive: false,
+            zIndexOffset: -200, // always behind pickup/dropoff pins
+          }).addTo(map),
+        );
     },
     setDropoff(coords) {
       dropoffMarker = setMarker(dropoffMarker, coords, pinIcon(L, { color: "var(--accent-2)" }));
@@ -181,6 +243,25 @@ export async function createMap(container, opts = {}) {
           color: accent, weight: 5, opacity: 1, lineCap: "round", lineJoin: "round",
           className: "nx-route-line",
         }).addTo(map);
+
+        // NOVA PULSE — draw the route rather than snapping it in.
+        // The path animates from pickup to destination in ~900ms, which
+        // makes the app feel like it is *working out* your route instead of
+        // having a picture of one. Implemented with stroke-dasharray on the
+        // real SVG path, so it costs nothing and degrades to a static line
+        // if the browser won't animate.
+        const path = routeLine.getElement?.();
+        if (path && !prefersReducedMotion()) {
+          try {
+            const len = path.getTotalLength();
+            path.style.strokeDasharray = `${len}`;
+            path.style.strokeDashoffset = `${len}`;
+            // Force layout so the transition has a start value to animate from.
+            void path.getBoundingClientRect();
+            path.style.transition = "stroke-dashoffset 900ms cubic-bezier(0.22,1,0.36,1)";
+            path.style.strokeDashoffset = "0";
+          } catch { /* getTotalLength unsupported — static line is fine */ }
+        }
       } else {
         routeLine = L.polyline(latlngs, {
           color: accent, weight: 4, opacity: 0.7, dashArray: "1 8", lineCap: "round",
@@ -233,6 +314,7 @@ export async function createMap(container, opts = {}) {
 
     destroy() {
       cancelAnimationFrame(driverAnim);
+      nearbyMarkers.forEach((m) => { try { map.removeLayer(m); } catch {} });
       try { map.remove(); } catch { /* already torn down */ }
     },
   };

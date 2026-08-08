@@ -1,19 +1,40 @@
 {
-  "name": "Nova X",
-  "short_name": "Nova X",
-  "description": "Rides, food, parcels & errands",
+  "name": "Nova X Bike",
+  "short_name": "Nova X Bike",
+  "description": "Book a bike in Karachi. Fixed fare, cash, verified riders.",
   "start_url": "customer.html",
   "scope": ".",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#0fa968",
+  "categories": [
+    "travel",
+    "navigation"
+  ],
   "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "favicon.svg",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/svg+xml"
     }
   ]
 }

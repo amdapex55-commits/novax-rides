@@ -237,15 +237,37 @@ export function renderRideBooking(root) {
           Your driver may quote a slightly different fare.
         </p>` : `<div class="mb-3"></div>`}
 
-      <!-- The fare, stated once, large, before anything else. In a cash
-           market the number is the decision — burying it in a list row is
-           how you get arguments at the roadside. -->
-      <div class="nx-fare-quote mb-4">
-        <div>
-          <p class="text-xs text-secondary">Fare, paid in cash</p>
-          <p class="nx-fare-amount">${fmtMoney(quoted)}</p>
+      <!-- THE COCKPIT.
+           Every fact needed to commit, on one surface: the locked fare, the
+           journey, how confident we are about the pickup, and how many
+           riders are actually nearby. In a cash market the number is the
+           decision, so it's the biggest thing on the screen — and "FARE
+           LOCKED" answers the question every Karachi passenger has been
+           trained to ask, which is whether the price will change later. -->
+      <div class="nx-cockpit mb-4">
+        <div class="nx-cockpit-top">
+          <div style="min-width:0;">
+            <p class="nx-cockpit-fare-label">Fare, paid in cash</p>
+            <p class="nx-cockpit-fare">${fmtMoney(quoted)}</p>
+          </div>
+          <span class="nx-lock">${icon("shield", 12)} Fare locked</span>
         </div>
-        <span class="badge badge-accent">Fixed price</span>
+        <div class="nx-cockpit-grid">
+          <div class="nx-cockpit-cell">
+            <div class="k">Journey</div>
+            <div class="v">${route.km} km</div>
+          </div>
+          <div class="nx-cockpit-cell">
+            <div class="k">Ride time</div>
+            <div class="v">${formatEta(route.minutes)}</div>
+          </div>
+          <div class="nx-cockpit-cell">
+            <div class="k">Pickup</div>
+            <div class="v ${pickupAccuracy == null ? "" : pickupAccuracy <= 40 ? "good" : "warn"}">
+              ${pickupAccuracy == null ? "By address" : `±${pickupAccuracy}m`}
+            </div>
+          </div>
+        </div>
       </div>
 
       ${VEHICLES.length > 1 ? `
@@ -280,9 +302,15 @@ export function renderRideBooking(root) {
       <div id="farePanel" class="mb-3"></div>
 
       <button id="confirmRideBtn" class="btn btn-primary btn-block">Request ride ${icon("bolt", 18)}</button>
-      <p class="text-xs text-muted text-center mt-3">
-        Pay your rider in cash · ${pickupAccuracy != null ? `pickup accurate to ±${pickupAccuracy}m` : "pickup set by address"}
-      </p>
+
+      <!-- Safety is not a footnote. These are the reasons someone is willing
+           to get on a stranger's motorcycle, so they sit directly under the
+           booking button in real colour, not as grey micro-text. -->
+      <div class="nx-welcome-trust" style="margin-top:14px;padding-top:14px;">
+        <span>${icon("shield", 13)} Verified rider</span>
+        <span>${icon("locate", 13)} Live tracking</span>
+        <span>${icon("phone", 13)} Ops watching</span>
+      </div>
     `);
 
     node.querySelector("#editRouteBtn").addEventListener("click", stepRoute);
