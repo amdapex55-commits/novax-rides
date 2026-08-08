@@ -252,44 +252,54 @@
 
 /* The hero card at the top of a home screen — gradient, depth, and a light
    sweep so it reads as the most important thing on the page. */
+/* The sweep used to be an oversized rotated pseudo-element, which forced
+   `overflow: hidden` on the card to contain it — and that same rule clipped
+   the card's own CONTENT whenever it needed more room than expected (a long
+   heading, a bigger font, a translated string). Cropped words on the driver
+   and merchant welcome screens were the visible result.
+
+   Fixed by moving the sweep into the card's own BACKGROUND and animating
+   background-position. A background is painted inside the border-box and
+   respects border-radius automatically, so nothing escapes and nothing needs
+   clipping. The card can now grow to fit whatever is in it. */
 .nx-hero-card {
   position: relative;
-  overflow: hidden;
   border-radius: var(--r-lg);
   padding: 22px;
   color: #fff;
-  background: linear-gradient(135deg, #0b8a54 0%, #12b673 55%, #0fa968 100%);
+  background-image:
+    linear-gradient(100deg, transparent 38%, rgba(255,255,255,0.16) 50%, transparent 62%),
+    linear-gradient(135deg, #0b8a54 0%, #12b673 55%, #0fa968 100%);
+  background-size: 260% 100%, 100% 100%;
+  background-position: 160% 0, 0 0;
+  background-repeat: no-repeat;
   box-shadow: 0 14px 38px rgba(15, 169, 104, 0.26);
+  animation: nx-sweep 5.5s ease-in-out infinite;
 }
 .nx-hero-card.food {
-  background: linear-gradient(135deg, #c07f04 0%, #f0a91b 55%, #e2960a 100%);
+  background-image:
+    linear-gradient(100deg, transparent 38%, rgba(255,255,255,0.16) 50%, transparent 62%),
+    linear-gradient(135deg, #c07f04 0%, #f0a91b 55%, #e2960a 100%);
   box-shadow: 0 14px 38px rgba(226, 150, 10, 0.26);
 }
 .nx-hero-card.ops {
-  background: linear-gradient(135deg, #16324f 0%, #2563eb 60%, #1d4ed8 100%);
+  background-image:
+    linear-gradient(100deg, transparent 38%, rgba(255,255,255,0.16) 50%, transparent 62%),
+    linear-gradient(135deg, #16324f 0%, #2563eb 60%, #1d4ed8 100%);
   box-shadow: 0 14px 38px rgba(37, 99, 235, 0.24);
 }
-/* Slow light sweep — the detail that separates "gradient" from "designed". */
-.nx-hero-card::after {
-  content: "";
-  position: absolute; top: -60%; left: -30%;
-  width: 55%; height: 220%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
-  transform: rotate(18deg);
-  animation: nx-sweep 5.5s ease-in-out infinite;
-  pointer-events: none;
-}
 @keyframes nx-sweep {
-  0%, 100% { transform: translateX(-40%) rotate(18deg); opacity: 0; }
-  40%      { opacity: 1; }
-  70%      { transform: translateX(320%) rotate(18deg); opacity: 0; }
+  0%   { background-position: 160% 0, 0 0; }
+  55%  { background-position: -60% 0, 0 0; }
+  100% { background-position: -60% 0, 0 0; }
 }
-.nx-hero-card > * { position: relative; z-index: 1; }
 
 /* Big tappable service tile — the customer home's main event. */
 .nx-service-tile {
   position: relative;
-  overflow: hidden;
+  /* clip, not hidden: clips the glow without creating a scroll container,
+     and unlike overflow:hidden it never suppresses a focus ring. */
+  overflow: clip;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -964,24 +974,20 @@
 .nx-cockpit {
   border-radius: var(--r-lg);
   padding: 16px 17px;
-  background: linear-gradient(160deg, #0e1d16 0%, #14261d 100%);
+  /* Same background-sweep technique as .nx-hero-card — no overflow:hidden,
+     so a long fare or a translated label grows the cockpit instead of being
+     cropped by it. */
+  background-image:
+    linear-gradient(100deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%),
+    linear-gradient(160deg, #0e1d16 0%, #14261d 100%);
+  background-size: 260% 100%, 100% 100%;
+  background-position: 160% 0, 0 0;
+  background-repeat: no-repeat;
   color: #fff;
   box-shadow: 0 16px 44px rgba(14,29,22,0.30);
   position: relative;
-  overflow: hidden;
-  animation: nx-pop 520ms var(--ease-bounce) both;
+  animation: nx-pop 520ms var(--ease-bounce) both, nx-sweep 6s ease-in-out infinite;
 }
-/* Slow sheen — the detail that reads as "expensive". */
-.nx-cockpit::after {
-  content: "";
-  position: absolute; top: -60%; left: -30%;
-  width: 45%; height: 220%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
-  transform: rotate(18deg);
-  animation: nx-sweep 6s ease-in-out infinite;
-  pointer-events: none;
-}
-.nx-cockpit > * { position: relative; z-index: 1; }
 
 .nx-cockpit-top {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -1090,7 +1096,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nx-accuracy-ring, .nx-rider-dot, .nx-cockpit, .nx-cockpit::after,
+  .nx-accuracy-ring, .nx-rider-dot, .nx-cockpit, .nx-hero-card,
   .nx-safety-btn.sos::before { animation: none; }
 }
 
@@ -1106,3 +1112,201 @@
 .nx-bike-supply b { font-weight: 800; }
 .nx-bike-supply.none { color: var(--warning); background: rgba(217,119,6,0.09); }
 .nx-bike-supply.hidden { display: none; }
+
+/* ===========================================================================
+   17. SIGN-IN — one field, thumb-sized
+   A customer should be booking in under 20 seconds. Everything here exists to
+   remove a decision: no country picker, no password, no referral field, no
+   role choice, and no "continue" tap once the number is complete.
+   =========================================================================== */
+
+.nx-auth-mark {
+  width: 56px; height: 56px; border-radius: 18px;
+  background: var(--accent-gradient); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 26px rgba(15,169,104,0.28);
+  animation: nx-mark-in 700ms var(--ease-bounce) both;
+}
+/* Ops is not a consumer product and shouldn't look like one. */
+.nx-auth-mark.internal {
+  background: linear-gradient(135deg, #16324f, #2563eb);
+  box-shadow: 0 10px 26px rgba(37,99,235,0.26);
+}
+
+.nx-auth-title {
+  font-size: 30px; font-weight: 800; letter-spacing: -0.035em;
+  line-height: 1.1; margin-bottom: 8px;
+}
+.nx-auth-sub { font-size: 15px; color: var(--text-secondary); margin-bottom: 26px; }
+
+/* The phone field. Deliberately oversized: this is the only thing on the
+   screen, it's used one-handed, often outdoors, sometimes in a hurry. */
+.nx-phone-field {
+  display: flex; align-items: center; gap: 12px;
+  padding: 4px 16px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 2px solid transparent;
+  transition: border-color 220ms var(--ease-out), background 220ms, box-shadow 220ms;
+  cursor: text;
+}
+.nx-phone-field:focus-within {
+  background: var(--bg);
+  border-color: var(--accent);
+  box-shadow: 0 6px 22px rgba(15,169,104,0.14);
+}
+.nx-phone-field.ready { border-color: var(--accent); background: var(--bg); }
+
+.nx-phone-cc {
+  font-size: 22px; font-weight: 700; color: var(--text-secondary);
+  flex: none; padding-right: 12px;
+  border-right: 1px solid var(--surface-border);
+  line-height: 60px;
+}
+.nx-phone-input {
+  flex: 1; min-width: 0;
+  border: none; outline: none; background: none;
+  /* Tabular figures so digits don't jiggle as they're typed. */
+  font-family: var(--font); font-variant-numeric: tabular-nums;
+  font-size: 24px; font-weight: 700; letter-spacing: 0.02em;
+  color: var(--text-primary);
+  height: 60px; padding: 0;
+}
+.nx-phone-input::placeholder { color: var(--text-muted); font-weight: 500; letter-spacing: 0.02em; }
+
+.nx-auth-hint {
+  font-size: 12.5px; color: var(--text-muted);
+  margin: 10px 2px 22px; transition: color 200ms;
+}
+.nx-auth-hint.ok { color: var(--accent); font-weight: 600; }
+
+.nx-auth-internal {
+  display: flex; align-items: flex-start; gap: 9px;
+  margin-top: 22px; padding: 12px 14px; border-radius: 11px;
+  background: rgba(37,99,235,0.07);
+  border: 1px solid rgba(37,99,235,0.2);
+  font-size: 12.5px; line-height: 1.55; color: var(--text-secondary);
+}
+
+/* ---- Rider application checklist ---- */
+
+.nx-check-row {
+  display: flex; align-items: center; gap: 13px;
+  padding: 15px 16px; border-radius: var(--r-md);
+  background: var(--bg); border: 1.5px solid var(--surface-border);
+  text-align: left; width: 100%;
+  transition: border-color 220ms, background 220ms, transform 200ms var(--ease-spring);
+}
+.nx-check-row:active { transform: scale(0.985); }
+.nx-check-row.done { border-color: rgba(15,169,104,0.35); background: var(--brand-ride-soft); }
+.nx-check-mark {
+  width: 26px; height: 26px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--surface-border); color: transparent;
+  font-size: 13px; font-weight: 800;
+  transition: all 260ms var(--ease-bounce);
+}
+.nx-check-row.done .nx-check-mark {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+  transform: scale(1.05);
+}
+.nx-check-body { flex: 1; min-width: 0; }
+.nx-check-title { font-size: 14.5px; font-weight: 700; }
+.nx-check-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+.nx-check-progress {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; font-weight: 700; color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+/* Sign-in page wrapper — generous bottom room so the keyboard never covers
+   the field on a short handset. */
+.nx-auth { padding-bottom: 40px; }
+
+/* ===========================================================================
+   18. PICKUP NOTE
+   "Neeli building, gate ke saamne." A GPS pin gets a rider to the street;
+   this gets them to the person. Typed by default, spoken if preferred.
+   =========================================================================== */
+
+.nx-note { }
+.nx-note-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-top: 8px;
+}
+.nx-note-hint { font-size: 12px; color: var(--text-muted); flex: 1; line-height: 1.45; }
+
+.nx-note-mic {
+  display: inline-flex; align-items: center; gap: 7px; flex: none;
+  padding: 9px 14px; border-radius: 99px;
+  background: var(--surface); color: var(--text-secondary);
+  font-size: 12.5px; font-weight: 700;
+  border: 1.5px solid transparent;
+  transition: all 200ms var(--ease-out);
+  /* Press-and-hold: stop the browser selecting text or firing a context
+     menu on a long press, which is exactly what this gesture is. */
+  user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none; touch-action: none;
+}
+.nx-note-mic:hover { background: var(--surface-2); }
+.nx-note-mic.recording {
+  background: rgba(225,29,72,0.09);
+  color: #e11d48;
+  border-color: rgba(225,29,72,0.35);
+  animation: nx-rec 1.4s ease-in-out infinite;
+}
+@keyframes nx-rec {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(225,29,72,0.34); }
+  70%      { box-shadow: 0 0 0 11px rgba(225,29,72,0); }
+}
+
+.nx-note-audio {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 10px; padding: 10px 12px;
+  border-radius: 12px; background: var(--surface);
+}
+.nx-note-clear {
+  font-size: 12px; font-weight: 700; color: var(--error);
+  flex: none; padding: 4px 6px;
+}
+
+/* The note as the DRIVER sees it, on an accepted job. */
+.nx-note-driver {
+  display: flex; gap: 11px; align-items: flex-start;
+  padding: 13px 15px; border-radius: var(--r-md);
+  background: var(--brand-ride-soft);
+  border: 1px solid rgba(15,169,104,0.22);
+  margin-bottom: 12px;
+}
+.nx-note-driver .k {
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--accent);
+}
+.nx-note-driver .v { font-size: 14.5px; font-weight: 600; margin-top: 3px; line-height: 1.45; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-note-mic.recording { animation: none; }
+}
+
+/* ===========================================================================
+   19. STALE-GPS WARNING (driver)
+   Browser geolocation stops when Android backgrounds the app. Until a native
+   foreground service ships (see BACKGROUND-GPS.md), this tells the rider
+   instead of letting them sit there believing they're earning.
+   =========================================================================== */
+
+.nx-gps-stale {
+  position: absolute;
+  top: calc(var(--safe-top) + 152px); left: 12px; right: 12px;
+  z-index: calc(var(--z-map-ui) + 1);
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px 14px; border-radius: 13px;
+  background: #fff6e8; border: 1.5px solid rgba(217,119,6,0.45);
+  color: #8a5a04; font-size: 12.5px; line-height: 1.5;
+  box-shadow: 0 8px 24px rgba(14,29,22,0.16);
+  animation: nx-rise 380ms var(--ease-spring) both;
+}
+.nx-gps-stale strong { color: #6b4503; font-weight: 800; }
+.nx-gps-stale[hidden] { display: none; }

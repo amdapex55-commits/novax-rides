@@ -271,76 +271,171 @@ async function restaurantHomePath() {
 // No cross-app "I'm actually a driver" links any more — each app is its own
 // product with its own download. A customer never sees the word "driver"
 // during signup, which is the entire point of the four-app split.
+/**
+ * Signup, split by who is signing up.
+ *
+ * Same backend auth for all three — same OTP endpoint, same token — but the
+ * FEELING has to be completely different, because the jobs are different:
+ *
+ *   CUSTOMER  wants to be booking a bike in under 20 seconds. Anything that
+ *             isn't their phone number is friction. No name, no email, no
+ *             password, no referral field, no role choice.
+ *   RIDER     is starting a job application. A checklist is expected and
+ *             actually reassuring — it signals we check people.
+ *   OPS       needs security, not speed. There is no public signup at all.
+ *
+ * Treating these as one screen with different words was the mistake.
+ */
 const ROLE_COPY = {
-  RIDER: { icon: "bolt", title: "Enter your number", subtitle: "We'll text you a code to sign in." },
-  DRIVER: { icon: "car", title: "Enter your number", subtitle: "We'll text you a code to start your driver application." },
-  RESTAURANT: { icon: "store", title: "Enter your number", subtitle: "We'll text you a code to set up your restaurant." },
+  RIDER: {
+    icon: "bike",
+    title: "Your number",
+    subtitle: "No password. We'll text you a code.",
+    cta: "Send code",
+    // Nothing but the phone field. The referral input used to live here and
+    // was costing every customer a decision before their first ride.
+    extras: false,
+  },
+  DRIVER: {
+    icon: "bike",
+    title: "Your number",
+    subtitle: "This starts your rider application.",
+    cta: "Start application",
+    extras: false,
+  },
+  RESTAURANT: {
+    icon: "store",
+    title: "Your number",
+    subtitle: "This starts your restaurant application.",
+    cta: "Start application",
+    extras: false,
+  },
+  ADMIN: {
+    icon: "shield",
+    title: "Ops sign-in",
+    subtitle: "Internal access only.",
+    cta: "Send code",
+    extras: false,
+    internal: true,
+  },
 };
 
 export function renderPhoneEntry(role) {
   return (root) => {
     const copy = ROLE_COPY[role] || ROLE_COPY.RIDER;
     const isRider = role === "RIDER";
-    root.innerHTML = `
-      <div class="page flex-col" style="height:100dvh;">
-        <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
-        <div class="flex-col" style="flex:1; justify-content:center;">
-          <div class="mb-6">
-            <div style="width:64px;height:64px;border-radius:20px;background:var(--accent-gradient);display:flex;align-items:center;justify-content:center;box-shadow:var(--accent-glow);margin-bottom:20px;">
-              ${icon(copy.icon, 30, 2)}
-            </div>
-            <h1 class="text-xl">${copy.title}</h1>
-            <p class="text-secondary mt-2">${copy.subtitle}</p>
-          </div>
-          <label class="field-label">Phone Number</label>
-          <div class="flex gap-2 mb-4">
-            <div class="input flex items-center justify-center" style="width:64px; flex:none; color:var(--text-secondary);">+92</div>
-            <input id="phoneInput" class="input" type="tel" inputmode="numeric" maxlength="10" placeholder="300 1234567"/>
-          </div>
-          ${isRider ? `
-          <label class="field-label">Referral Code <span class="text-muted" style="text-transform:none; font-weight:400;">(optional)</span></label>
-          <input id="referralInput" class="input mb-4" type="text" maxlength="8" placeholder="e.g. AB12CD" value="${state.pendingReferralCode || ""}" style="text-transform:uppercase;"/>
-          ` : ""}
-          <button id="continueBtn" class="btn btn-primary btn-block">Continue ${icon("arrow-forward", 18)}</button>
-          <div class="flex-col gap-1 mt-2">
 
+    root.innerHTML = `
+      <div class="page nx-auth" style="min-height:100dvh;display:flex;flex-direction:column;">
+        <button id="backBtn" class="btn-icon" style="align-self:flex-start;">${icon("arrow-back", 20)}</button>
+
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+          <div class="nx-auth-mark ${copy.internal ? "internal" : ""}">${icon(copy.icon, 26, 2)}</div>
+
+          <h1 class="nx-auth-title">${copy.title}</h1>
+          <p class="nx-auth-sub">${copy.subtitle}</p>
+
+          <!-- ONE field. The country code is fixed rather than a picker,
+               because this is a Karachi-only pilot and a country dropdown is
+               a decision nobody needs to make. -->
+          <div class="nx-phone-field" id="phoneField">
+            <span class="nx-phone-cc">+92</span>
+            <input id="phoneInput" class="nx-phone-input" type="tel"
+                   inputmode="numeric" autocomplete="tel-national"
+                   maxlength="11" placeholder="300 1234567"
+                   aria-label="Mobile number"/>
           </div>
-          <p class="text-xs text-muted text-center mt-6">By continuing you agree to Nova X's Terms of Service and Privacy Policy.</p>
+          <p class="nx-auth-hint" id="hint">Enter your 10-digit mobile number</p>
+
+          <button id="continueBtn" class="btn btn-primary btn-block" style="height:56px;font-size:16px;" disabled>
+            ${copy.cta} ${icon("arrow-forward", 18)}
+          </button>
+
+          ${copy.internal ? `
+            <p class="nx-auth-internal">
+              ${icon("shield", 13)} Ops accounts are created by Nova X. Signing in
+              here with an unapproved number will not grant access.
+            </p>` : `
+            <p class="text-xs text-muted text-center mt-5">
+              By continuing you agree to our
+              <a href="#/legal/terms" style="color:var(--accent);">Terms</a> and
+              <a href="#/legal/privacy" style="color:var(--accent);">Privacy Policy</a>.
+            </p>`}
         </div>
       </div>
     `;
+
     const input = root.querySelector("#phoneInput");
+    const field = root.querySelector("#phoneField");
     const btn = root.querySelector("#continueBtn");
+    const hint = root.querySelector("#hint");
+
     root.querySelector("#backBtn").addEventListener("click", () => {
-      // Always land on /welcome, never history.back() — a route that
-      // bounced them here (auth guard) would just bounce them right back,
-      // trapping them in a loop with no way out.
+      // Always /welcome, never history.back() — a guard that bounced them
+      // here would bounce them straight back, trapping them in a loop.
       state.postAuthRedirect = null;
       navigate("/welcome");
     });
-    input.focus();
 
-    btn.addEventListener("click", async () => {
-      const raw = input.value.replace(/\D/g, "");
-      if (raw.length < 10) { toast("Enter a valid 10-digit number", true); return; }
-      const phone = e164(input.value);
-      const referralCode = root.querySelector("#referralInput")?.value.trim().toUpperCase() || undefined;
+    input.focus();
+    field.addEventListener("click", () => input.focus());
+
+    /** Format as "300 1234567" while typing — easier to check at a glance. */
+    function format(digits) {
+      if (digits.length <= 3) return digits;
+      return digits.slice(0, 3) + " " + digits.slice(3);
+    }
+
+    let submitting = false;
+
+    async function submit() {
+      if (submitting) return;
+      const digits = input.value.replace(/\D/g, "").replace(/^0+/, "");
+      if (digits.length !== 10) { toast("Enter your 10-digit mobile number", true); return; }
+
+      submitting = true;
       btn.disabled = true;
       btn.innerHTML = `<span class="spinner"></span>`;
+      const phone = e164(digits);
       try {
-        await api.requestOtp(phone, referralCode, isRider ? undefined : role);
+        // Referral codes still work — they arrive via a link and ride along
+        // silently. What they no longer do is put a field in front of someone
+        // who just wants a bike.
+        await api.requestOtp(
+          phone,
+          state.pendingReferralCode || undefined,
+          isRider || role === "ADMIN" ? undefined : role,
+        );
         track("otp_requested", { role });
         state.pendingPhone = phone;
+        state.pendingRole = role;
         state.pendingReferralCode = null;
         navigate("/otp");
       } catch (err) {
         toast(err.message || "Couldn't send code", true);
+        submitting = false;
         btn.disabled = false;
-        btn.innerHTML = `Continue ${icon("arrow-forward", 18)}`;
+        btn.innerHTML = `${copy.cta} ${icon("arrow-forward", 18)}`;
       }
+    }
+
+    input.addEventListener("input", () => {
+      const digits = input.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 10);
+      input.value = format(digits);
+      const ready = digits.length === 10;
+      btn.disabled = !ready;
+      field.classList.toggle("ready", ready);
+      hint.textContent = ready
+        ? "Looks right — we'll text you a code"
+        : "Enter your 10-digit mobile number";
+      hint.classList.toggle("ok", ready);
+      // Auto-advance the moment the number is complete. No "tap continue"
+      // step for a field that can only be one length.
+      if (ready) submit();
     });
 
-
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+    btn.addEventListener("click", submit);
   };
 }
 
@@ -365,15 +460,51 @@ export function renderOtp(root) {
 
   const boxes = Array.from(root.querySelectorAll(".otp-box"));
   boxes[0].focus();
+
+  /** Fill all six boxes at once — from a paste or from SMS autofill. */
+  function fillCode(code) {
+    const digits = String(code).replace(/\D/g, "").slice(0, 6);
+    digits.split("").forEach((d, i) => { if (boxes[i]) boxes[i].value = d; });
+    if (digits.length === 6) { boxes[5].focus(); maybeAutoVerify(); }
+  }
+
+  /** Six digits in means there is nothing left to decide — verify. */
+  function maybeAutoVerify() {
+    const code = boxes.map((b) => b.value).join("");
+    if (code.length === 6) verify();
+  }
+
   boxes.forEach((box, i) => {
     box.addEventListener("input", () => {
+      // A phone keyboard or autofill can drop the whole code into one box.
+      if (box.value.length > 1) { fillCode(box.value); return; }
       box.value = box.value.replace(/\D/g, "");
       if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+      maybeAutoVerify();
     });
     box.addEventListener("keydown", (e) => {
       if (e.key === "Backspace" && !box.value && i > 0) boxes[i - 1].focus();
     });
+    box.addEventListener("paste", (e) => {
+      e.preventDefault();
+      fillCode((e.clipboardData || window.clipboardData).getData("text"));
+    });
   });
+
+  // ANDROID SMS AUTOFILL (WebOTP). Chrome on Android can read the code
+  // straight out of the incoming SMS and fill it, so the customer never
+  // leaves the app to look at their messages. Requires the SMS to end with
+  // a line like "@novax.pk #123456" — see the note in sms.service.ts.
+  // Silently unavailable everywhere else, which is fine: manual entry still
+  // works exactly as before.
+  let otpAbort = null;
+  if ("OTPCredential" in window && window.isSecureContext) {
+    otpAbort = new AbortController();
+    navigator.credentials
+      .get({ otp: { transport: ["sms"] }, signal: otpAbort.signal })
+      .then((otp) => { if (otp?.code) { track("otp_autofilled"); fillCode(otp.code); } })
+      .catch(() => { /* declined, unsupported, or aborted on unmount */ });
+  }
 
   const timerEl = root.querySelector("#timer");
   const resendBtn = root.querySelector("#resendBtn");
@@ -394,34 +525,60 @@ export function renderOtp(root) {
   });
 
   const verifyBtn = root.querySelector("#verifyBtn");
-  verifyBtn.addEventListener("click", async () => {
+
+  // Named, and latched, because it now runs from THREE places: the button,
+  // the sixth digit being typed, and Android SMS autofill. Without the latch
+  // a fast autofill plus a tap would verify twice.
+  let verifying = false;
+
+  async function verify() {
+    if (verifying) return;
     const code = boxes.map((b) => b.value).join("");
     if (code.length !== 6) { toast("Enter all 6 digits", true); return; }
+
+    verifying = true;
     verifyBtn.disabled = true;
     verifyBtn.innerHTML = `<span class="spinner"></span>`;
+    boxes.forEach((b) => { b.disabled = true; });
+
     try {
       await api.verifyOtp(phone, code);
       track("otp_verified");
       const user = await api.getMe();
       state.pendingPhone = null;
       window.__novaxRefreshNav();
+
       // Resume whatever guest action triggered the login prompt (request a
-      // ride, confirm a parcel, open wallet, ...) instead of always
-      // dropping them back on home. The router re-validates this path
-      // against the now-known role, so a stale/mismatched target is safe.
+      // ride, open wallet, ...) instead of always dropping them on home.
+      // The router re-validates the path against the now-known role.
       const resume = state.postAuthRedirect;
       state.postAuthRedirect = null;
       if (resume) navigate(resume);
-      else if (user.role === "DRIVER") navigate(user.kycStatus === "APPROVED" ? "/driver/home" : "/driver/pending");
-      else if (user.role === "ADMIN") navigate("/ops/dashboard");
+      // A brand-new DRIVER goes to the application checklist, not to a
+      // "pending approval" wall — they haven't applied for anything yet.
+      else if (user.role === "DRIVER") {
+        navigate(user.kycStatus === "APPROVED" ? "/driver/home" : "/driver/onboarding");
+      }
+      else if (user.role === "ADMIN") navigate("/ops/command");
       else if (user.role === "RESTAURANT") navigate(await restaurantHomePath());
+      // Customers go STRAIGHT to home. No name, no profile setup, no
+      // "welcome" interstitial — they came here to book a bike.
       else navigate("/home");
     } catch (err) {
       toast(err.message || "Invalid code", true);
+      verifying = false;
       verifyBtn.disabled = false;
       verifyBtn.innerHTML = `Verify ${icon("check", 18)}`;
+      boxes.forEach((b) => { b.disabled = false; b.value = ""; });
+      boxes[0].focus();
     }
-  });
+  }
 
-  return () => clearInterval(tick);
+  verifyBtn.addEventListener("click", verify);
+
+  return () => {
+    clearInterval(tick);
+    // Stop listening for the SMS if they leave the screen.
+    otpAbort?.abort();
+  };
 }

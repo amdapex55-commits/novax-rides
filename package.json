@@ -17,7 +17,9 @@
     "cap:add:ios": "npx cap add ios",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios",
-    "app:web": "node scripts/select-app.js web"
+    "app:web": "node scripts/select-app.js web",
+    "vendor:socket": "mkdir -p vendor && curl -fL -o vendor/socket.io.min.js https://cdn.socket.io/4.7.5/socket.io.min.js && echo 'vendored -> vendor/socket.io.min.js'",
+    "deploy:public": "node scripts/deploy-public.js"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.2",

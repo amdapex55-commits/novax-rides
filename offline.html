@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#ffffff"/>
+<title>No connection — Nova Go</title>
+<!--
+  Shown instead of Chrome's offline dinosaur when someone reloads with no
+  signal. A branded page that explains itself keeps a customer in the app;
+  the dinosaur sends them to a competitor.
+
+  Deliberately self-contained — no external CSS, no fonts, no JS modules.
+  A page that depends on other files is a page that can't render offline.
+-->
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<style>
+  :root { --g: #0fa968; --ink: #0e1d16; --dim: #5c6a63; }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+    padding: 28px; background: #fff; color: var(--ink); text-align: center;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .mark {
+    width: 68px; height: 68px; border-radius: 21px; margin: 0 auto 22px;
+    background: linear-gradient(135deg, #12b673, #0b8a54);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 28px rgba(15,169,104,0.26);
+  }
+  h1 { font-size: 23px; letter-spacing: -0.03em; margin-bottom: 10px; }
+  p { font-size: 14.5px; color: var(--dim); line-height: 1.6; max-width: 32ch; margin: 0 auto 22px; }
+  button {
+    font: inherit; font-weight: 700; font-size: 15px;
+    background: var(--g); color: #fff; border: 0;
+    padding: 15px 30px; border-radius: 16px; cursor: pointer;
+    box-shadow: 0 8px 22px rgba(15,169,104,0.28);
+  }
+  button:active { transform: scale(0.97); }
+  .tips {
+    margin-top: 26px; padding-top: 18px; border-top: 1px solid #eef2f0;
+    font-size: 12.5px; color: #94a19a; line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+  <div>
+    <div class="mark">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff"
+           stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+    </div>
+
+    <h1>No connection</h1>
+    <p>
+      Nova Go can't reach the network right now. Your signal will come back —
+      this isn't a problem with the app.
+    </p>
+
+    <button onclick="location.reload()">Try again</button>
+
+    <div class="tips">
+      Already on a ride? Your rider still has your trip.<br/>
+      Call them directly if you need to.
+    </div>
+  </div>
+
+  <script>
+    // Reload the moment connectivity returns, so nobody sits on this page
+    // after their signal comes back.
+    window.addEventListener("online", () => location.reload());
+  </script>
+</body>
+</html>

@@ -131,6 +131,43 @@ GitHub Pages rebuilds in 1–2 minutes.
 
 ---
 
+## STEP 4b — Create your ops account
+
+There is no "sign up as admin" button, on purpose: a self-service door into
+the dispatch console is a door anyone can walk through. Admin is granted by
+promoting an existing account in the database.
+
+**1. Sign in normally at `ops.html`** with your own phone number. Enter the
+OTP from the SMS. This creates an ordinary account.
+
+**2. You'll land on a "Wrong app" screen.** That's correct — your account is
+still a RIDER. Leave the tab open.
+
+**3. Promote yourself.** Railway → your **Postgres** service → **Data** tab →
+run:
+
+```sql
+UPDATE users SET role = 'ADMIN' WHERE phone = '+923001234567';
+```
+
+Use the **+92 format** — the app normalises `0300 1234567` to `+923001234567`
+before saving, so that's what's in the column. Check it worked:
+
+```sql
+SELECT phone, role FROM users WHERE role = 'ADMIN';
+```
+
+**4. Sign out and sign in again.** This matters: your role is baked into the
+JWT at login, so the token in your browser still says RIDER. Hit **"Sign out
+and use a different number"** on the wrong-app screen, then sign in with the
+same number. You'll land on the Command centre.
+
+**Ops accounts to create:** one per person on the desk, each with their own
+number. Never share a login — the incident log records who resolved what, and
+that's worthless if three people share an account.
+
+---
+
 ## STEP 5 — Verify (10 minutes, do all of it)
 
 Your URLs:

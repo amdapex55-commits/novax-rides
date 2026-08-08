@@ -1,0 +1,9 @@
+# Nova Go
+User-agent: *
+Allow: /
+# Internal consoles — not for indexing. This is a courtesy signal, NOT a
+# security control: robots.txt is public and advertises what exists. The real
+# protection is Cloudflare Access / a separate private host (see DEPLOY.md),
+# plus the fact that every ops API route is ADMIN-guarded server-side.
+Disallow: /ops.html
+Disallow: /merchant.html

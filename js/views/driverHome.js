@@ -19,12 +19,21 @@ export function renderDriverHome(root) {
   let online = state.isDriverOnline;
   let mode = state.driverMode || "RIDE";
   let watchId = null;
+  // Background-GPS watchdog state — see the long note in goOnline().
+  let lastFixAt = 0;
+  let staleTimer = 0;
+  let onVisible = null;
   let mapHandle = null;
   let destroyed = false;
 
   root.innerHTML = `
     <div class="map-screen" style="height:calc(100dvh - 76px);">
       <div class="nx-map" id="mapEl"></div>
+
+      <!-- Shown when position updates stop (usually because Android
+           backgrounded the app). A rider who thinks they're online but
+           isn't receiving jobs is the worst possible silent failure. -->
+      <div class="nx-gps-stale" id="gpsStale" hidden></div>
 
       <!-- Earnings hero floats over the map: the number they opened the app for -->
       <div style="position:absolute; top:calc(12px + var(--safe-top)); left:12px; right:12px; z-index:var(--z-map-ui);">
@@ -105,9 +114,20 @@ export function renderDriverHome(root) {
     radarLabelEl.textContent = radarLabel(online, mode);
   }
 
-  function goOnline() {
-    const socket = socketManager.connect();
-    if (!socket) { toast("Session expired — log in again", true); navigate("/phone"); return; }
+  async function goOnline() {
+    const socket = await socketManager.connect();
+    if (!socket) {
+      // Two different failures, two different messages — telling a driver
+      // "session expired" when the real problem is a blocked CDN sends them
+      // to re-login pointlessly and they still won't get jobs.
+      if (socketManager.degraded) {
+        toast("Can't reach the live network right now — check your connection", true);
+      } else {
+        toast("Session expired — log in again", true);
+        navigate("/phone");
+      }
+      return;
+    }
     socketManager.on("trip:offer", onTripOffer);
     socketManager.on("foodOrder:offer", onFoodOffer);
     socketManager.on("errand:offer", onErrandOffer);
@@ -117,6 +137,7 @@ export function renderDriverHome(root) {
     if (navigator.geolocation) {
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
+          lastFixAt = Date.now();
           socketManager.emit("driver:location", { lat: pos.coords.latitude, lng: pos.coords.longitude });
           if (mapHandle) mapHandle.setDriver({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         },
@@ -124,6 +145,51 @@ export function renderDriverHome(root) {
         { enableHighAccuracy: false, maximumAge: 10000, timeout: 10000 },
       );
     }
+
+    /* ---- THE BACKGROUND PROBLEM ------------------------------------
+       Browser geolocation only runs while this page is in the foreground.
+       The moment a rider opens WhatsApp, switches to Google Maps for
+       directions, or just locks their screen, Android suspends the timer
+       and position updates STOP — usually within 1-2 minutes.
+
+       The rider believes they're online. Our map shows them frozen at
+       their last known point. Ops dispatches to a stale position, or the
+       matcher skips them entirely. Nobody is told.
+
+       A real fix needs a native foreground service (see BACKGROUND-GPS.md).
+       Until that ships, the honest thing is to DETECT it and say so, rather
+       than let a rider sit there believing they're earning.               */
+    lastFixAt = Date.now();
+    staleTimer = setInterval(() => {
+      if (!online) return;
+      const staleFor = Date.now() - lastFixAt;
+      const banner = root.querySelector("#gpsStale");
+      if (!banner) return;
+      if (staleFor > 90_000) {
+        banner.hidden = false;
+        banner.innerHTML =
+          `${icon("bolt", 15)}<span><strong>Your location has stopped updating.</strong> ` +
+          `Keep Nova Go open on screen — you won't get jobs while it's in the background.</span>`;
+      } else {
+        banner.hidden = true;
+      }
+    }, 15_000);
+
+    // Re-acquire immediately on return to foreground, instead of waiting for
+    // the OS to resume the watch on its own schedule.
+    onVisible = () => {
+      if (document.visibilityState === "visible" && online && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            lastFixAt = Date.now();
+            socketManager.emit("driver:location", { lat: pos.coords.latitude, lng: pos.coords.longitude });
+          },
+          () => {},
+          { maximumAge: 0, timeout: 8000 },
+        );
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
     online = true;
     state.isDriverOnline = true;
     track("driver_went_online", { mode });
@@ -132,6 +198,10 @@ export function renderDriverHome(root) {
 
   function goOffline() {
     if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+    clearInterval(staleTimer);
+    if (onVisible) { document.removeEventListener("visibilitychange", onVisible); onVisible = null; }
+    const banner = root.querySelector("#gpsStale");
+    if (banner) banner.hidden = true;
     socketManager.off("trip:offer", onTripOffer);
     socketManager.off("foodOrder:offer", onFoodOffer);
     socketManager.off("errand:offer", onErrandOffer);

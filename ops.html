@@ -2,7 +2,11 @@
 <html lang="en" data-app="ops">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<!-- Internal console. Search engines must never surface this, and it should
+     ideally not be on the public origin at all — see scripts/deploy-public.js
+     and the Cloudflare Access note in DEPLOY.md. -->
+<meta name="robots" content="noindex, nofollow, noarchive"/>
 <meta name="theme-color" content="#ffffff"/>
 <title>Nova X Ops — Dispatch & Control</title>
 <meta name="description" content="Internal operations console."/>
@@ -12,13 +16,14 @@
 <link rel="manifest" href="manifest.ops.json"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet"/>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" media="print" onload="this.media='all'"/>
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"/></noscript>
 <link rel="stylesheet" href="css/tokens.css"/>
 <link rel="stylesheet" href="css/base.css"/>
 <link rel="stylesheet" href="css/components.css"/>
 <link rel="stylesheet" href="css/animations.css"/>
 <link rel="stylesheet" href="css/premium.css"/>
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
   // Which of the four Nova X apps this page is. Read by js/appMode.js before
   // anything else boots — it decides the routes, the nav, the signup role and

@@ -1,57 +1,78 @@
 #!/usr/bin/env node
 /**
- * Nova X — pick which of the four apps to package natively.
+ * Build one of the four Nova X apps for Capacitor.
  *
- *   node scripts/select-app.js driver
+ * ============================================================================
+ * WHY THIS NO LONGER TOUCHES index.html
+ * ============================================================================
+ * The previous version copied the chosen app's entry OVER the repo's
+ * index.html, then relied on you remembering to run `npm run app:web` to put
+ * the landing page back.
  *
- * Capacitor always loads `index.html` and always reads `capacitor.config.json`,
- * so building a specific app means putting the right files in those two spots.
- * Doing that by hand (`cp driver.html index.html && cp capacitor/... `) is how
- * you accidentally ship the driver app under the customer's appId — an
- * unrecoverable mistake once it's live on a Play listing.
+ * That is a loaded gun. Build the customer app, forget the restore, commit,
+ * push — and GitHub Pages instantly serves the customer app at your marketing
+ * URL. Your landing page is gone, and nothing warns you, because the commit
+ * looks completely normal.
  *
- * This script does it atomically and tells you exactly what it did.
+ * Now the build assembles into `www/`, which is gitignored and rebuilt from
+ * scratch every time. Capacitor's webDir points there. The repo's index.html
+ * is never modified, so there is nothing to restore and nothing to forget.
  *
- * NOTE: the repo's `index.html` is the PUBLIC LANDING PAGE, not an app. The
- * customer app lives in `customer.html`. Native builds have no landing page —
- * a packaged app should open straight into its product — so this script
- * overwrites index.html with the chosen app's entry. `landing.html` keeps a
- * copy of the landing page so the web build can always be restored with
- * `node scripts/select-app.js web`.
+ *   node scripts/select-app.js customer   → www/ contains the customer app
+ *   npx cap sync android
+ *
+ * `www/` is disposable. Delete it any time.
+ * ============================================================================
  */
 const fs = require("fs");
 const path = require("path");
 
 const APPS = {
-  customer: { entry: "customer.html", config: "capacitor.customer.json", name: "Nova X", appId: "com.novax.app" },
-  driver:   { entry: "driver.html",         config: "capacitor.driver.json",   name: "Nova X Driver",   appId: "com.novax.driver" },
-  merchant: { entry: "merchant.html",       config: "capacitor.merchant.json", name: "Nova X Merchant", appId: "com.novax.merchant" },
-  ops:      { entry: "ops.html",            config: "capacitor.ops.json",      name: "Nova X Ops",      appId: "com.novax.ops" },
+  customer: { entry: "customer.html", config: "capacitor.customer.json", name: "Nova Go",          appId: "com.novax.app" },
+  driver:   { entry: "driver.html",   config: "capacitor.driver.json",   name: "Nova Go Rider",    appId: "com.novax.driver" },
+  merchant: { entry: "merchant.html", config: "capacitor.merchant.json", name: "Nova X Merchant",  appId: "com.novax.merchant" },
+  ops:      { entry: "ops.html",      config: "capacitor.ops.json",      name: "Nova X Ops",       appId: "com.novax.ops" },
 };
 
-const target = (process.argv[2] || "").toLowerCase();
-const app = APPS[target];
+// Everything the apps need at runtime. Deliberately an allowlist, not a
+// "copy everything except…" — that way a new stray file in the repo root
+// can't silently end up inside a shipped APK.
+const ASSET_DIRS = ["css", "js", "icons"];
+const ASSET_FILES = ["favicon.svg"];
 
-if (!app && target !== "web") {
-  console.error(`\nUsage: node scripts/select-app.js <${Object.keys(APPS).join("|")}|web>\n  web = restore index.html to the public landing page\n`);
+const target = (process.argv[2] || "").toLowerCase();
+
+if (target === "web") {
+  console.log(
+    "\n  `web` is no longer needed.\n" +
+    "  Builds go to www/ and never modify index.html, so there is nothing to restore.\n",
+  );
+  process.exit(0);
+}
+
+const app = APPS[target];
+if (!app) {
+  console.error(`\nUsage: node scripts/select-app.js <${Object.keys(APPS).join("|")}>\n`);
   process.exit(1);
 }
 
 const root = path.join(__dirname, "..");
 const p = (...s) => path.join(root, ...s);
+const www = p("www");
 
-// Preserve the landing page before we overwrite index.html with an app entry.
-if (!fs.existsSync(p("landing.html"))) {
-  fs.copyFileSync(p("index.html"), p("landing.html"));
-  console.log("  saved landing.html (public landing page backup)");
+/* -------------------------------------------------------------- helpers -- */
+
+function copyDir(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const item of fs.readdirSync(src, { withFileTypes: true })) {
+    const from = path.join(src, item.name);
+    const to = path.join(dest, item.name);
+    if (item.isDirectory()) copyDir(from, to);
+    else fs.copyFileSync(from, to);
+  }
 }
 
-// `web` restores the repo to its shipped state: index.html = landing page.
-if (target === "web") {
-  fs.copyFileSync(p("landing.html"), p("index.html"));
-  console.log("\n  Restored index.html to the public landing page.\n");
-  process.exit(0);
-}
+/* ---------------------------------------------------------------- build -- */
 
 const entrySrc = p(app.entry);
 if (!fs.existsSync(entrySrc)) {
@@ -59,35 +80,69 @@ if (!fs.existsSync(entrySrc)) {
   process.exit(1);
 }
 
-const configSrc = p("capacitor", app.config);
-if (!fs.existsSync(configSrc)) {
-  console.error(`\nMissing config: capacitor/${app.config}\n`);
+// Always start clean. A stale file from a previous app is exactly the kind of
+// thing that ships to a store and is never noticed.
+fs.rmSync(www, { recursive: true, force: true });
+fs.mkdirSync(www, { recursive: true });
+
+// The chosen entry becomes www/index.html — Capacitor always loads index.html.
+fs.copyFileSync(entrySrc, path.join(www, "index.html"));
+
+for (const dir of ASSET_DIRS) {
+  if (fs.existsSync(p(dir))) copyDir(p(dir), path.join(www, dir));
+}
+for (const file of ASSET_FILES) {
+  if (fs.existsSync(p(file))) fs.copyFileSync(p(file), path.join(www, file));
+}
+
+// Per-app manifest, renamed so the entry's <link rel="manifest"> resolves.
+const manifestSrc = p(`manifest.${target}.json`);
+if (fs.existsSync(manifestSrc)) {
+  fs.copyFileSync(manifestSrc, path.join(www, `manifest.${target}.json`));
+}
+
+// Service worker, so a packaged app keeps its offline behaviour.
+if (fs.existsSync(p("sw.js"))) fs.copyFileSync(p("sw.js"), path.join(www, "sw.js"));
+
+/* --------------------------------------------------------------- verify -- */
+
+// Confirm the built entry really declares the app we were asked for. Shipping
+// the driver app under the customer's appId is unrecoverable once it's live
+// on a store listing.
+const built = fs.readFileSync(path.join(www, "index.html"), "utf8");
+const declared = built.match(/window\.NOVAX_APP\s*=\s*["'](\w+)["']/);
+if (!declared || declared[1] !== target) {
+  console.error(
+    `\n  ABORT: ${app.entry} declares NOVAX_APP="${declared ? declared[1] : "none"}" ` +
+    `but you asked for "${target}".\n  Refusing to build a mislabelled app.\n`,
+  );
+  fs.rmSync(www, { recursive: true, force: true });
   process.exit(1);
 }
 
-fs.copyFileSync(entrySrc, p("index.html"));
-
-// Strip the private "_" hint keys — they're documentation for humans reading
-// the repo, not Capacitor config, and Capacitor warns about unknown keys.
-const cfg = JSON.parse(fs.readFileSync(configSrc, "utf8"));
-for (const k of Object.keys(cfg)) if (k.startsWith("_")) delete cfg[k];
-fs.writeFileSync(p("capacitor.config.json"), JSON.stringify(cfg, null, 2) + "\n");
-
-// Sanity check: does index.html actually declare the app we asked for?
-const html = fs.readFileSync(p("index.html"), "utf8");
-const declared = (html.match(/NOVAX_APP\s*=\s*"(\w+)"/) || [])[1];
-if (declared !== target) {
-  console.error(`\n  MISMATCH: index.html declares "${declared}" but you asked for "${target}". Aborting.\n`);
-  process.exit(1);
+// Swap in the matching Capacitor config (appId + appName).
+const cfgSrc = p(app.config);
+if (fs.existsSync(cfgSrc)) {
+  fs.copyFileSync(cfgSrc, p("capacitor.config.json"));
+} else {
+  // Generate it rather than failing — one less file to keep in sync by hand.
+  const base = JSON.parse(fs.readFileSync(p("capacitor.config.json"), "utf8"));
+  base.appId = app.appId;
+  base.appName = app.name;
+  base.webDir = "www";
+  fs.writeFileSync(p("capacitor.config.json"), JSON.stringify(base, null, 2) + "\n");
 }
 
 console.log(`
-  Selected: ${app.name}
-    appId        ${app.appId}
-    entry        ${app.entry} -> index.html
-    config       capacitor/${app.config} -> capacitor.config.json
-    NOVAX_APP    "${declared}"  (verified)
+  Built ${app.name}  (${app.appId})
 
-  Next:  npx cap sync  &&  npx cap open android
-  After: node scripts/select-app.js web        (restore the landing page)
+    source : ${app.entry}
+    output : www/
+    verified NOVAX_APP = "${target}"
+
+  Next:
+    npx cap sync android
+    npx cap open android
+
+  index.html was NOT modified — your landing page is untouched.
 `);

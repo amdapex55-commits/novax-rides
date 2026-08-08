@@ -77,8 +77,11 @@ export function renderActiveTracking(root) {
 
   api.getTrip(tripId).then((trip) => setStatus(trip.status)).catch(() => setStatus("REQUESTED"));
 
-  const socket = socketManager.connect();
-  socket?.emit("trip:subscribe", { tripId });
+  // connect() is async (the library is fetched on demand), so subscribe
+  // once it resolves rather than on a Promise object.
+  socketManager.connect().then((socket) => {
+    socket?.emit("trip:subscribe", { tripId });
+  });
 
   const onMatched = () => setStatus("MATCHED");
   const onArrived = () => { statusText.textContent = "Driver has arrived"; };

@@ -34,5 +34,18 @@ function boot() {
 
 document.addEventListener("DOMContentLoaded", boot);
 
+// Service worker. Registered AFTER load so it never competes with the first
+// paint, and wrapped in a guard because it needs a secure context — it's
+// simply absent on http://localhost:5500-style dev servers and inside some
+// Capacitor shells, which is fine.
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch((err) => {
+      // Non-fatal: the app works without it, just without offline support.
+      console.warn("[NovaX] service worker not registered:", err.message);
+    });
+  });
+}
+
 // Exposed for views that need to trigger a nav refresh after login/role change.
 window.__novaxRefreshNav = renderBottomNav;

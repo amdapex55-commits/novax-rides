@@ -39,10 +39,15 @@ export function renderDriverOnboarding(root) {
   function draw(status) {
     const wrap = root.querySelector("#wrap");
     const submitted = !!status.submittedForReviewAt;
+    // Payout fields only appear once a human has approved the application.
+    status.approved = status.kycStatus === "APPROVED";
 
     wrap.innerHTML = `
-      <h1 class="text-xl mb-1">Become a Nova X driver</h1>
-      <p class="text-secondary text-sm mb-4">We verify every driver before they can accept rides. This keeps passengers safe and your earnings protected.</p>
+      <h1 class="text-xl mb-1">Your rider application</h1>
+      <p class="text-secondary text-sm mb-4">
+        A person checks every application before anyone carries a passenger.
+        You can stop at any point and come back — nothing is lost.
+      </p>
 
       ${submitted ? `
         <div class="card mb-5" style="border-color:var(--accent);">
@@ -60,10 +65,17 @@ export function renderDriverOnboarding(root) {
         </div>`}
 
       <h3 class="text-sm text-secondary mb-2" style="text-transform:uppercase; letter-spacing:0.04em;">Your vehicle</h3>
-      <label class="field-label">Vehicle type</label>
-      <select id="vehicleType" class="input mb-3">
-        ${["bike", "rickshaw", "car"].map((v) => `<option value="${v}"${profile.vehicleType === v ? " selected" : ""}>${v[0].toUpperCase() + v.slice(1)}</option>`).join("")}
-      </select>
+      <!-- Bike only in the pilot, so this is a statement rather than a
+           choice. A dropdown offering rickshaw and car would take an
+           application we can never approve. -->
+      <input type="hidden" id="vehicleType" value="bike"/>
+      <div class="list-row mb-3" style="background:var(--surface);border-radius:var(--r-md);">
+        <div class="list-row-icon" style="color:var(--accent);">${icon("bike", 18)}</div>
+        <div style="flex:1;">
+          <p class="font-bold text-sm">Motorcycle</p>
+          <p class="text-secondary text-xs">Nova X is bike-only right now</p>
+        </div>
+      </div>
       <label class="field-label">Number plate</label>
       <input id="vehiclePlate" class="input mb-3" placeholder="e.g. KHI-2024" value="${esc(profile.vehiclePlate)}"/>
       <label class="field-label">CNIC number</label>
@@ -86,17 +98,33 @@ export function renderDriverOnboarding(root) {
       <label class="field-label">Service area</label>
       <input id="serviceZone" class="input mb-5" placeholder="e.g. DHA / Clifton / Saddar" value="${esc(profile.serviceZone)}"/>
 
-      <h3 class="text-sm text-secondary mb-2" style="text-transform:uppercase; letter-spacing:0.04em;">How we pay you</h3>
-      <p class="text-xs text-muted mb-3">Riders pay you in cash. This is where we send your weekly earnings after commission.</p>
-      <label class="field-label">Payout method</label>
-      <select id="payoutMethod" class="input mb-3">
-        <option value="">Select…</option>
-        ${["JAZZCASH", "EASYPAISA", "BANK"].map((m) => `<option value="${m}"${profile.payoutMethod === m ? " selected" : ""}>${m === "BANK" ? "Bank account" : m[0] + m.slice(1).toLowerCase()}</option>`).join("")}
-      </select>
-      <label class="field-label">Account name</label>
-      <input id="payoutAccountName" class="input mb-3" placeholder="As registered" value="${esc(profile.payoutAccountName)}"/>
-      <label class="field-label">Account / mobile number</label>
-      <input id="payoutAccountNumber" class="input mb-5" placeholder="03001234567" value="${esc(profile.payoutAccountNumber)}"/>
+      <!-- PAYOUT IS DEFERRED.
+           Asking a rider for their JazzCash or bank number before we've even
+           looked at their documents does two bad things: it lengthens the
+           form at the exact moment they're deciding whether to bother, and
+           it asks for financial details from someone we may reject. We
+           collect it once they're approved, just before the first payout.
+           The fields still exist below for an approved rider editing their
+           profile — they're simply not part of the application. -->
+      ${status.approved ? `
+        <h3 class="text-sm text-secondary mb-2" style="text-transform:uppercase; letter-spacing:0.04em;">Where we send your earnings</h3>
+        <p class="text-xs text-muted mb-3">Passengers pay you in cash. This is where your weekly share is settled after commission.</p>
+        <label class="field-label">Payout method</label>
+        <select id="payoutMethod" class="input mb-3">
+          <option value="">Select…</option>
+          ${["JAZZCASH", "EASYPAISA", "BANK"].map((m) => `<option value="${m}"${profile.payoutMethod === m ? " selected" : ""}>${m === "BANK" ? "Bank account" : m[0] + m.slice(1).toLowerCase()}</option>`).join("")}
+        </select>
+        <label class="field-label">Account name</label>
+        <input id="payoutAccountName" class="input mb-3" placeholder="As registered" value="${esc(profile.payoutAccountName)}"/>
+        <label class="field-label">Account / mobile number</label>
+        <input id="payoutAccountNumber" class="input mb-5" placeholder="03001234567" value="${esc(profile.payoutAccountNumber)}"/>
+      ` : `
+        <div class="nx-launch-note mb-5">
+          ${icon("wallet", 15)}
+          <span>We'll ask for your <strong>payout details after you're approved</strong> —
+          no bank or wallet number needed to apply.</span>
+        </div>
+      `}
 
       <h3 class="text-sm text-secondary mb-2" style="text-transform:uppercase; letter-spacing:0.04em;">Emergency contact</h3>
       <p class="text-xs text-muted mb-3">Who we call if something happens to you while you're working.</p>
@@ -105,7 +133,7 @@ export function renderDriverOnboarding(root) {
       <label class="field-label">Phone</label>
       <input id="emergencyContactPhone" class="input mb-5" placeholder="+923001234567" value="${esc(profile.emergencyContactPhone)}"/>
 
-      <button id="saveBtn" class="btn btn-secondary btn-block mb-3">Save progress</button>
+      <button id="saveBtn" class="btn btn-secondary btn-block mb-3">Save and continue later</button>
       <button id="submitBtn" class="btn btn-primary btn-block" ${status.canSubmit ? "" : "disabled"}>
         ${submitted ? "Re-submit for review" : "Submit for review"} ${icon("arrow-forward", 18)}
       </button>

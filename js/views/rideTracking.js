@@ -205,8 +205,30 @@ export function renderRideTracking(root) {
 
   api.getTrip(tripId).then((t) => { if (!destroyed) applyTrip(t); }).catch(() => drawSheet());
 
-  const socket = socketManager.connect();
-  socket?.emit("trip:subscribe", { tripId });
+  // Async: the socket library is fetched on demand. Listeners registered
+  // via socketManager.on() below are queued and attached on connect.
+  //
+  // POLLING FALLBACK. If socket.io can't load at all — blocked CDN, hostile
+  // network, an ISP having a bad day — a tracking screen that never updates
+  // is worse than useless: the customer sits watching a stationary dot while
+  // their rider is actually two streets away. So we degrade to polling the
+  // REST API instead. Slower, but it always works.
+  let pollTimer = 0;
+  socketManager.connect().then((socket) => {
+    if (destroyed) return;
+    if (socket) {
+      socket.emit("trip:subscribe", { tripId });
+      return;
+    }
+    console.warn("[NovaX] no live socket — polling trip status every 8s");
+    pollTimer = setInterval(async () => {
+      if (destroyed) return;
+      try {
+        const t = await api.getTrip(tripId);
+        if (!destroyed) applyTrip(t);
+      } catch { /* transient — the next tick retries */ }
+    }, 8000);
+  });
 
   const setStatus = (s) => { currentStatus = s; drawSheet(); };
   const onMatched = async () => {
@@ -252,6 +274,7 @@ export function renderRideTracking(root) {
   return () => {
     destroyed = true;
     socket?.emit("trip:unsubscribe", { tripId });
+    clearInterval(pollTimer);
     socketManager.off("trip:matched", onMatched);
     socketManager.off("trip:driverArrived", onArrived);
     socketManager.off("trip:started", onStarted);

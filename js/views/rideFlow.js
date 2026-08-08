@@ -7,12 +7,13 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, fmtMoney, dockSheet, esc } from "../ui.js";
+import { toast, fmtMoney, dockSheet, esc, countUp } from "../ui.js";
 import { navigate } from "../router.js";
 import { createMap } from "../map.js";
 import { resolveRoute, geocode, getPickupFix, createSuggester, reverseGeocode } from "../geocode.js";
 import { getRoute, routeSummary, formatEta } from "../routing.js";
 import { track } from "../analytics.js";
+import { mountPickupNote } from "../pickupNote.js";
 import {
   PRICING, VEHICLE_TYPES, ALLOW_BID_FARE, GPS, ZONE, inZone, isOpenNow, HOURS,
 } from "../launch.config.js";
@@ -66,6 +67,8 @@ export function renderRideBooking(root) {
   let selectedVehicle = VEHICLE_TYPES.includes(state.selectedVehicle) ? state.selectedVehicle : VEHICLE_TYPES[0];
   let fareMode = "FIXED";
   let destroyed = false;
+  let noteCtl = null;
+  let note = { text: "", audioUrl: null };
 
   // ---------- Step 1: where to ----------
   function stepRoute() {
@@ -248,7 +251,10 @@ export function renderRideBooking(root) {
         <div class="nx-cockpit-top">
           <div style="min-width:0;">
             <p class="nx-cockpit-fare-label">Fare, paid in cash</p>
-            <p class="nx-cockpit-fare">${fmtMoney(quoted)}</p>
+            <!-- Counts up from zero on arrival. The fare is the decision on
+                 this screen, and a number that lands rather than appearing
+                 draws the eye to it without a single word of instruction. -->
+            <p class="nx-cockpit-fare" id="fareAmount">${fmtMoney(0)}</p>
           </div>
           <span class="nx-lock">${icon("shield", 12)} Fare locked</span>
         </div>
@@ -299,6 +305,7 @@ export function renderRideBooking(root) {
           <button class="top-tab active" data-mode="FIXED">Fixed fare</button>
           <button class="top-tab" data-mode="BID">Name your fare</button>
         </div>` : ""}
+      <div id="pickupNote" class="mb-3"></div>
       <div id="farePanel" class="mb-3"></div>
 
       <button id="confirmRideBtn" class="btn btn-primary btn-block">Request ride ${icon("bolt", 18)}</button>
@@ -314,6 +321,18 @@ export function renderRideBooking(root) {
     `);
 
     node.querySelector("#editRouteBtn").addEventListener("click", stepRoute);
+
+    // Pickup note. Optional, never blocking — Karachi addresses are spoken
+    // ("gate ke saamne"), and a GPS pin gets a rider to the street but not
+    // to the person.
+    noteCtl?.destroy();
+    noteCtl = mountPickupNote(node.querySelector("#pickupNote"), (n) => { note = n; });
+
+    // Fare count-up. countUp() already respects the app's motion helpers and
+    // finishes on the exact value, so the number shown is never a rounded
+    // approximation of the number charged.
+    const fareEl = node.querySelector("#fareAmount");
+    if (fareEl) countUp(fareEl, quoted, { prefix: "Rs. ", duration: 700 });
 
     const farePanel = node.querySelector("#farePanel");
     const confirmBtn = node.querySelector("#confirmRideBtn");
@@ -412,6 +431,8 @@ export function renderRideBooking(root) {
           roadDistanceKm: route.km,
           roadDurationMinutes: route.minutes,
           pickupAccuracyMeters: pickupAccuracy ?? undefined,
+          pickupNote: note.text || undefined,
+          pickupNoteAudioUrl: note.audioUrl || undefined,
           ...(fareMode === "BID" ? { offeredFare } : {}),
         });
         track("ride_requested", {
@@ -465,6 +486,8 @@ export function renderRideBooking(root) {
 
   return () => {
     destroyed = true;
+    // Releases the microphone if a recording was in progress.
+    noteCtl?.destroy();
     if (mapHandle) mapHandle.destroy();
   };
 }
