@@ -4,10 +4,10 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#05070a"/>
-<title>Nova X — Rides, Food, Parcels &amp; Errands in Karachi</title>
-<meta name="description" content="Rides, food, parcels and errands moving through one local network. Book in seconds, pay cash, track live. Live in Karachi."/>
-<meta property="og:title" content="Nova X — one network, four experiences"/>
-<meta property="og:description" content="Rides, food, parcels and errands moving through one local network."/>
+<title>Nova X Bike — Bike rides across Karachi</title>
+<meta name="description" content="Bike rides across Karachi. Fixed fare shown before you book, verified riders, pay cash. Food, parcels and errands coming soon."/>
+<meta property="og:title" content="Nova X Bike — bike rides across Karachi"/>
+<meta property="og:description" content="Fixed fare before you book. Verified riders. Pay cash."/>
 <meta property="og:type" content="website"/>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <link rel="apple-touch-icon" href="favicon.svg"/>
@@ -27,12 +27,12 @@
       Nova X
     </a>
     <div class="nx-nav-links">
-      <a href="#services">Services</a>
+      <a href="#how">How it works</a>
       <a href="#drive">Drive</a>
-      <a href="#partner">Partner</a>
-      <a href="#operations">Operations</a>
+      <a href="#safety">Safety</a>
+      <a href="#soon">What's next</a>
     </div>
-    <a href="customer.html" class="nx-nav-cta">Open the app</a>
+    <a href="customer.html" class="nx-nav-cta">Book a bike</a>
   </div>
 </nav>
 
@@ -42,39 +42,39 @@
 
   <div class="nx-wrap nx-hero-inner">
     <div class="nx-hero-copy">
-      <div class="nx-eyebrow"><span class="dot"></span> Live in Karachi</div>
+      <div class="nx-eyebrow"><span class="dot"></span> Now live in Karachi</div>
 
       <h1 class="nx-h1">
-        Get your<br/>
-        <span class="glow nx-rotator" id="rotator">
-          <span>ride</span><span>food</span><span>parcel</span><span>errand</span>
-        </span><br/>moving.
+        Beat the<br/>
+        <span class="glow">traffic.</span><br/>
+        Pay in cash.
       </h1>
 
       <p class="nx-lead">
-        Rides, food, parcels and errands moving through one local network.
+        Bike rides across Karachi. You see the fare before you book — and
+        that's the fare you pay.
       </p>
 
       <div class="nx-hero-actions">
         <a href="customer.html" class="nx-btn nx-btn-primary">
-          Book a ride
+          Book a bike
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
-        <a href="driver.html" class="nx-btn nx-btn-ghost">Drive &amp; earn</a>
+        <a href="driver.html" class="nx-btn nx-btn-ghost">Drive with Nova X</a>
       </div>
 
       <div class="nx-hero-proof">
         <div class="nx-proof-item">
-          <div class="v" style="color:var(--nx-ride);">4</div>
-          <div class="l">Services, one app</div>
+          <div class="v" style="color:var(--nx-ride);">Rs. 150</div>
+          <div class="l">Minimum fare</div>
         </div>
         <div class="nx-proof-item">
           <div class="v">Cash</div>
           <div class="l">No cards, no top-ups</div>
         </div>
         <div class="nx-proof-item">
-          <div class="v" style="color:var(--nx-ops);">15s</div>
-          <div class="l">To book a ride</div>
+          <div class="v" style="color:var(--nx-ops);">100%</div>
+          <div class="l">Riders verified by a person</div>
         </div>
       </div>
     </div>
@@ -96,49 +96,52 @@
   <div class="nx-ticker-track" id="ticker"></div>
 </div>
 
-<!-- ========================================================== SERVICES -->
-<section class="nx-section" id="services">
+<!-- ============================================================== HOW -->
+<section class="nx-section" id="how">
   <div class="nx-wrap">
     <div class="nx-section-head nx-reveal">
-      <p class="nx-kicker">One app, four services</p>
-      <h2 class="nx-h2">Everything you need moving.<br/>Nothing you don't.</h2>
-      <p class="nx-sub">Most cities need four apps for this. Karachi needs one.</p>
+      <p class="nx-kicker">How Nova X Bike works</p>
+      <h2 class="nx-h2">The fare you're shown<br/>is the fare you pay.</h2>
+      <p class="nx-sub">
+        No meter running while you sit in traffic. No surge you find out about
+        at the end. You see one number before you book, and that's it.
+      </p>
     </div>
 
     <div class="nx-switch" id="switcher">
       <div class="nx-tabs">
-        <button class="nx-tab on" data-service="ride" style="--accent-c: var(--nx-ride);">
+        <button class="nx-tab on" data-service="whereto" style="--accent-c: var(--nx-ride);">
           <span class="nx-tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6M6 17 10 7h4l4 10"/></svg></span>
           <span style="flex:1;">
-            <span class="nx-tab-t">Rides</span>
-            <span class="nx-tab-d">Bike, rickshaw or car. Take the metered fare — or name your own and let drivers accept.</span>
+            <span class="nx-tab-t">Tell us where</span>
+            <span class="nx-tab-d">Enter your destination. We check where you actually are before sending anyone — if your GPS is vague, we ask rather than guess.</span>
             <span class="nx-tab-bar"><i></i></span>
           </span>
         </button>
 
-        <button class="nx-tab" data-service="food" style="--accent-c: var(--nx-food);">
-          <span class="nx-tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v8a3 3 0 0 0 6 0V3M7 11v10M18 3c-1.5 2-2 4-2 6s.5 3 2 3v9"/></svg></span>
+        <button class="nx-tab" data-service="quote" style="--accent-c: var(--nx-parcel);">
+          <span class="nx-tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l4-4 4 4 5-6"/></svg></span>
           <span style="flex:1;">
-            <span class="nx-tab-t">Food</span>
-            <span class="nx-tab-d">Kitchens near you, with live prep times set by the restaurant itself — not a guess.</span>
+            <span class="nx-tab-t">See the real fare</span>
+            <span class="nx-tab-d">Rs. 60 base plus Rs. 22 per kilometre of actual road distance — not a straight line across the map. Minimum Rs. 150.</span>
             <span class="nx-tab-bar"><i></i></span>
           </span>
         </button>
 
-        <button class="nx-tab" data-service="parcel" style="--accent-c: var(--nx-parcel);">
-          <span class="nx-tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></span>
+        <button class="nx-tab" data-service="matched" style="--accent-c: var(--nx-food);">
+          <span class="nx-tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4"/></svg></span>
           <span style="flex:1;">
-            <span class="nx-tab-t">Parcels</span>
-            <span class="nx-tab-d">Send anything across the city in under an hour. Collect cash on delivery if you need to.</span>
+            <span class="nx-tab-t">Meet a verified rider</span>
+            <span class="nx-tab-d">Name, photo, rating and number plate before they arrive. Check the plate matches. Every rider was approved by a person, not a script.</span>
             <span class="nx-tab-bar"><i></i></span>
           </span>
         </button>
 
-        <button class="nx-tab" data-service="errand" style="--accent-c: var(--nx-food);">
-          <span class="nx-tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14l-1.5 12h-11z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></span>
+        <button class="nx-tab" data-service="tracking" style="--accent-c: var(--nx-ops);">
+          <span class="nx-tab-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
           <span style="flex:1;">
-            <span class="nx-tab-t">Errands</span>
-            <span class="nx-tab-d">Tell us what to buy and your budget. A rider shops it and brings it to your door.</span>
+            <span class="nx-tab-t">Ride, tracked</span>
+            <span class="nx-tab-d">Watch them approach. Send anyone a live link — no app needed. SOS is on screen the whole way.</span>
             <span class="nx-tab-bar"><i></i></span>
           </span>
         </button>
@@ -147,7 +150,7 @@
       <div class="nx-phone-stage">
         <div class="nx-phone" style="transform:none;">
           <div class="nx-screen">
-            <div class="nx-statusbar"><span>9:41</span><span>▪▪▪ ᯤ ▮</span></div>
+            <div class="nx-statusbar"><span>9:41</span><span>&#9642;&#9642;&#9642; &#7020; &#9646;</span></div>
             <div class="nx-phone-map" data-sw-map style="transition:opacity 500ms;"></div>
             <div class="nx-sheet" data-sw-sheet></div>
           </div>
@@ -258,51 +261,43 @@
   </div>
 </section>
 
-<!-- =========================================================== PARTNER -->
-<section class="nx-section alt" id="partner">
+<!-- ============================================================= SOON -->
+<section class="nx-section alt" id="soon">
   <div class="nx-wrap">
     <div class="nx-section-head nx-reveal">
-      <p class="nx-kicker">For restaurants</p>
-      <h2 class="nx-h2">Built for the counter,<br/>not the boardroom.</h2>
+      <p class="nx-kicker">What's next</p>
+      <h2 class="nx-h2">One service.<br/>Done properly first.</h2>
       <p class="nx-sub">
-        Your order screen has to be readable across a hot kitchen by someone with flour
-        on their hands. So it is: loud colour on new orders, big buttons, one tap to close.
+        Food, parcels and errands are built and tested. They're switched off
+        until bike rides run reliably every day, because four services that
+        half-work is worse than one that doesn't.
       </p>
     </div>
 
     <div class="nx-bento">
-      <div class="nx-bento-cell w3 nx-reveal" style="--accent-c: var(--nx-food);">
-        <div class="nx-bento-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/></svg></div>
-        <h3>You set the prep time</h3>
-        <p>A biryani isn't a sandwich. Choose the real time per order and the customer's ETA follows it — instead of a platform guessing and making you look late.</p>
+      <div class="nx-bento-cell w2 nx-reveal" style="--accent-c: var(--nx-ride);">
+        <div class="nx-bento-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6M6 17 10 7h4l4 10"/></svg></div>
+        <h3>Bike rides <span style="color:var(--nx-ride);">— live now</span></h3>
+        <p>Across Karachi, cash, fixed fare, verified riders.</p>
       </div>
-      <div class="nx-bento-cell w3 nx-reveal" style="--accent-c: var(--nx-food);">
-        <div class="nx-bento-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
-        <h3>Keep 80% of the subtotal</h3>
-        <p>20% commission on food, nothing else. The delivery fee goes to the rider — it's never taken out of your share. No listing fee, no monthly charge.</p>
+      <div class="nx-bento-cell w2 nx-reveal" style="--accent-c: var(--nx-parcel); opacity:0.72;">
+        <div class="nx-bento-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></div>
+        <h3>Parcels <span style="color:var(--nx-faint);">— next</span></h3>
+        <p>Send anything across the city in under an hour.</p>
       </div>
-      <div class="nx-bento-cell w2 nx-reveal" style="--accent-c: var(--nx-food);">
-        <div class="nx-bento-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
-        <h3>Slammed? Close.</h3>
-        <p>One tap stops new orders instantly.</p>
+      <div class="nx-bento-cell w2 nx-reveal" style="--accent-c: var(--nx-food); opacity:0.72;">
+        <div class="nx-bento-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v8a3 3 0 0 0 6 0V3M7 11v10M18 3c-1.5 2-2 4-2 6s.5 3 2 3v9"/></svg></div>
+        <h3>Food &amp; errands <span style="color:var(--nx-faint);">— after that</span></h3>
+        <p>Kitchens near you, and a rider who'll shop your list.</p>
       </div>
-      <div class="nx-bento-cell w2 nx-reveal" style="--accent-c: var(--nx-food);">
-        <div class="nx-bento-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-6"/></svg></div>
-        <h3>Your menu, live</h3>
-        <p>Prices and photos update the moment you save.</p>
-      </div>
-      <div class="nx-bento-cell w2 nx-reveal" style="--accent-c: var(--nx-food);">
-        <div class="nx-bento-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></div>
-        <h3>Someone answers</h3>
-        <p>Missed an order? Ops calls your kitchen, not a bot.</p>
-      </div>
-      <div class="nx-bento-cell w6 nx-reveal" style="--accent-c: var(--nx-food); display:flex; flex-wrap:wrap; gap:24px; align-items:center; justify-content:space-between;">
+
+      <div class="nx-bento-cell w6 nx-reveal" style="--accent-c: var(--nx-ride); display:flex; flex-wrap:wrap; gap:24px; align-items:center; justify-content:space-between;">
         <div>
-          <h3 style="margin-bottom:6px;">List your kitchen this week</h3>
-          <p style="max-width:52ch;">Onboarding takes one conversation. Send us your menu and we'll have you live.</p>
+          <h3 style="margin-bottom:6px;">Run a restaurant? Register early.</h3>
+          <p style="max-width:52ch;">We're building the kitchen waiting list now so we can switch food on with real supply from day one.</p>
         </div>
-        <a href="merchant.html" class="nx-btn nx-btn-primary" style="background:linear-gradient(135deg,var(--nx-food),#d98c00); box-shadow:0 8px 30px rgba(255,176,46,0.28);">
-          Partner your restaurant
+        <a href="merchant.html" class="nx-btn nx-btn-ghost">
+          Join the waiting list
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
       </div>
@@ -311,14 +306,15 @@
 </section>
 
 <!-- ======================================================== OPERATIONS -->
-<section class="nx-section" id="operations">
+<section class="nx-section" id="safety">
   <div class="nx-wrap">
     <div class="nx-section-head nx-reveal">
-      <p class="nx-kicker">The part nobody advertises</p>
-      <h2 class="nx-h2">Marketplaces don't fail<br/>on features.</h2>
+      <p class="nx-kicker">Safety &amp; operations</p>
+      <h2 class="nx-h2">A person is watching<br/>every ride.</h2>
       <p class="nx-sub">
-        They fail on the evening nobody's online and nobody notices. So we built the
-        operations desk first — before the marketing site, before the app store listing.
+        We run limited hours on purpose. Every hour Nova X is bookable, someone
+        is at the operations desk who can see your trip, call your rider, and
+        act. A ride nobody is watching is a ride we can't help with.
       </p>
     </div>
 
@@ -419,17 +415,16 @@
         Nova X
       </a>
       <p class="nx-footer-note">
-        Rides, food, parcels and errands moving through one local network.
+        Bike rides across Karachi. Food, parcels and errands coming soon.
         Operating in Karachi, Pakistan.
       </p>
     </div>
     <div class="nx-footer-cols">
       <div class="nx-footer-col">
         <h5>Apps</h5>
-        <a href="customer.html">Nova X</a>
+        <a href="customer.html">Nova X Bike</a>
         <a href="driver.html">Nova X Driver</a>
-        <a href="merchant.html">Nova X Merchant</a>
-        <a href="ops.html">Nova X Ops</a>
+        <a href="merchant.html">Restaurants (early access)</a>
       </div>
       <div class="nx-footer-col">
         <h5>Earn</h5>
@@ -440,6 +435,7 @@
       <div class="nx-footer-col">
         <h5>Company</h5>
         <a href="customer.html#/help">Help</a>
+        <a href="customer.html#/legal/safety">Safety policy</a>
         <a href="customer.html#/legal/terms">Terms</a>
         <a href="customer.html#/legal/privacy">Privacy</a>
         <a href="customer.html#/legal/cancellation">Cancellations</a>
@@ -451,7 +447,7 @@
 <script type="module">
   import { initHero } from "./js/landing.js";
   import {
-    initHeroPhone, initRotator, initCounters, initSwitcher,
+    initHeroPhone, initCounters, initSwitcher,
     initJourney, initEarnings, initOpsFeed,
   } from "./js/landing-ui.js";
   import { COMMERCIALS } from "./js/support.config.js";
@@ -460,7 +456,6 @@
   initHero(document.getElementById("nx-canvas"), hero);
 
   initHeroPhone(document.getElementById("heroPhone"));
-  initRotator(document.getElementById("rotator"));
   initSwitcher(document.getElementById("switcher"));
   initJourney(document.getElementById("journey"));
   initOpsFeed(document.getElementById("opsConsole"));
@@ -474,14 +469,14 @@
 
   // Ticker: duplicated once so the marquee loops seamlessly at -50%.
   const TICKS = [
-    ["var(--nx-ride)", "Bike rides from Rs. 120"],
-    ["var(--nx-food)", "Food delivered across Karachi"],
-    ["var(--nx-parcel)", "Parcels in under an hour"],
-    ["var(--nx-ride)", "Drivers keep 85% of every fare"],
-    ["var(--nx-food)", "Restaurants keep 80% of the subtotal"],
-    ["var(--nx-ops)", "Cash payments — no cards needed"],
-    ["var(--nx-ride)", "Every driver verified by a human"],
-    ["var(--nx-parcel)", "Share your ride live with anyone"],
+    ["var(--nx-ride)", "Rs. 60 base + Rs. 22/km"],
+    ["var(--nx-ops)", "Minimum fare Rs. 150"],
+    ["var(--nx-ride)", "The fare you see is the fare you pay"],
+    ["var(--nx-parcel)", "Cash only — no cards, no top-ups"],
+    ["var(--nx-ride)", "Every rider verified by a person"],
+    ["var(--nx-ops)", "Share your ride live with anyone"],
+    ["var(--nx-food)", "Riders keep 85% of every fare"],
+    ["var(--nx-parcel)", "SOS on screen the whole way"],
   ];
   const track = document.getElementById("ticker");
   track.innerHTML = [...TICKS, ...TICKS]

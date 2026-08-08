@@ -45,6 +45,17 @@ const PATHS = {
   swap: 'M7 4v3H3l4 4 4-4H7V4zM17 20v-3h4l-4-4-4 4h4v3z',
   taxi: 'M5 17V9l2-4h10l2 4v8M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM15 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM5 13h14M9 5v0M15 5v0',
   basket: 'M4 9h16l-1.5 10.5a2 2 0 0 1-2 1.5H7.5a2 2 0 0 1-2-1.5L4 9zM8 9l2-6M16 9l-2-6M9 13v4M15 13v4',
+
+  // Added for the bike pilot + storefront wizard. Without these the icon()
+  // helper silently falls back to the "help" question mark, which is how you
+  // end up shipping a screen full of question marks.
+  clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3.5 2',
+  search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',
+  info: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v5M12 8v0',
+  image: 'M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6',
+  add: 'M12 5v14M5 12h14',
+  location: 'M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11zM12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+  restaurant: 'M6 2v7a2 2 0 0 0 4 0V2M8 9v13M16 2c-2 0-3 2-3 5s1 4 3 4M16 2v18',
 };
 
 export function icon(name, size = 20, strokeWidth = 2) {

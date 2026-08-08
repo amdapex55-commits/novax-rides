@@ -73,15 +73,114 @@ function localMatches(q) {
     .map((p) => ({ lat: p.lat, lng: p.lng, displayName: p.name, resolved: true, local: true }));
 }
 
-/** Device GPS, or Karachi city centre if unavailable/denied. */
+/** Device GPS, or Karachi city centre if unavailable/denied.
+ *
+ *  `accurate` here means only "we got a fix at all". For anything that
+ *  dispatches a driver, use getPickupFix() below instead — it also checks
+ *  HOW accurate the fix is, which is the difference between a rider arriving
+ *  at your door and a rider arriving in the next neighbourhood. */
 export function getCurrentCoords(timeout = 5000) {
   return new Promise((resolve) => {
     if (!navigator.geolocation) return resolve({ ...KARACHI, accurate: false });
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accurate: true }),
+      (pos) => resolve({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        accurate: true,
+      }),
       () => resolve({ ...KARACHI, accurate: false }),
       { timeout, maximumAge: 60000 },
     );
+  });
+}
+
+/**
+ * A pickup fix good enough to send a driver to — or an honest refusal.
+ *
+ * THE PROBLEM THIS SOLVES. Before this existed, a denied or vague GPS
+ * permission silently fell back to Karachi city centre, and the app booked
+ * the ride anyway. The rider got dispatched to Saddar while the customer
+ * stood in DHA. Both people wasted twenty minutes, both blamed Nova X, and
+ * the app never once said it didn't know where anyone was.
+ *
+ * Browser geolocation reports `coords.accuracy` — a radius in metres it's
+ * confident about. Outdoors with GPS that's 5–20m. Indoors on wifi it's
+ * routinely 500–3000m, which is a completely different part of the city.
+ * A number nobody was reading.
+ *
+ * Returns { ok: true, lat, lng, accuracy } when the fix is trustworthy, or
+ * { ok: false, reason, ... } when it isn't. Callers MUST NOT book on
+ * ok:false — make the customer confirm an address instead.
+ *
+ * reason is one of:
+ *   "unsupported" — no geolocation API at all
+ *   "denied"      — permission refused
+ *   "unavailable" — permission fine, no fix obtained (indoors, airplane mode)
+ *   "timeout"     — took too long
+ *   "inaccurate"  — got a fix, but it's too vague to dispatch to
+ */
+export function getPickupFix({ maxAccuracyMeters = 120, maxAgeMs = 60000, timeoutMs = 12000 } = {}) {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve({ ok: false, reason: "unsupported" });
+      return;
+    }
+
+    let settled = false;
+    let best = null;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      navigator.geolocation.clearWatch(watchId);
+      clearTimeout(timer);
+
+      if (!best) { resolve({ ok: false, reason: "unavailable" }); return; }
+      if (best.coords.accuracy > maxAccuracyMeters) {
+        resolve({
+          ok: false,
+          reason: "inaccurate",
+          accuracy: Math.round(best.coords.accuracy),
+          // Still hand back the position: it's fine for centring a map so
+          // the customer can drag a pin, just not for dispatching to.
+          lat: best.coords.latitude,
+          lng: best.coords.longitude,
+        });
+        return;
+      }
+      resolve({
+        ok: true,
+        lat: best.coords.latitude,
+        lng: best.coords.longitude,
+        accuracy: Math.round(best.coords.accuracy),
+      });
+    };
+
+    // watchPosition rather than getCurrentPosition: the first fix is often
+    // a coarse network estimate, and the GPS refines it over a few seconds.
+    // We keep the best one and stop early once it's good enough, so a user
+    // outdoors waits about a second and a user indoors waits the full
+    // timeout before we tell them we can't place them.
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (!best || pos.coords.accuracy < best.coords.accuracy) best = pos;
+        if (pos.coords.accuracy <= maxAccuracyMeters) finish();
+      },
+      (err) => {
+        if (settled) return;
+        settled = true;
+        navigator.geolocation.clearWatch(watchId);
+        clearTimeout(timer);
+        resolve({
+          ok: false,
+          reason: err.code === 1 ? "denied" : err.code === 3 ? "timeout" : "unavailable",
+        });
+      },
+      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: maxAgeMs },
+    );
+
+    const timer = setTimeout(finish, timeoutMs);
   });
 }
 

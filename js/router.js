@@ -16,7 +16,8 @@
 // navigation.
 import { Token } from "./api.js";
 import { state } from "./state.js";
-import { APP_CONFIG, routeAllowed } from "./appMode.js";
+import { APP_CONFIG, routeAllowed, isParkedRoute, serviceForRoute } from "./appMode.js";
+import { SERVICES } from "./launch.config.js";
 
 // auth: "none" (public) | "guest" (public, but bounces a logged-in
 // non-rider to their own home) | "any" (any logged-in role) | "RIDER" |
@@ -34,7 +35,13 @@ export const ROUTES = {
   // returns the actual render function.
   "/phone": { view: () => import("./views/auth.js"), fn: "renderPhoneEntry", wrap: true, auth: "none", nav: false },
   "/otp": { view: () => import("./views/auth.js"), fn: "renderOtp", auth: "none", nav: false },
-  "/home": { view: () => import("./views/riderHome.js"), fn: "renderHome", auth: "guest", nav: true, tab: "home" },
+  // Home swaps with the pilot. With one service live the customer gets the
+  // focused bike-hailing screen (map + "Where to?"); once a second service
+  // goes live in launch.config.js the multi-service tabbed home returns.
+  "/home": Object.values(SERVICES).filter((x) => x.live).length === 1
+    ? { view: () => import("./views/bikeHome.js"), fn: "renderBikeHome", auth: "guest", nav: true, tab: "home" }
+    : { view: () => import("./views/riderHome.js"), fn: "renderHome", auth: "guest", nav: true, tab: "home" },
+  "/coming-soon": { view: () => import("./views/bikeHome.js"), fn: "renderComingSoon", auth: "none", nav: false },
   // Map-first booking — one screen with a docked sheet, replacing the old
   // /set-locations → /fare page-per-step flow (both kept as aliases so any
   // saved postAuthRedirect or bookmark still lands somewhere sane).
@@ -49,6 +56,7 @@ export const ROUTES = {
   "/legal/cancellation": { view: () => import("./views/legal.js"), fn: "renderCancellation", auth: "none", nav: false },
   "/legal/driver-agreement": { view: () => import("./views/legal.js"), fn: "renderDriverAgreement", auth: "none", nav: false },
   "/legal/restaurant-agreement": { view: () => import("./views/legal.js"), fn: "renderRestaurantAgreement", auth: "none", nav: false },
+  "/legal/safety": { view: () => import("./views/legal.js"), fn: "renderSafety", auth: "none", nav: false },
   "/rate": { view: () => import("./views/riderTrip.js"), fn: "renderRateTrip", auth: "RIDER", nav: false },
   "/wallet": { view: () => import("./views/riderAccount.js"), fn: "renderWallet", auth: "guest", nav: true, tab: "wallet" },
   "/history": { view: () => import("./views/riderAccount.js"), fn: "renderTripHistory", auth: "guest", nav: true, tab: "history" },
@@ -209,6 +217,17 @@ async function renderRoute(path) {
   }
 
   if (!route) { navigate(APP_CONFIG.home); return; }
+
+  // PARKED-SERVICE GUARD. Food, parcels and errands are built and tested but
+  // switched off for the bike pilot (see js/launch.config.js). Their routes
+  // stay registered so an old bookmark or a shared link still resolves — but
+  // anyone reaching one lands on the coming-soon screen rather than a
+  // checkout that can't be fulfilled. Flip the service to live in
+  // launch.config.js and the real screens come back with no code change.
+  if (isParkedRoute(path)) {
+    state.comingSoonService = serviceForRoute(path);
+    if (path !== "/coming-soon") { navigate("/coming-soon"); return; }
+  }
 
   // Auth guard
   if (route.auth === "guest") {

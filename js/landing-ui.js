@@ -41,20 +41,22 @@ const RIDE_SEQUENCE = [
     map: { car: [22, 62], route: true, pins: true },
     sheet: `
       <div style="display:flex;justify-content:space-between;align-items:baseline;">
-        <span style="font-size:15px;font-weight:800;letter-spacing:-0.02em;">Choose a ride</span>
-        <span style="font-size:11.5px;color:#7b8a83;">6.2 km · 15 min</span>
+        <span style="font-size:15px;font-weight:800;letter-spacing:-0.02em;">Confirm your ride</span>
+        <span style="font-size:11.5px;color:#7b8a83;">6.2 km · 18 min</span>
       </div>
-      <div style="margin-top:12px;display:flex;flex-direction:column;gap:7px;">
-        <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border:2px solid #0fa968;border-radius:13px;background:rgba(15,169,104,0.05);">
-          <span style="font-size:19px;">🛵</span>
-          <div style="flex:1;"><div style="font-size:13.5px;font-weight:700;">Nova Moto</div><div style="font-size:11px;color:#7b8a83;">Fastest through traffic</div></div>
-          <span style="font-size:14px;font-weight:800;">Rs. 210</span>
+      <!-- Bike only, and the fare stated once and large — matching the real
+           pilot screen. 6.2km at Rs 60 + Rs 22/km = Rs 195. -->
+      <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;
+                  padding:14px 15px;border-radius:14px;background:rgba(15,169,104,0.07);">
+        <div>
+          <div style="font-size:10.5px;color:#5c6a63;">Fare, paid in cash</div>
+          <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#0b8a54;">Rs. 195</div>
         </div>
-        <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid #e6ebe8;border-radius:13px;">
-          <span style="font-size:19px;">🚗</span>
-          <div style="flex:1;"><div style="font-size:13.5px;font-weight:700;">Nova Premium</div><div style="font-size:11px;color:#7b8a83;">AC car</div></div>
-          <span style="font-size:14px;font-weight:800;">Rs. 640</span>
-        </div>
+        <span style="font-size:9.5px;font-weight:800;color:#0b8a54;background:rgba(15,169,104,0.13);padding:4px 9px;border-radius:99px;">FIXED PRICE</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;margin-top:9px;border:1px solid #e6ebe8;border-radius:13px;">
+        <span style="font-size:19px;">🛵</span>
+        <div style="flex:1;"><div style="font-size:13.5px;font-weight:700;">Nova Moto</div><div style="font-size:11px;color:#7b8a83;">Arrives in about 5 min</div></div>
       </div>
       <div class="nx-fakebtn solid" style="margin-top:12px;">Request ride</div>`,
   },
@@ -62,14 +64,14 @@ const RIDE_SEQUENCE = [
     ms: 2400,
     map: { car: [40, 50], route: true, pins: true },
     sheet: `
-      <span class="nx-chip live">Finding a driver</span>
+      <span class="nx-chip live">Finding a rider</span>
       <div class="nx-row" style="margin-top:16px;gap:12px;">
         <span style="width:22px;height:22px;border:2.5px solid #e6ebe8;border-top-color:#0fa968;border-radius:50%;display:inline-block;animation:nx-spin 0.8s linear infinite;"></span>
-        <span style="font-size:14px;color:#5c6a63;">Contacting drivers near you…</span>
+        <span style="font-size:14px;color:#5c6a63;">Contacting riders near you…</span>
       </div>
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid #eef2f0;display:flex;justify-content:space-between;">
-        <span style="font-size:12px;color:#7b8a83;">Pay cash to your driver</span>
-        <span style="font-size:12px;color:#0fa968;font-weight:700;">Rs. 210</span>
+        <span style="font-size:12px;color:#7b8a83;">Pay cash to your rider</span>
+        <span style="font-size:12px;color:#0fa968;font-weight:700;">Rs. 195</span>
       </div>`,
   },
   {
@@ -77,7 +79,7 @@ const RIDE_SEQUENCE = [
     map: { car: [58, 40], route: true, pins: true },
     sheet: `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <span class="nx-chip ride">Driver on the way</span>
+        <span class="nx-chip ride">Rider on the way</span>
         <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#98a5ad;letter-spacing:0.05em;">#A7F3C1</span>
       </div>
       <div class="nx-row" style="margin-top:15px;padding-bottom:14px;border-bottom:1px solid #eef2f0;">
@@ -161,9 +163,10 @@ export function initHeroPhone(root) {
   const sheet = root.querySelector("[data-sheet]");
   if (!map || !sheet) return;
 
-  // Two stories, told back to back: a ride, then a food order. Nova X is
-  // both, and a phone showing only one under-sells the product.
-  const script = [...RIDE_SEQUENCE, ...FOOD_SEQUENCE];
+  // Bike pilot: one story, told well. The food sequence is left in the file
+  // (and used by the switcher's parked entries) for when food switches on,
+  // but the hero must show only what the app can actually do today.
+  const script = [...RIDE_SEQUENCE];
   let i = 0;
   let timer = 0;
 
@@ -207,6 +210,8 @@ export function initHeroPhone(root) {
    ========================================================================== */
 
 export function initRotator(el) {
+  // The bike-pilot hero has a fixed headline, so this element may not exist.
+  if (!el) return;
   const words = Array.from(el.querySelectorAll("span"));
   if (!words.length) return;
   let i = 0;
@@ -256,7 +261,35 @@ export function initCounters(scope = document) {
    4. SERVICE SWITCHER — tabs drive the phone, auto-advancing.
    ========================================================================== */
 
+// Pilot switcher: the four steps of ONE bike ride, rather than four
+// different services. The food/parcel/errand screens below are kept for
+// when those services switch on.
 const SERVICE_SCREENS = {
+  whereto: RIDE_SEQUENCE[0],
+  quote: RIDE_SEQUENCE[1],
+  matched: RIDE_SEQUENCE[3],
+  tracking: {
+    map: { car: [64, 34], route: true, pins: true },
+    sheet: `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <span class="nx-chip ride">2 min away</span>
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#98a5ad;">#A7F3C1</span>
+      </div>
+      <div class="nx-row" style="margin-top:15px;padding-bottom:13px;border-bottom:1px solid #eef2f0;">
+        <div class="nx-av">B</div>
+        <div style="flex:1;min-width:0;">
+          <div class="nx-t-title">Bilal A.</div>
+          <div class="nx-t-sub">★ 4.9 · Nova Moto</div>
+        </div>
+        <span class="nx-plate">KHI-4417</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:13px;">
+        <div class="nx-fakebtn soft" style="flex:1;font-size:13px;">Share ride</div>
+        <div class="nx-fakebtn" style="flex:1;font-size:13px;background:#fdeaee;color:#e11d48;font-weight:800;">SOS</div>
+      </div>`,
+  },
+
+  // --- parked services ---
   ride: RIDE_SEQUENCE[3],
   food: FOOD_SEQUENCE[2],
   parcel: {
@@ -412,10 +445,11 @@ export function initEarnings(root, { commissionPct = 15 } = {}) {
    never reads as a claim about real current volume.
    ========================================================================== */
 
+// Bike pilot: the feed shows only the service that's actually live. A
+// dispatcher preview listing food orders we don't take would be a lie about
+// the product on the marketing site.
 const FEED_TEMPLATES = [
-  { kind: "Ride", color: "var(--nx-ride)", who: ["Ayesha M.", "Hamza K.", "Zainab R.", "Usman T.", "Fatima S."], amt: [180, 640] },
-  { kind: "Food", color: "var(--nx-food)", who: ["Karachi Karahi House", "Bundu Khan", "Student Biryani", "Kolachi"], amt: [700, 2400] },
-  { kind: "Parcel", color: "var(--nx-parcel)", who: ["Clifton → Gulshan", "Saddar → DHA", "Tariq Rd → Nazimabad"], amt: [150, 420] },
+  { kind: "Ride", color: "var(--nx-ride)", who: ["Clifton → Saddar", "DHA Phase 6 → Tariq Rd", "Gulshan → Nazimabad", "Sea View → Zamzama", "Airport → Gulistan-e-Johar"], amt: [150, 420] },
 ];
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 

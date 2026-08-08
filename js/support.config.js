@@ -8,11 +8,32 @@
 // number is worse than no support screen — people will call it.
 
 export const SUPPORT = {
+  // ⚠️ ALL FOUR MUST BE REAL BEFORE PUBLIC LAUNCH.
+  // Until they are, every live-contact button hides itself automatically
+  // (see the placeholder guard below) and the ops dashboard shows a blocker.
+
   // Digits only, with country code, no + or spaces — this is what wa.me needs.
-  whatsapp: "923000000000",       // TODO: your real WhatsApp business number
+  // Use a WhatsApp BUSINESS account, not a personal one: you need the away
+  // messages, quick replies and the ability to hand the number to whoever is
+  // on the ops desk without handing over someone's personal WhatsApp.
+  whatsapp: "923000000000",       // TODO: your real WhatsApp Business number
+
+  // The number a customer or driver calls when something is wrong. It must
+  // be answered by a human during operating hours — an unanswered support
+  // line does more damage than no number at all.
   phone: "+92 300 0000000",       // TODO: display format for tel: links
+
   email: "support@novax.pk",      // TODO: your real support inbox
-  hours: "8am – 11pm, every day", // TODO: when someone actually answers
+
+  // Escalation: the number ops staff call when a ride goes badly wrong —
+  // an accident, a safety incident, a driver who won't respond. NOT shown
+  // to customers. This should reach you or whoever owns the pilot,
+  // 24 hours a day, for as long as rides are running.
+  opsEscalation: "",              // TODO: your own number
+
+  // Must match HOURS in js/launch.config.js — don't advertise cover you
+  // aren't providing.
+  hours: "8am – 10pm, every day",
 };
 
 /* ---------------------------------------------------------------------------
@@ -49,6 +70,10 @@ export const SUPPORT_STATUS = {
   whatsapp: !isPlaceholder("whatsapp"),
   phone: !isPlaceholder("phone"),
   email: !isPlaceholder("email"),
+  // Internal only — never rendered to a customer, but a launch blocker,
+  // because "who do we call at 11pm when a rider has an accident" needs an
+  // answer before the first ride, not after the first incident.
+  opsEscalation: !!String(SUPPORT.opsEscalation || "").replace(/[\s\-()+]/g, ""),
 };
 
 SUPPORT_STATUS.anyLive =

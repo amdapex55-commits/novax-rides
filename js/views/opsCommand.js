@@ -14,6 +14,44 @@ import { icon } from "../icons.js";
 import { toast, esc, fmtMoney, skeletonRows, emptyRich } from "../ui.js";
 import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
+import { launchReadiness } from "../launch.config.js";
+
+/**
+ * Launch readiness, rendered where the ops team will actually see it.
+ *
+ * A checklist in a document gets read once. This reads the live config on
+ * every page load, so the day someone rotates a support number or a legal
+ * detail goes missing, the desk finds out — not a customer.
+ */
+function readinessHtml() {
+  const r = launchReadiness();
+  if (r.ready) {
+    return `
+      <div class="nx-launch-note mb-4" style="background:var(--brand-ride-soft);border-color:rgba(15,169,104,0.25);">
+        ${icon("check-circle", 16)}
+        <span><strong>Launch checks passing.</strong> ${r.passed}/${r.total} — support contacts,
+        legal details and zone are all configured.</span>
+      </div>`;
+  }
+  return `
+    <div class="card mb-4" style="border:1.5px solid rgba(225,29,72,0.3);background:#fff5f7;">
+      <div class="flex items-center gap-2 mb-2">
+        ${icon("bolt", 16)}
+        <p class="font-bold text-sm" style="color:#b3123c;">
+          Not ready for public launch — ${r.blockers.length} blocker${r.blockers.length === 1 ? "" : "s"}
+        </p>
+      </div>
+      <div class="flex-col gap-2">
+        ${r.checks.filter((c) => !c.ok).map((c) => `
+          <div style="font-size:12.5px;line-height:1.5;">
+            <span style="color:${c.blocker ? "#b3123c" : "var(--warning)"};font-weight:700;">
+              ${c.blocker ? "✗" : "!"}</span>
+            <strong>${esc(c.label)}</strong><br/>
+            <span class="text-muted" style="font-size:11.5px;">${esc(c.fix)}</span>
+          </div>`).join("")}
+      </div>
+    </div>`;
+}
 
 export function renderOpsCommand(root) {
   root.innerHTML = `
@@ -28,6 +66,8 @@ export function renderOpsCommand(root) {
           <span class="text-xs text-secondary">Live</span>
         </div>
       </div>
+
+      ${readinessHtml()}
 
       <div id="incidentBlock" class="mb-5"></div>
 

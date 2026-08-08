@@ -15,13 +15,51 @@
 // see a product that does one thing — get me a ride, get me food. Drivers
 // see earnings. Restaurants see orders. Ops sees control.
 
+import { SERVICES } from "./launch.config.js";
+
 export const APP = (typeof window !== "undefined" && window.NOVAX_APP) || "customer";
+
+function liveServiceCount() {
+  return Object.values(SERVICES).filter((s) => s.live).length;
+}
+
+/**
+ * Route prefixes belonging to a service that isn't live yet.
+ *
+ * Rather than deleting these routes (which would 404 old links and mean
+ * un-deleting a dozen entries when food launches), each parked service's
+ * routes are redirected to /coming-soon. Flipping SERVICES.food.live to
+ * true in launch.config.js switches the real screens back on with no other
+ * change anywhere in the codebase.
+ */
+const SERVICE_ROUTE_PREFIXES = {
+  food: ["/food/"],
+  parcel: ["/parcel/"],
+  errand: ["/errand/"],
+};
+
+/** Which service does this route belong to, if any? */
+export function serviceForRoute(path) {
+  for (const [key, prefixes] of Object.entries(SERVICE_ROUTE_PREFIXES)) {
+    if (prefixes.some((p) => path.startsWith(p))) return key;
+  }
+  return null;
+}
+
+/** True when the route's service is parked and should show coming-soon. */
+export function isParkedRoute(path) {
+  const svc = serviceForRoute(path);
+  return !!svc && !SERVICES[svc]?.live;
+}
 
 const CONFIGS = {
   customer: {
     key: "customer",
-    name: "Nova X",
-    tagline: "Rides, food, parcels & errands",
+    // Pilot naming. "Nova X Bike" sets the expectation the app can actually
+    // meet; "Rides, food, parcels & errands" promises three things that
+    // aren't live and makes the app feel broken rather than focused.
+    name: SERVICES.ride.live && liveServiceCount() === 1 ? "Nova X Bike" : "Nova X",
+    tagline: liveServiceCount() === 1 ? "Bike rides across Karachi" : "Rides, food, parcels & errands",
     // Role assigned when a brand-new number signs up through this app.
     signupRole: "RIDER",
     // Which backend role is allowed to use this app at all.
@@ -29,9 +67,15 @@ const CONFIGS = {
     home: "/home",
     // Everything a consumer can reach. Anything not listed is invisible in
     // this build — the driver/restaurant/ops worlds simply don't exist here.
+    //
+    // Parked services keep their routes registered so nothing 404s if a
+    // customer has an old link bookmarked, but the tiles route to
+    // /coming-soon instead. See routeAllowed() below, which redirects any
+    // parked service route to the coming-soon screen.
     routes: [
       "/splash", "/welcome", "/phone", "/otp",
       "/home", "/ride", "/set-locations", "/fare", "/tracking", "/rate", "/shared",
+      "/coming-soon",
       "/food/browse", "/food/restaurant", "/food/cart", "/food/tracking",
       "/parcel/service", "/parcel/details", "/parcel/contact", "/parcel/tracking",
       "/errand/details", "/errand/tracking",
@@ -39,11 +83,15 @@ const CONFIGS = {
       "/loyalty", "/refer", "/business",
       "/chat", "/support", "/help", "/chat-thread",
       "/legal/terms", "/legal/privacy", "/legal/cancellation",
+      "/legal/safety",
     ],
+    // Wallet is dropped from the pilot nav: it's cash-only, so a Wallet tab
+    // that can only ever show Rs. 0 is a tab that teaches people the app is
+    // half-built. Route stays registered for when top-ups arrive.
     nav: [
-      { tab: "home", icon: "home", label: "Home", path: "/home" },
-      { tab: "history", icon: "history", label: "Activity", path: "/history" },
-      { tab: "wallet", icon: "wallet", label: "Wallet", path: "/wallet" },
+      { tab: "home", icon: "home", label: "Ride", path: "/home" },
+      { tab: "history", icon: "history", label: "Trips", path: "/history" },
+      { tab: "help", icon: "help", label: "Help", path: "/support" },
       { tab: "profile", icon: "person", label: "Profile", path: "/profile" },
     ],
   },
@@ -64,7 +112,7 @@ const CONFIGS = {
       "/driver/earnings", "/driver/profile", "/driver/vehicle",
       "/driver/notifications", "/driver/incentives",
       "/chat", "/support", "/help", "/chat-thread", "/earnings-explained",
-      "/legal/terms", "/legal/privacy", "/legal/driver-agreement",
+      "/legal/terms", "/legal/privacy", "/legal/driver-agreement", "/legal/safety",
     ],
     nav: [
       { tab: "home", icon: "home", label: "Home", path: "/driver/home" },

@@ -10,39 +10,39 @@ import { icon } from "../icons.js";
 import { toast, fmtMoney, dockSheet, esc } from "../ui.js";
 import { navigate } from "../router.js";
 import { createMap } from "../map.js";
-import { resolveRoute, getCurrentCoords } from "../geocode.js";
+import { resolveRoute, geocode, getPickupFix, createSuggester, reverseGeocode } from "../geocode.js";
+import { getRoute, routeSummary, formatEta } from "../routing.js";
 import { track } from "../analytics.js";
+import {
+  PRICING, VEHICLE_TYPES, ALLOW_BID_FARE, GPS, ZONE, inZone, isOpenNow, HOURS,
+} from "../launch.config.js";
 
-const VEHICLES = [
-  { type: "BIKE", name: "Nova Moto", desc: "Fastest through traffic", icon: "bike", from: 120, tag: "Fastest" },
-  { type: "RICKSHAW", name: "Nova Lite", desc: "Budget-friendly", icon: "rickshaw", from: 250 },
-  { type: "CAR", name: "Nova Premium", desc: "AC car, extra comfort", icon: "car", from: 450 },
+const ALL_VEHICLES = [
+  { type: "BIKE", name: "Nova Moto", desc: "Fastest through traffic", icon: "bike", tag: "Bike" },
+  { type: "RICKSHAW", name: "Nova Lite", desc: "Budget-friendly", icon: "rickshaw" },
+  { type: "CAR", name: "Nova Premium", desc: "AC car, extra comfort", icon: "car" },
 ];
 
-// Same shape as the backend's FARE_CONFIG so the preview is honest rather
-// than decorative. The server still calculates the real fare on booking.
-const FARE_PREVIEW = {
-  BIKE: { base: 30, perKm: 4, perMin: 1 },
-  RICKSHAW: { base: 60, perKm: 7, perMin: 1.5 },
-  CAR: { base: 100, perKm: 12, perMin: 2 },
-};
-const AVG_SPEED_KMH = 25;
+// Only what the pilot actually supplies. Offering a car with no cars online
+// produces an unmatched request, which is a worse experience than never
+// having offered it.
+const VEHICLES = ALL_VEHICLES.filter((v) => VEHICLE_TYPES.includes(v.type));
 
-function haversineKm(a, b) {
-  const R = 6371;
-  const toRad = (d) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-}
-function previewFare(type, km) {
-  const c = FARE_PREVIEW[type] || FARE_PREVIEW.BIKE;
-  const mins = (km / AVG_SPEED_KMH) * 60;
-  return Math.round(c.base + km * c.perKm + mins * c.perMin);
-}
-function etaMinutes(km) {
-  return Math.max(3, Math.round((km / AVG_SPEED_KMH) * 60));
+/**
+ * Fare preview.
+ *
+ * Reads PRICING from launch.config.js, which is kept in step with the
+ * backend's FARE_CONFIG. Takes ROAD kilometres — the previous version took
+ * straight-line distance and added a fabricated per-minute term derived from
+ * an assumed 25km/h, so every quote was low and every real fare came back
+ * higher than the number the customer had just agreed to.
+ */
+function previewFare(type, roadKm, durationMinutes) {
+  const c = PRICING[type] || PRICING.BIKE;
+  const timePart = c.perMin > 0 && durationMinutes ? durationMinutes * c.perMin : 0;
+  const raw = c.base + roadKm * c.perKm + timePart;
+  const rounded = Math.round(raw / 5) * 5;   // cash needs change
+  return Math.max(c.minimum, rounded);
 }
 
 export function renderRideBooking(root) {
@@ -59,10 +59,11 @@ export function renderRideBooking(root) {
   root.querySelector("#backBtn").addEventListener("click", () => navigate("/home"));
 
   let mapHandle = null;
-  let pickup = null;   // { lat, lng, label }
+  let pickup = null;   // { lat, lng, label } — set ONLY when trustworthy
   let dropoff = null;
-  let distanceKm = 0;
-  let selectedVehicle = state.selectedVehicle || "BIKE";
+  let route = null;    // { km, minutes, coordinates, estimated } from routing.js
+  let pickupAccuracy = null;
+  let selectedVehicle = VEHICLE_TYPES.includes(state.selectedVehicle) ? state.selectedVehicle : VEHICLE_TYPES[0];
   let fareMode = "FIXED";
   let destroyed = false;
 
@@ -100,75 +101,188 @@ export function renderRideBooking(root) {
       const dropoffLabel = dropInput.value.trim();
       if (!dropoffLabel) { toast("Where are you going?", true); return; }
 
+      if (!isOpenNow()) { toast(HOURS.closedMessage, true); return; }
+
       const btn = e.currentTarget;
+      const reset = () => {
+        btn.disabled = false;
+        btn.innerHTML = `Continue ${icon("arrow-forward", 18)}`;
+      };
       btn.disabled = true;
       btn.innerHTML = `<span class="spinner"></span> Finding address...`;
+
       try {
-        const resolved = await resolveRoute(pickupLabel, dropoffLabel);
-        if (!resolved.dropoff.resolved) {
-          toast("Couldn't find that address — try adding an area or landmark", true);
-          btn.disabled = false;
-          btn.innerHTML = `Continue ${icon("arrow-forward", 18)}`;
-          return;
+        /* ---- PICKUP: the P0 gate -------------------------------------
+           A ride cannot be booked against a pickup we aren't confident
+           about. Previously an empty pickup field silently used the
+           device position with no accuracy check, and a denied permission
+           silently used Karachi city centre — so a customer in DHA could
+           be dispatched to a rider in Saddar with nothing on screen ever
+           admitting we didn't know where they were.
+
+           Now: typed pickup → geocode it. Blank pickup → demand a fix
+           that's accurate enough to send someone to, and refuse to
+           continue without one. */
+        const typedPickup = pickupLabel && !/current location/i.test(pickupLabel);
+
+        if (typedPickup) {
+          const hit = await geocode(pickupLabel);
+          if (!hit.resolved) {
+            toast("Couldn't find that pickup — add an area or landmark", true);
+            reset(); return;
+          }
+          pickup = { lat: hit.lat, lng: hit.lng, label: hit.displayName || pickupLabel };
+          pickupAccuracy = null;
+        } else if (state.pickup?.verified && state.pickup.lat != null) {
+          // Already verified on the home screen — don't make them wait twice.
+          pickup = { lat: state.pickup.lat, lng: state.pickup.lng, label: state.pickup.label || "Current location" };
+          pickupAccuracy = state.pickup.accuracy ?? null;
+        } else {
+          btn.innerHTML = `<span class="spinner"></span> Finding you...`;
+          const fix = await getPickupFix({
+            maxAccuracyMeters: GPS.maxAccuracyMeters,
+            maxAgeMs: GPS.maxAgeMs,
+            timeoutMs: GPS.timeoutMs,
+          });
+          if (!fix.ok) {
+            showPickupProblem(fix);
+            reset(); return;
+          }
+          pickup = { lat: fix.lat, lng: fix.lng, label: "Current location" };
+          pickupAccuracy = fix.accuracy;
+          reverseGeocode(pickup).then((n) => { if (n) pickup.label = n; });
         }
-        pickup = { ...resolved.pickup, label: pickupLabel || "Current location" };
-        dropoff = { ...resolved.dropoff, label: dropoffLabel };
-        state.pickup = { label: pickup.label, lat: pickup.lat, lng: pickup.lng };
-        state.dropoff = { label: dropoff.label, lat: dropoff.lat, lng: dropoff.lng };
-        distanceKm = haversineKm(pickup, dropoff);
+
+        // Zone check happens on the pickup, not the destination: we can take
+        // you out of the zone, we just can't collect you from outside it.
+        if (!inZone(pickup)) {
+          toast(ZONE.outsideMessage, true);
+          track("booking_blocked_outside_zone", {});
+          reset(); return;
+        }
+
+        /* ---- DROP-OFF ------------------------------------------------ */
+        btn.innerHTML = `<span class="spinner"></span> Finding address...`;
+        const drop = await geocode(dropoffLabel, pickup);
+        if (!drop.resolved) {
+          toast("Couldn't find that address — try adding an area or landmark", true);
+          reset(); return;
+        }
+        dropoff = { lat: drop.lat, lng: drop.lng, label: drop.displayName || dropoffLabel };
+
+        /* ---- ROAD ROUTE ---------------------------------------------- */
+        btn.innerHTML = `<span class="spinner"></span> Checking the route...`;
+        route = await getRoute(pickup, dropoff);
+
+        state.pickup = { ...pickup, accuracy: pickupAccuracy, verified: true };
+        state.dropoff = { ...dropoff };
+        state.route = route;
 
         if (mapHandle) {
           mapHandle.setPickup(pickup);
           mapHandle.setDropoff(dropoff);
-          mapHandle.setRoute([pickup, dropoff]);
-          mapHandle.fit([pickup, dropoff], [60, 260]);
+          mapHandle.setRoute(route.coordinates);
+          mapHandle.fit(route.coordinates, [60, 260]);
         }
-        track("ride_route_set", { distanceKm: Math.round(distanceKm * 10) / 10 });
+        track("ride_route_set", {
+          distanceKm: route.km,
+          routed: !route.estimated,
+          pickupAccuracy,
+        });
         stepVehicle();
       } catch (err) {
         toast(err.message || "Couldn't look that up", true);
-        btn.disabled = false;
-        btn.innerHTML = `Continue ${icon("arrow-forward", 18)}`;
+        reset();
       }
     });
   }
 
+  /**
+   * Explain a GPS failure and offer the way out.
+   *
+   * Every branch tells the customer something true and gives them an action.
+   * None of them silently books a ride against a location we invented.
+   */
+  function showPickupProblem(fix) {
+    const messages = {
+      denied: "Location is off. Turn it on in your browser settings, or type your pickup address above.",
+      inaccurate: `We can only place you within ${fix.accuracy}m — too vague to send a rider to. Step outside, or type your pickup address above.`,
+      unavailable: "We couldn't find your location. Type your pickup address above instead.",
+      timeout: "Finding your location is taking too long. Type your pickup address above instead.",
+      unsupported: "This device can't share its location. Type your pickup address above instead.",
+    };
+    toast(messages[fix.reason] || messages.unavailable, true);
+    track("booking_blocked_gps", { reason: fix.reason, accuracy: fix.accuracy || null });
+
+    // Focus the pickup field — the fix is right there.
+    const p = sheet.el?.querySelector?.("#pickupInput") || document.querySelector("#pickupInput");
+    if (p) { p.value = ""; p.placeholder = "Type your pickup address"; p.focus(); }
+  }
+
   // ---------- Step 2: vehicle + fare ----------
   function stepVehicle() {
-    track("ride_fare_viewed", { distanceKm: Math.round(distanceKm * 10) / 10 });
-    const eta = etaMinutes(distanceKm);
+    track("ride_fare_viewed", { distanceKm: route.km, routed: !route.estimated });
+
+    const quoted = previewFare(selectedVehicle, route.km, route.minutes);
 
     const node = sheet.step(`
       <div class="flex justify-between items-center mb-1">
-        <h2 class="text-lg">Choose a ride</h2>
+        <h2 class="text-lg">${VEHICLES.length > 1 ? "Choose a ride" : "Confirm your ride"}</h2>
         <button id="editRouteBtn" class="text-xs text-accent font-bold">Edit route</button>
       </div>
-      <p class="text-secondary text-sm mb-4">${distanceKm.toFixed(1)} km · about ${eta} min</p>
+      <p class="text-secondary text-sm mb-1">${routeSummary(route)}</p>
+      ${route.estimated ? `
+        <p class="text-xs text-muted mb-3">
+          ${icon("info", 11)} Distance is estimated — we couldn't reach the routing service.
+          Your driver may quote a slightly different fare.
+        </p>` : `<div class="mb-3"></div>`}
 
-      <div class="flex-col gap-2 mb-4" id="vehList">
-        ${VEHICLES.map((v) => `
-          <button class="option-card${v.type === selectedVehicle ? " selected" : ""}" data-type="${v.type}" style="padding:var(--sp-3) var(--sp-4);">
-            <div class="list-row-icon">${icon(v.icon, 22)}</div>
-            <div class="flex-col" style="flex:1;">
-              <div class="flex items-center gap-2">
-                <p class="font-bold">${v.name}</p>
-                ${v.tag ? `<span class="badge badge-accent">${v.tag}</span>` : ""}
+      <!-- The fare, stated once, large, before anything else. In a cash
+           market the number is the decision — burying it in a list row is
+           how you get arguments at the roadside. -->
+      <div class="nx-fare-quote mb-4">
+        <div>
+          <p class="text-xs text-secondary">Fare, paid in cash</p>
+          <p class="nx-fare-amount">${fmtMoney(quoted)}</p>
+        </div>
+        <span class="badge badge-accent">Fixed price</span>
+      </div>
+
+      ${VEHICLES.length > 1 ? `
+        <div class="flex-col gap-2 mb-4" id="vehList">
+          ${VEHICLES.map((v) => `
+            <button class="option-card${v.type === selectedVehicle ? " selected" : ""}" data-type="${v.type}" style="padding:var(--sp-3) var(--sp-4);">
+              <div class="list-row-icon">${icon(v.icon, 22)}</div>
+              <div class="flex-col" style="flex:1;">
+                <div class="flex items-center gap-2">
+                  <p class="font-bold">${v.name}</p>
+                  ${v.tag ? `<span class="badge badge-accent">${v.tag}</span>` : ""}
+                </div>
+                <p class="text-secondary text-xs">${v.desc}</p>
               </div>
-              <p class="text-secondary text-xs">${v.desc}</p>
-            </div>
-            <p class="font-bold">${fmtMoney(previewFare(v.type, distanceKm))}</p>
-          </button>`).join("")}
-      </div>
+              <p class="font-bold">${fmtMoney(previewFare(v.type, route.km, route.minutes))}</p>
+            </button>`).join("")}
+        </div>` : `
+        <div class="list-row mb-4" style="background:var(--surface);border-radius:var(--r-md);">
+          <div class="list-row-icon" style="color:var(--accent);">${icon("bike", 22)}</div>
+          <div style="flex:1;">
+            <p class="font-bold text-sm">Nova Moto</p>
+            <p class="text-secondary text-xs">Bike · arrives in about ${formatEta(Math.max(3, Math.round(route.minutes * 0.3)))}</p>
+          </div>
+        </div>`}
 
-      <div class="top-tabs mb-3" id="fareTabs" style="grid-template-columns:1fr 1fr;">
-        <div class="top-tabs-indicator" id="fareInd" style="width:50%; transform:translateX(0);"></div>
-        <button class="top-tab active" data-mode="FIXED">Fixed fare</button>
-        <button class="top-tab" data-mode="BID">Name your fare</button>
-      </div>
+      ${ALLOW_BID_FARE ? `
+        <div class="top-tabs mb-3" id="fareTabs" style="grid-template-columns:1fr 1fr;">
+          <div class="top-tabs-indicator" id="fareInd" style="width:50%; transform:translateX(0);"></div>
+          <button class="top-tab active" data-mode="FIXED">Fixed fare</button>
+          <button class="top-tab" data-mode="BID">Name your fare</button>
+        </div>` : ""}
       <div id="farePanel" class="mb-3"></div>
 
-      <button id="confirmRideBtn" class="btn btn-primary btn-block">Request Ride ${icon("bolt", 18)}</button>
-      <p class="text-xs text-muted text-center mt-3">Cash payment · pay your driver directly</p>
+      <button id="confirmRideBtn" class="btn btn-primary btn-block">Request ride ${icon("bolt", 18)}</button>
+      <p class="text-xs text-muted text-center mt-3">
+        Pay your rider in cash · ${pickupAccuracy != null ? `pickup accurate to ±${pickupAccuracy}m` : "pickup set by address"}
+      </p>
     `);
 
     node.querySelector("#editRouteBtn").addEventListener("click", stepRoute);
@@ -180,31 +294,40 @@ export function renderRideBooking(root) {
 
     function drawFarePanel() {
       if (fareMode === "FIXED") {
-        farePanel.innerHTML = `<p class="text-xs text-muted text-center">Final fare is calculated on distance when you book.</p>`;
-        confirmBtn.innerHTML = `Request Ride ${icon("bolt", 18)}`;
+        // The fare is already stated large above, so this line is the
+        // promise about it rather than a repeat of the number.
+        farePanel.innerHTML = `
+          <p class="text-xs text-muted text-center">
+            This is the price. Your rider will not ask for more.
+          </p>`;
+        confirmBtn.innerHTML = `Request ride ${icon("bolt", 18)}`;
       } else {
-        const suggested = previewFare(selectedVehicle, distanceKm);
+        const suggested = previewFare(selectedVehicle, route.km, route.minutes);
         farePanel.innerHTML = `
           <label class="field-label">Your offer</label>
           <div class="flex items-center gap-2">
             <span class="font-bold text-lg">Rs.</span>
             <input id="bidInput" class="input" type="number" inputmode="numeric" min="1" value="${suggested}" style="flex:1;"/>
           </div>
-          <p class="text-xs text-muted mt-2">Drivers nearby see your offer and choose to accept.</p>
+          <p class="text-xs text-muted mt-2">Riders nearby see your offer and choose to accept.</p>
         `;
-        confirmBtn.innerHTML = `Send Offer ${icon("bolt", 18)}`;
+        confirmBtn.innerHTML = `Send offer ${icon("bolt", 18)}`;
       }
     }
     drawFarePanel();
 
-    fareTabs.querySelectorAll("[data-mode]").forEach((btn, i) => {
-      btn.addEventListener("click", () => {
-        fareMode = btn.dataset.mode;
-        fareTabs.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("active", b === btn));
-        fareInd.style.transform = i === 0 ? "translateX(0)" : "translateX(100%)";
-        drawFarePanel();
+    // Bidding is off for the pilot (ALLOW_BID_FARE in launch.config.js), so
+    // these controls may not exist at all.
+    if (fareTabs && fareInd) {
+      fareTabs.querySelectorAll("[data-mode]").forEach((btn, i) => {
+        btn.addEventListener("click", () => {
+          fareMode = btn.dataset.mode;
+          fareTabs.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("active", b === btn));
+          fareInd.style.transform = i === 0 ? "translateX(0)" : "translateX(100%)";
+          drawFarePanel();
+        });
       });
-    });
+    }
 
     node.querySelectorAll("[data-type]").forEach((card) => {
       card.addEventListener("click", () => {
@@ -216,17 +339,37 @@ export function renderRideBooking(root) {
       });
     });
 
+    // Guards against the classic double-booking: an impatient tap on a slow
+    // connection creating two trips, two riders dispatched, one customer.
+    // The disabled attribute alone loses the race if the tap lands in the
+    // same frame, so we also latch a flag.
+    let submitting = false;
+
     confirmBtn.addEventListener("click", async () => {
+      if (submitting) return;
+
+      // OTP is required at the point of booking, not before — guest browsing
+      // stays open right up until the action that genuinely needs an account.
       if (!Token.access) {
         state.postAuthRedirect = "/ride";
         navigate("/phone");
         return;
       }
+
+      // Re-check the things that can change while someone deliberates.
+      if (!isOpenNow()) { toast(HOURS.closedMessage, true); return; }
+      if (!pickup || pickup.lat == null) {
+        toast("We still don't have your pickup — set it above", true);
+        return;
+      }
+
       let offeredFare;
       if (fareMode === "BID") {
         offeredFare = Number(node.querySelector("#bidInput").value);
         if (!offeredFare || offeredFare <= 0) { toast("Enter an offer amount", true); return; }
       }
+
+      submitting = true;
       confirmBtn.disabled = true;
       confirmBtn.innerHTML = `<span class="spinner"></span>`;
       try {
@@ -235,13 +378,23 @@ export function renderRideBooking(root) {
           dropoffLat: dropoff.lat, dropoffLng: dropoff.lng,
           vehicleType: selectedVehicle,
           fareType: fareMode,
+          // Road distance and duration, so the server prices the ride the
+          // customer was actually quoted rather than recomputing a
+          // straight line. The server sanity-checks both before trusting.
+          roadDistanceKm: route.km,
+          roadDurationMinutes: route.minutes,
+          pickupAccuracyMeters: pickupAccuracy ?? undefined,
           ...(fareMode === "BID" ? { offeredFare } : {}),
         });
-        track("ride_requested", { vehicleType: selectedVehicle, fareType: fareMode, distanceKm: Math.round(distanceKm * 10) / 10 });
+        track("ride_requested", {
+          vehicleType: selectedVehicle, fareType: fareMode,
+          distanceKm: route.km, routed: !route.estimated,
+        });
         state.activeTripId = trip.id;
         navigate("/tracking");
       } catch (err) {
         toast(err.message || "Couldn't request a ride", true);
+        submitting = false;
         confirmBtn.disabled = false;
         drawFarePanel();
       }
@@ -251,11 +404,27 @@ export function renderRideBooking(root) {
   // ---------- Boot ----------
   (async () => {
     try {
-      const here = await getCurrentCoords();
+      // Centre on the customer if we can, on the zone centre otherwise.
+      // This fix is for the MAP ONLY — an inaccurate position is fine for
+      // deciding where to point a viewport, and is never promoted to a
+      // pickup without passing the accuracy gate in stepRoute().
+      const fix = await getPickupFix({
+        maxAccuracyMeters: GPS.maxAccuracyMeters,
+        maxAgeMs: GPS.maxAgeMs,
+        timeoutMs: 6000,
+      });
+      const here = fix.lat != null ? { lat: fix.lat, lng: fix.lng } : ZONE.center;
       if (destroyed) return;
       mapHandle = await createMap(root.querySelector("#mapEl"), { center: here, zoom: 14 });
       if (destroyed) { mapHandle.destroy(); return; }
-      mapHandle.setPickup(here);
+
+      if (fix.ok) {
+        // Trustworthy — remember it so stepRoute doesn't make them wait again.
+        pickup = { lat: fix.lat, lng: fix.lng, label: "Current location" };
+        pickupAccuracy = fix.accuracy;
+        state.pickup = { ...pickup, accuracy: fix.accuracy, verified: true };
+        mapHandle.setPickup(pickup);
+      }
       root.querySelector("#recenterBtn").addEventListener("click", () => mapHandle.center(here, 15));
     } catch {
       // Map failed (offline / CDN blocked) — booking must still work.
