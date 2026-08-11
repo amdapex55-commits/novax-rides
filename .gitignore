@@ -25,3 +25,6 @@ ios/
 
 # Mapbox token — public, but kept out of git (see js/map-token.example.js)
 js/map-token.js
+
+# Build output of scripts/deploy-public.js
+public/
