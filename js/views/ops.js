@@ -42,7 +42,7 @@ export function renderOpsDashboard(root) {
             <p class="text-xs text-muted" id="fleetCount">Loading drivers…</p>
           </div>
           <div class="flex gap-3 text-xs text-secondary">
-            <span class="flex items-center gap-1"><i class="nx-key-dot" style="--dot:#0fa968;"></i>Idle</span>
+            <span class="flex items-center gap-1"><i class="nx-key-dot" style="--dot:#6d28d9;"></i>Idle</span>
             <span class="flex items-center gap-1"><i class="nx-key-dot" style="--dot:#e2960a;"></i>Busy</span>
           </div>
         </div>

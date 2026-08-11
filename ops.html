@@ -33,51 +33,80 @@
 </script>
 </head>
 <body>
-<!-- Boot splash. Inlined rather than living in a stylesheet on purpose: it has
-     to paint on the very first frame, and an external <link> is exactly the
-     round trip that would make it appear late, flash, and look worse than no
-     splash at all. Removed by js/app.js once the first view is on screen. -->
+<!-- BOOT SPLASH — "BAS NOVA KRO."
+     Inlined, not in a stylesheet: it must paint on the first frame, and an
+     external <link> is exactly the round trip that would make it arrive late,
+     flash, and look worse than no splash at all. Removed by js/app.js once the
+     first real view is behind it.
+
+     A nova is a star that suddenly brightens, so the animation is that: light
+     arriving. Rays sweep out, the mark draws itself, then the line that has to
+     do the actual work — the one we want people repeating. -->
 <style>
   #nxSplash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;
-    background:linear-gradient(150deg,#12b673,#0b8a54);
-    transition:opacity .38s ease,visibility .38s ease}
+    background:radial-gradient(120% 90% at 50% 40%,#7c3aed 0%,#5b21b6 45%,#2e1065 100%);
+    transition:opacity .42s ease,visibility .42s ease}
   #nxSplash.is-done{opacity:0;visibility:hidden;pointer-events:none}
-  #nxSplash .nxs-stage{position:relative;display:grid;place-items:center;width:150px;height:150px}
-  /* Rings pulse OUTWARD from behind the mark: motion that reads as a signal
-     going out, which is what the app is about to do. */
-  #nxSplash .nxs-ring{position:absolute;width:74px;height:74px;border-radius:50%;
-    border:2px solid rgba(255,255,255,.55);opacity:0;
-    animation:nxs-pulse 1.9s cubic-bezier(.22,.61,.36,1) infinite}
-  #nxSplash .nxs-ring:nth-child(2){animation-delay:.45s}
-  #nxSplash .nxs-ring:nth-child(3){animation-delay:.9s}
-  @keyframes nxs-pulse{0%{transform:scale(.7);opacity:.7}70%{opacity:.12}100%{transform:scale(2.15);opacity:0}}
-  #nxSplash svg{position:relative;width:74px;height:74px;filter:drop-shadow(0 6px 16px rgba(0,0,0,.22))}
-  /* The bolt draws itself in, then fills. dasharray is set to comfortably
-     exceed the path length so the stroke starts fully hidden. */
+  #nxSplash .nxs-stage{position:relative;display:grid;place-items:center;width:min(78vw,320px)}
+
+  /* Rays: light arriving from a point, not a spinner. Conic gradient masked
+     to a ring so it costs one element instead of twelve. */
+  #nxSplash .nxs-rays{position:absolute;width:230px;height:230px;border-radius:50%;
+    background:conic-gradient(from 0deg,transparent 0 6deg,rgba(255,255,255,.5) 7deg 8deg,
+      transparent 9deg 28deg,rgba(255,255,255,.32) 29deg 30deg,transparent 31deg 60deg);
+    -webkit-mask:radial-gradient(circle,transparent 34%,#000 36%,#000 62%,transparent 64%);
+    mask:radial-gradient(circle,transparent 34%,#000 36%,#000 62%,transparent 64%);
+    opacity:0;animation:nxs-rays 2.6s cubic-bezier(.2,.7,.3,1) forwards}
+  @keyframes nxs-rays{0%{opacity:0;transform:scale(.55) rotate(-40deg)}
+    40%{opacity:.85}100%{opacity:.28;transform:scale(1) rotate(18deg)}}
+
+  #nxSplash .nxs-ring{position:absolute;width:96px;height:96px;border-radius:50%;
+    border:1.5px solid rgba(255,255,255,.5);opacity:0;
+    animation:nxs-pulse 2.4s cubic-bezier(.22,.61,.36,1) infinite}
+  #nxSplash .nxs-ring:nth-of-type(2){animation-delay:.6s}
+  #nxSplash .nxs-ring:nth-of-type(3){animation-delay:1.2s}
+  @keyframes nxs-pulse{0%{transform:scale(.62);opacity:.65}70%{opacity:.1}100%{transform:scale(2);opacity:0}}
+
+  #nxSplash svg{position:relative;width:86px;height:86px;filter:drop-shadow(0 8px 22px rgba(0,0,0,.3))}
+  /* The bolt draws itself, then fills. dasharray comfortably exceeds the path
+     length so the stroke starts fully hidden. */
   #nxSplash .nxs-bolt{stroke-dasharray:240;stroke-dashoffset:240;fill-opacity:0;
-    animation:nxs-draw .74s ease-out forwards,nxs-fill .34s ease-out .62s forwards}
+    animation:nxs-draw .8s ease-out .12s forwards,nxs-fill .36s ease-out .78s forwards}
   @keyframes nxs-draw{to{stroke-dashoffset:0}}
   @keyframes nxs-fill{to{fill-opacity:1}}
-  #nxSplash .nxs-word{position:absolute;bottom:-6px;font-family:Sora,Inter,sans-serif;
-    font-size:15px;font-weight:800;letter-spacing:.14em;color:#fff;opacity:0;
-    animation:nxs-word .4s ease-out .72s forwards}
-  @keyframes nxs-word{to{opacity:.95}}
-  /* Vestibular safety: no draw, no pulse, no scale — just the mark. */
+
+  #nxSplash .nxs-words{position:absolute;top:calc(50% + 74px);text-align:center;width:100%}
+  #nxSplash .nxs-mark{display:block;font-family:Sora,Inter,system-ui,sans-serif;
+    font-size:17px;font-weight:800;letter-spacing:.22em;color:#fff;opacity:0;
+    animation:nxs-in .45s ease-out .85s forwards}
+  /* The tagline. Gold, because it is the thing we want remembered. */
+  #nxSplash .nxs-tag{display:block;margin-top:9px;font-family:Sora,Inter,system-ui,sans-serif;
+    font-size:clamp(19px,5.6vw,25px);font-weight:800;letter-spacing:-.01em;
+    color:#fbbf24;opacity:0;transform:translateY(7px);
+    animation:nxs-in .5s cubic-bezier(.16,1,.3,1) 1.12s forwards}
+  @keyframes nxs-in{to{opacity:1;transform:none}}
+
+  /* Vestibular safety: no draw, no sweep, no scale — just the finished frame. */
   @media (prefers-reduced-motion:reduce){
-    #nxSplash .nxs-ring{animation:none;opacity:.25}
+    #nxSplash .nxs-rays{animation:none;opacity:.28}
+    #nxSplash .nxs-ring{animation:none;opacity:.2}
     #nxSplash .nxs-bolt{animation:none;stroke-dashoffset:0;fill-opacity:1}
-    #nxSplash .nxs-word{animation:none;opacity:.95}
+    #nxSplash .nxs-mark,#nxSplash .nxs-tag{animation:none;opacity:1;transform:none}
   }
 </style>
 <div id="nxSplash" role="status" aria-label="Nova Go is starting">
   <div class="nxs-stage">
+    <span class="nxs-rays"></span>
     <span class="nxs-ring"></span><span class="nxs-ring"></span><span class="nxs-ring"></span>
     <svg viewBox="0 0 64 64" aria-hidden="true">
       <path class="nxs-bolt" d="M36 8 18 36h12l-2 20 18-28H34l2-20z"
             fill="#fff" stroke="#fff" stroke-width="2.5"
             stroke-linejoin="round" stroke-linecap="round"/>
     </svg>
-    <span class="nxs-word">NOVA GO</span>
+    <span class="nxs-words">
+      <span class="nxs-mark">NOVA GO</span>
+      <span class="nxs-tag">BAS NOVA KRO.</span>
+    </span>
   </div>
 </div>
 <div id="app-root"></div>

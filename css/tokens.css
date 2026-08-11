@@ -9,35 +9,47 @@
      between stacked cards, not a return to flat gray-on-gray. */
   --bg: #ffffff;
   --bg-elevated: #ffffff;
-  --surface: #f6f8f7;
-  --surface-2: #eef1ef;
-  --surface-3: #e3e7e4;
-  --surface-border: #dfe3e0;
+  --surface: #f7f7fb;
+  --surface-2: #eeeef5;
+  --surface-3: #e4e4ee;
+  --surface-border: #e0e0ea;
 
   /* Text */
-  --text-primary: #0e1d16;
-  --text-secondary: #5c6a63;
-  --text-muted: #94a19a;
+  --text-primary: #16121f;
+  --text-secondary: #635c6f;
+  --text-muted: #948fa1;
 
-  /* Brand accent — same emerald identity, deepened slightly so it holds
-     AA contrast on white instead of the neon-on-navy tuning. Amber stays
-     the sole secondary, reserved for warnings/pending states. */
-  --accent: #0fa968;
-  --accent-2: #e2960a;
-  --accent-gradient: linear-gradient(135deg, #0c9a5e 0%, #12b673 100%);
-  --accent-gradient-3: var(--accent-gradient);
-  --accent-glow: 0 0 14px rgba(15, 169, 104, 0.22);
-  --accent-2-glow: 0 0 14px rgba(226, 150, 10, 0.22);
+  /* BRAND — Nova violet.
+     Every ride-hailing brand in this market is green: Bykea, Careem, and
+     inDrive's accent all sit within a few degrees of each other, so a green
+     Nova Go looks like a Bykea clone at a glance on a shared screen — which
+     is exactly the comparison we don't want a first-time user making.
+     Violet is unclaimed here, reads premium rather than budget, and matches
+     the name: a nova is a star, so the identity is night sky plus starlight.
+     Gold is the second colour — energy, "Fast Match", the moment something
+     good happens.
+     #6D28D9 holds 7.4:1 against white, so white button text passes AA at
+     every size, which the brighter violets do not. */
+  --accent: #6d28d9;
+  --accent-strong: #5b21b6;
+  --accent-soft: #ede9fe;
+  --accent-2: #f59e0b;
+  --accent-gradient: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
+  --accent-gradient-3: linear-gradient(135deg, #5b21b6 0%, #7c3aed 55%, #a78bfa 100%);
+  --accent-glow: 0 0 14px rgba(109, 40, 217, 0.24);
+  --accent-2-glow: 0 0 14px rgba(245, 158, 11, 0.24);
 
   /* Glass surfaces — light, frosted-white instead of dark-tinted. */
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-bg-strong: rgba(255, 255, 255, 0.92);
-  --glass-border: rgba(14, 29, 22, 0.08);
+  --glass-border: rgba(22, 18, 31, 0.08);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   --glass-blur: 22px;
 
-  /* Semantic */
-  --success: #12b673;
+  /* Semantic — deliberately NOT the brand colour. Green means "this worked"
+     to everyone; making success violet would make every confirmation look
+     like a branded banner instead of a result. */
+  --success: #059669;
   --warning: #d97706;
   --error: #e11d48;
   --on-accent: #ffffff;
@@ -93,7 +105,7 @@
      decoration. This is what stops the app looking like five apps. */
   --brand-ride: var(--accent);      /* rides, parcels, primary CTAs */
   --brand-food: var(--accent-2);    /* food marketplace + loyalty */
-  --brand-ride-soft: rgba(15, 169, 104, 0.10);
+  --brand-ride-soft: rgba(109, 40, 217, 0.10);
   --brand-food-soft: rgba(226, 150, 10, 0.12);
 
   /* Sheets sit above maps; maps sit under everything. */

@@ -112,17 +112,26 @@ export const ZONE = {
   // comes. "We don't serve your area yet" is a disappointment; a rider who
   // never arrives is a lost customer and a public complaint.
   //
-  // Clifton + DHA is the default because it's where a first bike pilot works
-  // best: high smartphone penetration, short dense trips, and the easiest
-  // area to recruit riders who already work it. Change the three values
-  // below if you pick differently — nothing else needs touching.
+  // NOVA GO RUNS ACROSS ALL OF KARACHI.
+  //
+  // The radius below is drawn from the city centre and set wide enough to
+  // cover Karachi end to end — Malir and Bin Qasim in the east, Baldia and
+  // Hawksbay in the west, North Karachi and Gadap to the north, Sea View to
+  // the south. It is a sanity boundary, not a service area: it stops a
+  // booking from Hyderabad or a GPS glitch in the Arabian Sea, and nothing
+  // else.
+  //
+  // Supply is managed by where you recruit riders, not by fencing customers
+  // out. Turning whole neighbourhoods away is how a new service stays small.
   enabled: true,
-  name: "Clifton & DHA",
-  center: { lat: 24.8138, lng: 67.0300 },
-  // 6km from Clifton covers Zamzama, Boat Basin, DHA 1–6 and Sea View
-  // without stretching into areas you have no riders in.
-  radiusKm: 6,
-  outsideMessage: "We're starting in Clifton & DHA and expanding weekly — we're not in your area yet.",
+  name: "Karachi",
+  // Roughly the geographic centre of the city, not Clifton — a centre point
+  // in the south would push the radius out to sea and cut off the north.
+  center: { lat: 24.9200, lng: 67.1000 },
+  // 45km from centre covers every populated part of Karachi with room to
+  // spare, and still rejects another city.
+  radiusKm: 45,
+  outsideMessage: "Nova Go runs across Karachi — it looks like you're outside the city.",
 };
 
 /** Is this point inside the launch zone? Returns true when zoning is off. */

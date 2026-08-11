@@ -73,7 +73,7 @@ const CUSTOMER_PROOF = [
 
 // One accent. A single-service app shouldn't look like four products.
 const PROOF_THEME = {
-  color: "var(--accent)", soft: "var(--brand-ride-soft)", glow: "rgba(15,169,104,0.14)",
+  color: "var(--accent)", soft: "var(--brand-ride-soft)", glow: "rgba(109,40,217,0.14)",
 };
 
 function renderCustomerWelcome(root) {

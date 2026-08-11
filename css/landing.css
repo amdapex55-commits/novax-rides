@@ -17,10 +17,10 @@
   --nx-dim: #97a4ae;
   --nx-faint: #5c6772;
 
-  --nx-ride: #17e08a;
+  --nx-ride: #a78bfa;
   --nx-food: #ffb02e;
   --nx-ops: #4d9dff;
-  --nx-parcel: #b98cff;
+  --nx-parcel: #22d3ee;
 
   --nx-max: 1200px;
   --nx-ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -61,20 +61,20 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .nx-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; letter-spacing: -0.03em; }
 .nx-logo-mark {
   width: 30px; height: 30px; border-radius: 9px;
-  background: linear-gradient(135deg, var(--nx-ride), #0b9d63);
+  background: linear-gradient(135deg, var(--nx-ride), #5b21b6);
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 0 24px rgba(23, 224, 138, 0.4);
+  box-shadow: 0 0 24px rgba(167, 139, 250, 0.4);
 }
 .nx-nav-links { display: flex; gap: 26px; font-size: 14px; color: var(--nx-dim); }
 .nx-nav-links a { transition: color 200ms; }
 .nx-nav-links a:hover { color: var(--nx-text); }
 .nx-nav-cta {
   padding: 9px 18px; border-radius: 999px;
-  background: var(--nx-ride); color: #04120b;
+  background: var(--nx-ride); color: #ffffff;
   font-size: 14px; font-weight: 700;
   transition: transform 240ms var(--nx-spring), box-shadow 240ms;
 }
-.nx-nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(23, 224, 138, 0.35); }
+.nx-nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(167, 139, 250, 0.35); }
 @media (max-width: 900px) { .nx-nav-links { display: none; } }
 
 /* ============================================================= HERO ==== */
@@ -96,7 +96,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .nx-hero.no-webgl #nx-canvas { display: none; }
 .nx-hero.no-webgl {
   background:
-    radial-gradient(circle at 76% 34%, rgba(23,224,138,0.16), transparent 55%),
+    radial-gradient(circle at 76% 34%, rgba(167,139,250,0.16), transparent 55%),
     radial-gradient(circle at 22% 72%, rgba(77,157,255,0.11), transparent 55%),
     var(--nx-bg);
 }
@@ -111,15 +111,15 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .nx-eyebrow {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 7px 15px; border-radius: 999px;
-  background: rgba(23,224,138,0.1);
-  border: 1px solid rgba(23,224,138,0.26);
+  background: rgba(167,139,250,0.1);
+  border: 1px solid rgba(167,139,250,0.26);
   color: var(--nx-ride);
   font-size: 12px; font-weight: 700;
   letter-spacing: 0.07em; text-transform: uppercase;
   margin-bottom: 26px;
 }
 .nx-eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--nx-ride); animation: nx-live 2s ease-in-out infinite; }
-@keyframes nx-live { 0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(23,224,138,0.6); } 50% { opacity: 0.4; box-shadow: 0 0 0 5px rgba(23,224,138,0); } }
+@keyframes nx-live { 0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(167,139,250,0.6); } 50% { opacity: 0.4; box-shadow: 0 0 0 5px rgba(167,139,250,0); } }
 
 .nx-h1 {
   font-family: "Sora", "Inter", sans-serif;
@@ -128,7 +128,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   letter-spacing: -0.05em; margin-bottom: 20px;
 }
 .nx-h1 .glow {
-  background: linear-gradient(115deg, #fff 15%, var(--nx-ride) 55%, #86f3c4 100%);
+  background: linear-gradient(115deg, #fff 15%, var(--nx-ride) 55%, #fbbf24 100%);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 /* Rotating service word — the headline says what we do, then proves it. */
@@ -150,10 +150,10 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-size: 15px; font-weight: 700; white-space: nowrap;
   transition: transform 260ms var(--nx-spring), box-shadow 260ms, background 260ms, border-color 260ms;
 }
-.nx-btn-primary { background: linear-gradient(135deg, var(--nx-ride), #0fae6c); color: #04120b; box-shadow: 0 8px 30px rgba(23,224,138,0.3); }
-.nx-btn-primary:hover { transform: translateY(-3px); box-shadow: 0 14px 44px rgba(23,224,138,0.44); }
+.nx-btn-primary { background: linear-gradient(135deg, #7c3aed, #5b21b6); color: #ffffff; box-shadow: 0 8px 30px rgba(167,139,250,0.3); }
+.nx-btn-primary:hover { transform: translateY(-3px); box-shadow: 0 14px 44px rgba(167,139,250,0.44); }
 .nx-btn-ghost { border: 1px solid var(--nx-border-2); color: var(--nx-text); background: rgba(255,255,255,0.03); }
-.nx-btn-ghost:hover { transform: translateY(-3px); border-color: var(--nx-ride); background: rgba(23,224,138,0.08); }
+.nx-btn-ghost:hover { transform: translateY(-3px); border-color: var(--nx-ride); background: rgba(167,139,250,0.08); }
 
 /* Hero proof strip */
 .nx-hero-proof { display: flex; flex-wrap: wrap; gap: 28px; }
@@ -176,7 +176,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     0 50px 100px -20px rgba(0,0,0,0.85),
     0 0 0 9px #14181e,
     0 0 0 10px rgba(255,255,255,0.06),
-    0 0 90px rgba(23,224,138,0.13);
+    0 0 90px rgba(167,139,250,0.13);
   overflow: hidden;
   transform: rotateY(-9deg) rotateX(3deg) translateZ(0);
   transition: transform 700ms var(--nx-ease);
@@ -194,16 +194,35 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   height: 44px; display: flex; align-items: flex-end; justify-content: space-between;
   padding: 0 20px 5px; font-size: 11px; font-weight: 700; color: #0e1d16;
 }
+/* The hero phone's map. A real drawn city (see CITY_SVG in landing-ui.js)
+   rather than the graph-paper grid this used to be — the grid was why the
+   phone screen read as blank. */
 .nx-phone-map {
   position: absolute; inset: 44px 0 0 0;
-  background:
-    linear-gradient(rgba(14,29,22,0.045) 1px, transparent 1px) 0 0 / 100% 34px,
-    linear-gradient(90deg, rgba(14,29,22,0.045) 1px, transparent 1px) 0 0 / 34px 100%,
-    #eef2f0;
+  overflow: hidden;
+  background: #f2f2f8;
+}
+.nx-phone-map .nx-city {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  /* Slow drift, so the map feels alive without competing with the route
+     animation that carries the actual story. */
+  animation: nx-city-drift 26s ease-in-out infinite alternate;
+}
+@keyframes nx-city-drift {
+  from { transform: scale(1.06) translate(-1.5%, -1%); }
+  to   { transform: scale(1.06) translate(1.5%, 1%); }
+}
+/* Route, pins and the moving bike live above the city and are the only part
+   that re-renders per step. */
+.nx-city-layer { position: absolute; inset: 0; transition: opacity 400ms ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-phone-map .nx-city { animation: none; transform: scale(1.06); }
 }
 .nx-route {
   position: absolute; height: 3px; border-radius: 3px;
-  background: linear-gradient(90deg, var(--nx-ride), rgba(23,224,138,0.25));
+  background: linear-gradient(90deg, var(--nx-ride), rgba(167,139,250,0.25));
 }
 .nx-pin {
   position: absolute; width: 15px; height: 15px; border-radius: 50% 50% 50% 0;
@@ -239,15 +258,15 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   padding: 4px 10px; border-radius: 999px;
   font-size: 10.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase;
 }
-.nx-chip.ride { background: rgba(15,169,104,0.12); color: #0b8a54; }
+.nx-chip.ride { background: rgba(109,40,217,0.12); color: #5b21b6; }
 .nx-chip.food { background: rgba(226,150,10,0.14); color: #a86c05; }
-.nx-chip.live { background: rgba(15,169,104,0.12); color: #0b8a54; }
+.nx-chip.live { background: rgba(109,40,217,0.12); color: #5b21b6; }
 
 .nx-row { display: flex; align-items: center; gap: 11px; }
 .nx-av {
   width: 42px; height: 42px; border-radius: 50%; flex: none;
   background: #eef2f0; display: flex; align-items: center; justify-content: center;
-  font-weight: 800; color: #0fa968; font-size: 15px;
+  font-weight: 800; color: #6d28d9; font-size: 15px;
 }
 .nx-t-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
 .nx-t-sub { font-size: 11.5px; color: #7b8a83; margin-top: 1px; }
@@ -260,7 +279,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
   font-size: 14px; font-weight: 700;
 }
-.nx-fakebtn.solid { background: linear-gradient(135deg, #0fa968, #0c9a5e); color: #fff; }
+.nx-fakebtn.solid { background: linear-gradient(135deg, #6d28d9, #6423c8); color: #fff; }
 .nx-fakebtn.soft { background: #f2f5f3; color: #0e1d16; border: 1px solid #e2e8e5; }
 
 /* Food card inside phone */
@@ -354,8 +373,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-size: 12px; font-weight: 800; color: var(--nx-faint);
   transition: all 460ms var(--nx-spring);
 }
-.nx-jstep.done .nx-jdot { background: var(--nx-ride); border-color: var(--nx-ride); color: #04120b; transform: scale(1.12); }
-.nx-jstep.active .nx-jdot { box-shadow: 0 0 0 7px rgba(23,224,138,0.14); }
+.nx-jstep.done .nx-jdot { background: var(--nx-ride); border-color: var(--nx-ride); color: #ffffff; transform: scale(1.12); }
+.nx-jstep.active .nx-jdot { box-shadow: 0 0 0 7px rgba(167,139,250,0.14); }
 .nx-jstep h4 { font-size: 14.5px; font-weight: 700; margin: 15px 0 5px; letter-spacing: -0.01em; }
 .nx-jstep p { font-size: 12.5px; color: var(--nx-faint); line-height: 1.55; padding-right: 12px; }
 
@@ -377,7 +396,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   width: 24px; height: 24px; border-radius: 50%;
   background: var(--nx-ride); cursor: pointer;
   border: 3px solid var(--nx-bg);
-  box-shadow: 0 0 0 1px var(--nx-ride), 0 4px 14px rgba(23,224,138,0.4);
+  box-shadow: 0 0 0 1px var(--nx-ride), 0 4px 14px rgba(167,139,250,0.4);
   transition: transform 200ms var(--nx-spring);
 }
 .nx-slider::-webkit-slider-thumb:active { transform: scale(1.18); }
@@ -485,7 +504,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   background: var(--nx-panel); border: 1px solid var(--nx-border); color: var(--nx-dim);
   transition: border-color 260ms, color 260ms, transform 260ms var(--nx-spring);
 }
-.nx-zone.live { border-color: rgba(23,224,138,0.4); color: var(--nx-ride); }
+.nx-zone.live { border-color: rgba(167,139,250,0.4); color: var(--nx-ride); }
 .nx-zone:hover { transform: translateY(-2px); border-color: var(--nx-border-2); color: var(--nx-text); }
 
 /* -------------------------------------------------------- CTA band ---- */
@@ -494,7 +513,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   position: relative; padding: clamp(58px, 8vw, 92px) clamp(26px, 6vw, 68px);
   border-radius: 30px; overflow: hidden;
   background:
-    radial-gradient(ellipse at 18% 0%, rgba(23,224,138,0.18), transparent 58%),
+    radial-gradient(ellipse at 18% 0%, rgba(167,139,250,0.18), transparent 58%),
     radial-gradient(ellipse at 88% 100%, rgba(77,157,255,0.13), transparent 58%),
     var(--nx-bg-2);
   border: 1px solid var(--nx-border);

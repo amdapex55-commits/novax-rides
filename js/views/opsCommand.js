@@ -27,7 +27,7 @@ function readinessHtml() {
   const r = launchReadiness();
   if (r.ready) {
     return `
-      <div class="nx-launch-note mb-4" style="background:var(--brand-ride-soft);border-color:rgba(15,169,104,0.25);">
+      <div class="nx-launch-note mb-4" style="background:var(--brand-ride-soft);border-color:rgba(109,40,217,0.25);">
         ${icon("check-circle", 16)}
         <span><strong>Launch checks passing.</strong> ${r.passed}/${r.total} — support contacts,
         legal details and zone are all configured.</span>

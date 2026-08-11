@@ -269,11 +269,11 @@
   color: #fff;
   background-image:
     linear-gradient(100deg, transparent 38%, rgba(255,255,255,0.16) 50%, transparent 62%),
-    linear-gradient(135deg, #0b8a54 0%, #12b673 55%, #0fa968 100%);
+    linear-gradient(135deg, #5b21b6 0%, #7c3aed 55%, #6d28d9 100%);
   background-size: 260% 100%, 100% 100%;
   background-position: 160% 0, 0 0;
   background-repeat: no-repeat;
-  box-shadow: 0 14px 38px rgba(15, 169, 104, 0.26);
+  box-shadow: 0 14px 38px rgba(109, 40, 217, 0.26);
   animation: nx-sweep 5.5s ease-in-out infinite;
 }
 .nx-hero-card.food {
@@ -314,7 +314,7 @@
 .nx-service-tile::before {
   content: "";
   position: absolute; inset: 0;
-  background: radial-gradient(120% 90% at 100% 0%, var(--tile-glow, rgba(15,169,104,0.14)), transparent 62%);
+  background: radial-gradient(120% 90% at 100% 0%, var(--tile-glow, rgba(109,40,217,0.14)), transparent 62%);
   opacity: 0;
   transition: opacity 320ms var(--ease-out);
 }
@@ -377,7 +377,7 @@
   padding: 13px 15px;
   border-radius: var(--r-md);
   background: var(--brand-ride-soft);
-  border: 1px solid rgba(15, 169, 104, 0.2);
+  border: 1px solid rgba(109, 40, 217, 0.2);
   font-size: 12.5px; line-height: 1.55;
   color: var(--text-secondary);
 }
@@ -461,7 +461,7 @@
   transform-origin: left;
   animation: nx-fillbar 480ms var(--ease-out) both;
 }
-.nx-steps i.now::after { background: linear-gradient(90deg, var(--accent), rgba(15,169,104,0.35)); }
+.nx-steps i.now::after { background: linear-gradient(90deg, var(--accent), rgba(109,40,217,0.35)); }
 @keyframes nx-fillbar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .nx-step-label { font-size: 12px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.02em; }
 
@@ -527,7 +527,7 @@
 .nx-store-openpill {
   position: absolute; top: 10px; left: 10px;
   font-size: 9.5px; font-weight: 800; letter-spacing: 0.05em;
-  background: rgba(255,255,255,0.95); color: #0b8a54;
+  background: rgba(255,255,255,0.95); color: #5b21b6;
   padding: 4px 9px; border-radius: 99px;
 }
 .nx-store-logo {
@@ -548,7 +548,7 @@
 .nx-store-row h4.muted { color: var(--text-muted); font-weight: 600; }
 .nx-store-rating {
   font-size: 11px; font-weight: 800; flex: none;
-  background: var(--brand-ride-soft); color: #0b8a54;
+  background: var(--brand-ride-soft); color: #5b21b6;
   padding: 3px 8px; border-radius: 99px;
 }
 .nx-store-tags { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
@@ -590,7 +590,7 @@
 .nx-chip-opt:hover { background: var(--surface-2); }
 .nx-chip-opt.on {
   background: var(--brand-ride-soft); color: var(--accent);
-  border-color: rgba(15,169,104,0.32); transform: scale(1.03);
+  border-color: rgba(109,40,217,0.32); transform: scale(1.03);
 }
 
 .nx-seg { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -600,7 +600,7 @@
   border-radius: 11px; background: var(--surface); color: var(--text-secondary);
   border: 1.5px solid transparent; transition: all 200ms var(--ease-out);
 }
-.nx-seg-btn.on { background: var(--bg); border-color: var(--accent); color: var(--accent); box-shadow: 0 3px 12px rgba(15,169,104,0.15); }
+.nx-seg-btn.on { background: var(--bg); border-color: var(--accent); color: var(--accent); box-shadow: 0 3px 12px rgba(109,40,217,0.15); }
 
 .nx-pay-grid { display: flex; flex-direction: column; gap: 8px; }
 .nx-pay-opt {
@@ -609,7 +609,7 @@
   background: var(--surface); border: 1.5px solid transparent;
   transition: all 220ms var(--ease-out);
 }
-.nx-pay-opt.on { background: var(--bg); border-color: var(--accent); box-shadow: 0 4px 16px rgba(15,169,104,0.14); }
+.nx-pay-opt.on { background: var(--bg); border-color: var(--accent); box-shadow: 0 4px 16px rgba(109,40,217,0.14); }
 .nx-pay-name { font-size: 14.5px; font-weight: 700; }
 .nx-pay-hint { font-size: 11.5px; color: var(--text-muted); }
 
@@ -623,7 +623,7 @@
 .nx-range::-webkit-slider-thumb {
   -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
   background: #fff; border: 3px solid var(--accent); cursor: grab;
-  box-shadow: 0 3px 10px rgba(15,169,104,0.32);
+  box-shadow: 0 3px 10px rgba(109,40,217,0.32);
   transition: transform 180ms var(--ease-bounce);
 }
 .nx-range::-webkit-slider-thumb:active { transform: scale(1.16); cursor: grabbing; }
@@ -694,7 +694,7 @@
 .nx-welcome-glow {
   position: absolute; inset: 0; pointer-events: none; z-index: 0;
   background:
-    radial-gradient(46% 32% at 18% 8%, var(--glow-a, rgba(15,169,104,0.16)), transparent 70%),
+    radial-gradient(46% 32% at 18% 8%, var(--glow-a, rgba(109,40,217,0.16)), transparent 70%),
     radial-gradient(40% 28% at 92% 22%, rgba(226,150,10,0.13), transparent 70%);
   filter: blur(6px);
   animation: nx-breathe 9s ease-in-out infinite;
@@ -711,7 +711,7 @@
   display: flex; align-items: center; justify-content: center;
   color: #fff;
   margin: 0 auto 18px;
-  box-shadow: 0 10px 30px rgba(15,169,104,0.32);
+  box-shadow: 0 10px 30px rgba(109,40,217,0.32);
   animation: nx-mark-in 780ms var(--ease-bounce) both;
 }
 @keyframes nx-mark-in {
@@ -792,7 +792,7 @@
   width: 27px; height: 27px; border-radius: 9px;
   background: var(--accent-gradient); color: #fff;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 12px rgba(15,169,104,0.3);
+  box-shadow: 0 4px 12px rgba(109,40,217,0.3);
 }
 .nx-bike-avatar {
   width: 38px; height: 38px; border-radius: 50%;
@@ -844,7 +844,7 @@
 }
 .nx-whereto:hover:not(:disabled), .nx-whereto:focus-visible {
   background: var(--bg); border-color: var(--accent);
-  box-shadow: 0 8px 26px rgba(15,169,104,0.16);
+  box-shadow: 0 8px 26px rgba(109,40,217,0.16);
 }
 .nx-whereto:active:not(:disabled) { transform: scale(0.985); }
 .nx-whereto:disabled { opacity: 0.5; }
@@ -935,7 +935,7 @@
   display: flex; align-items: center; justify-content: space-between;
   padding: 15px 17px; border-radius: var(--r-md);
   background: var(--brand-ride-soft);
-  border: 1px solid rgba(15,169,104,0.2);
+  border: 1px solid rgba(109,40,217,0.2);
   animation: nx-pop 480ms var(--ease-bounce) both;
 }
 .nx-fare-amount {
@@ -977,7 +977,7 @@
 
 /* Route line already animates its draw from map.js. This adds the subtle
    travelling sheen that makes a static route feel live. */
-.nx-route-line { filter: drop-shadow(0 1px 4px rgba(15,169,104,0.35)); }
+.nx-route-line { filter: drop-shadow(0 1px 4px rgba(109,40,217,0.35)); }
 
 /* ===========================================================================
    15. BOOKING COCKPIT
@@ -1022,8 +1022,8 @@
 .nx-lock {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
-  color: #17e08a; background: rgba(23,224,138,0.14);
-  border: 1px solid rgba(23,224,138,0.28);
+  color: #a78bfa; background: rgba(167,139,250,0.14);
+  border: 1px solid rgba(167,139,250,0.28);
   padding: 5px 10px; border-radius: 99px;
   flex: none;
 }
@@ -1042,7 +1042,7 @@
   display: flex; align-items: center; gap: 5px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.nx-cockpit-cell .v.good { color: #17e08a; }
+.nx-cockpit-cell .v.good { color: #a78bfa; }
 .nx-cockpit-cell .v.warn { color: #ffc45c; }
 
 /* ===========================================================================
@@ -1065,7 +1065,7 @@
 .nx-safety-btn:active { transform: scale(0.96); }
 .nx-safety-btn.share {
   background: var(--brand-ride-soft); color: var(--accent);
-  border-color: rgba(15,169,104,0.26);
+  border-color: rgba(109,40,217,0.26);
 }
 .nx-safety-btn.sos {
   background: rgba(225,29,72,0.09); color: #e11d48;
@@ -1081,13 +1081,13 @@
 .nx-verified {
   display: flex; align-items: center; gap: 13px;
   padding: 14px; border-radius: var(--r-md);
-  background: var(--bg); border: 1.5px solid rgba(15,169,104,0.24);
-  box-shadow: 0 6px 22px rgba(15,169,104,0.10);
+  background: var(--bg); border: 1.5px solid rgba(109,40,217,0.24);
+  box-shadow: 0 6px 22px rgba(109,40,217,0.10);
 }
 .nx-verified-badge {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 10.5px; font-weight: 800; letter-spacing: 0.05em;
-  color: #0b8a54; background: var(--brand-ride-soft);
+  color: #5b21b6; background: var(--brand-ride-soft);
   padding: 3px 8px; border-radius: 99px;
 }
 .nx-plate-big {
@@ -1140,7 +1140,7 @@
   background: var(--accent-gradient); color: #fff;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 20px;
-  box-shadow: 0 10px 26px rgba(15,169,104,0.28);
+  box-shadow: 0 10px 26px rgba(109,40,217,0.28);
   animation: nx-mark-in 700ms var(--ease-bounce) both;
 }
 /* Ops is not a consumer product and shouldn't look like one. */
@@ -1169,7 +1169,7 @@
 .nx-phone-field:focus-within {
   background: var(--bg);
   border-color: var(--accent);
-  box-shadow: 0 6px 22px rgba(15,169,104,0.14);
+  box-shadow: 0 6px 22px rgba(109,40,217,0.14);
 }
 .nx-phone-field.ready { border-color: var(--accent); background: var(--bg); }
 
@@ -1214,7 +1214,7 @@
   transition: border-color 220ms, background 220ms, transform 200ms var(--ease-spring);
 }
 .nx-check-row:active { transform: scale(0.985); }
-.nx-check-row.done { border-color: rgba(15,169,104,0.35); background: var(--brand-ride-soft); }
+.nx-check-row.done { border-color: rgba(109,40,217,0.35); background: var(--brand-ride-soft); }
 .nx-check-mark {
   width: 26px; height: 26px; border-radius: 50%; flex: none;
   display: flex; align-items: center; justify-content: center;
@@ -1292,7 +1292,7 @@
   display: flex; gap: 11px; align-items: flex-start;
   padding: 13px 15px; border-radius: var(--r-md);
   background: var(--brand-ride-soft);
-  border: 1px solid rgba(15,169,104,0.22);
+  border: 1px solid rgba(109,40,217,0.22);
   margin-bottom: 12px;
 }
 .nx-note-driver .k {

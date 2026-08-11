@@ -34,7 +34,7 @@ function renderShell() {
  * to hold longer than that just because something downstream is slow: the
  * floor is a floor, not a delay added to boot time.
  */
-const SPLASH_MIN_MS = 1200;
+const SPLASH_MIN_MS = 1750;
 const bootStartedAt = Date.now();
 
 function dismissSplash() {

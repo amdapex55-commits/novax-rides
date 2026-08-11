@@ -25,7 +25,7 @@ const RIDE_SEQUENCE = [
       <span class="nx-chip ride">Where to?</span>
       <div style="margin-top:14px; border:1px solid #e6ebe8; border-radius:14px; padding:12px 14px;">
         <div class="nx-row" style="gap:10px; margin-bottom:10px;">
-          <span style="width:9px;height:9px;border-radius:50%;background:#0fa968;flex:none;"></span>
+          <span style="width:9px;height:9px;border-radius:50%;background:#6d28d9;flex:none;"></span>
           <span style="font-size:13.5px;color:#0e1d16;">Current location</span>
         </div>
         <div style="height:1px;background:#eef2f0;margin:0 0 10px 19px;"></div>
@@ -47,12 +47,12 @@ const RIDE_SEQUENCE = [
       <!-- Bike only, and the fare stated once and large — matching the real
            pilot screen. 6.2km at Rs 60 + Rs 22/km = Rs 195. -->
       <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;
-                  padding:14px 15px;border-radius:14px;background:rgba(15,169,104,0.07);">
+                  padding:14px 15px;border-radius:14px;background:rgba(109,40,217,0.07);">
         <div>
           <div style="font-size:10.5px;color:#5c6a63;">Fare, paid in cash</div>
-          <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#0b8a54;">Rs. 195</div>
+          <div style="font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#5b21b6;">Rs. 195</div>
         </div>
-        <span style="font-size:9.5px;font-weight:800;color:#0b8a54;background:rgba(15,169,104,0.13);padding:4px 9px;border-radius:99px;">FIXED PRICE</span>
+        <span style="font-size:9.5px;font-weight:800;color:#5b21b6;background:rgba(109,40,217,0.13);padding:4px 9px;border-radius:99px;">FIXED PRICE</span>
       </div>
       <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;margin-top:9px;border:1px solid #e6ebe8;border-radius:13px;">
         <span style="font-size:19px;">🛵</span>
@@ -66,12 +66,12 @@ const RIDE_SEQUENCE = [
     sheet: `
       <span class="nx-chip live">Finding a rider</span>
       <div class="nx-row" style="margin-top:16px;gap:12px;">
-        <span style="width:22px;height:22px;border:2.5px solid #e6ebe8;border-top-color:#0fa968;border-radius:50%;display:inline-block;animation:nx-spin 0.8s linear infinite;"></span>
+        <span style="width:22px;height:22px;border:2.5px solid #e6ebe8;border-top-color:#6d28d9;border-radius:50%;display:inline-block;animation:nx-spin 0.8s linear infinite;"></span>
         <span style="font-size:14px;color:#5c6a63;">Contacting riders near you…</span>
       </div>
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid #eef2f0;display:flex;justify-content:space-between;">
         <span style="font-size:12px;color:#7b8a83;">Pay cash to your rider</span>
-        <span style="font-size:12px;color:#0fa968;font-weight:700;">Rs. 195</span>
+        <span style="font-size:12px;color:#6d28d9;font-weight:700;">Rs. 195</span>
       </div>`,
   },
   {
@@ -80,14 +80,14 @@ const RIDE_SEQUENCE = [
     sheet: `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <span class="nx-chip ride">Rider on the way</span>
-        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#98a5ad;letter-spacing:0.05em;">#A7F3C1</span>
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#98a5ad;letter-spacing:0.05em;">#A78BFA</span>
       </div>
       <div class="nx-row" style="margin-top:15px;padding-bottom:14px;border-bottom:1px solid #eef2f0;">
         <div class="nx-av">B</div>
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:6px;">
             <span class="nx-t-title">Bilal A.</span>
-            <span style="font-size:9.5px;font-weight:800;color:#0fa968;background:rgba(15,169,104,0.11);padding:2px 7px;border-radius:99px;">✓ VERIFIED</span>
+            <span style="font-size:9.5px;font-weight:800;color:#6d28d9;background:rgba(109,40,217,0.11);padding:2px 7px;border-radius:99px;">✓ VERIFIED</span>
           </div>
           <div class="nx-t-sub">★ 4.9 · Nova Moto · 3 min away</div>
         </div>
@@ -109,13 +109,13 @@ const FOOD_SEQUENCE = [
       <div class="nx-food-card" style="margin-top:13px;">
         <div class="nx-food-banner">
           <span style="font-size:27px;">🍛</span>
-          <span style="position:absolute;top:9px;left:9px;font-size:9.5px;font-weight:800;background:rgba(255,255,255,0.94);color:#0b8a54;padding:3px 8px;border-radius:99px;">OPEN NOW</span>
+          <span style="position:absolute;top:9px;left:9px;font-size:9.5px;font-weight:800;background:rgba(255,255,255,0.94);color:#5b21b6;padding:3px 8px;border-radius:99px;">OPEN NOW</span>
         </div>
         <div class="nx-food-body">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;">
             <div><div style="font-size:14px;font-weight:800;letter-spacing:-0.01em;">Karachi Karahi House</div>
             <div style="font-size:11px;color:#7b8a83;margin-top:2px;">Pakistani · BBQ</div></div>
-            <span style="font-size:10.5px;font-weight:800;background:rgba(15,169,104,0.11);color:#0b8a54;padding:3px 8px;border-radius:99px;">★ 4.7</span>
+            <span style="font-size:10.5px;font-weight:800;background:rgba(109,40,217,0.11);color:#5b21b6;padding:3px 8px;border-radius:99px;">★ 4.7</span>
           </div>
           <div style="font-size:11px;color:#7b8a83;margin-top:8px;">25–40 min · Delivery Rs. 50 · Cash on delivery</div>
         </div>
@@ -134,7 +134,7 @@ const FOOD_SEQUENCE = [
         ${["Order placed", "Restaurant accepted", "Preparing", "On the way"].map((s, i) => `
           <div class="nx-row" style="gap:11px;">
             <span style="width:21px;height:21px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;
-              ${i < 3 ? "background:#0fa968;color:#fff;" : "background:#eef2f0;color:#98a5ad;"}">${i < 3 ? "✓" : i + 1}</span>
+              ${i < 3 ? "background:#6d28d9;color:#fff;" : "background:#eef2f0;color:#98a5ad;"}">${i < 3 ? "✓" : i + 1}</span>
             <span style="font-size:13px;${i < 3 ? "color:#0e1d16;font-weight:600;" : "color:#98a5ad;"}">${s}</span>
           </div>`).join("")}
       </div>`,
@@ -158,6 +158,90 @@ const FOOD_SEQUENCE = [
   },
 ];
 
+/**
+ * The city under the hero phone.
+ *
+ * This used to be a 34px CSS grid — technically a "map", visually a sheet of
+ * graph paper, which is why the phone read as blank. This is a stylised
+ * Karachi instead: the coastline along the bottom (the one feature that makes
+ * the city instantly recognisable to anyone who lives here), arterial roads,
+ * a denser side-street weave, blocks, and two parks.
+ *
+ * Hand-drawn SVG rather than map tiles on purpose — the hero must paint
+ * instantly and identically for everyone, with no tile request, no API key,
+ * no grey squares on a slow connection, and no attribution obligations on a
+ * marketing page. The real product uses real Leaflet tiles (see js/map.js);
+ * this is a portrait of it.
+ */
+const CITY_SVG = `
+<svg class="nx-city" viewBox="0 0 300 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="nxSea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a5b4fc" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#818cf8" stop-opacity=".75"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="300" height="520" fill="#f2f2f8"/>
+
+  <!-- Blocks: slightly varied so it reads as a city, not a chessboard. -->
+  <g fill="#e7e7f1">
+    <rect x="12" y="14" width="74" height="58" rx="3"/>
+    <rect x="96" y="14" width="52" height="58" rx="3"/>
+    <rect x="158" y="14" width="60" height="34" rx="3"/>
+    <rect x="158" y="56" width="60" height="16" rx="3"/>
+    <rect x="228" y="14" width="60" height="58" rx="3"/>
+    <rect x="12" y="86" width="46" height="70" rx="3"/>
+    <rect x="68" y="86" width="80" height="42" rx="3"/>
+    <rect x="68" y="138" width="80" height="18" rx="3"/>
+    <rect x="158" y="86" width="60" height="70" rx="3"/>
+    <rect x="228" y="86" width="60" height="34" rx="3"/>
+    <rect x="228" y="130" width="60" height="26" rx="3"/>
+    <rect x="12" y="170" width="66" height="54" rx="3"/>
+    <rect x="88" y="170" width="60" height="54" rx="3"/>
+    <rect x="158" y="170" width="44" height="54" rx="3"/>
+    <rect x="212" y="170" width="76" height="54" rx="3"/>
+    <rect x="12" y="238" width="80" height="62" rx="3"/>
+    <rect x="102" y="238" width="46" height="62" rx="3"/>
+    <rect x="158" y="238" width="60" height="30" rx="3"/>
+    <rect x="158" y="278" width="60" height="22" rx="3"/>
+    <rect x="228" y="238" width="60" height="62" rx="3"/>
+    <rect x="12" y="314" width="60" height="48" rx="3"/>
+    <rect x="82" y="314" width="66" height="48" rx="3"/>
+    <rect x="158" y="314" width="130" height="48" rx="3"/>
+  </g>
+
+  <!-- Parks. Green survives the rebrand here: a park is green on every map
+       anyone has ever read, and this is geography, not brand. -->
+  <g fill="#c9e4d0">
+    <rect x="96" y="86" width="52" height="42" rx="4"/>
+    <rect x="212" y="170" width="42" height="54" rx="4"/>
+  </g>
+
+  <!-- Side streets -->
+  <g stroke="#ffffff" stroke-width="4" stroke-linecap="round">
+    <path d="M0 78h300M0 162h300M0 230h300M0 306h300M0 368h300"/>
+    <path d="M62 0v368M152 0v368M222 0v368"/>
+  </g>
+
+  <!-- Arterials: wider, warmer, with a casing so they sit above the grid -->
+  <g stroke="#ffffff" stroke-width="13" stroke-linecap="round">
+    <path d="M0 128h300"/><path d="M92 0v368"/>
+  </g>
+  <g stroke="#fdf3d8" stroke-width="8" stroke-linecap="round">
+    <path d="M0 128h300"/><path d="M92 0v368"/>
+  </g>
+
+  <!-- The coast. Karachi's one unmistakable line. -->
+  <path d="M0 372 Q46 362 92 374 T186 372 Q238 366 300 380 L300 520 L0 520 Z" fill="url(#nxSea)"/>
+  <path d="M0 372 Q46 362 92 374 T186 372 Q238 366 300 380" fill="none"
+        stroke="#ffffff" stroke-width="2.5" opacity=".85"/>
+  <g fill="#ffffff" opacity=".5">
+    <path d="M24 402h44M96 418h38M170 400h52M40 440h58M150 452h44"
+          stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+  </g>
+</svg>`;
+
 export function initHeroPhone(root) {
   const map = root.querySelector("[data-map]");
   const sheet = root.querySelector("[data-sheet]");
@@ -170,11 +254,18 @@ export function initHeroPhone(root) {
   let i = 0;
   let timer = 0;
 
+  // The city is static, so it's drawn once and the animated layer is swapped
+  // above it. Re-rendering this SVG on every step would throw away the
+  // browser's rasterisation four times a cycle for no visual gain.
+  map.innerHTML = CITY_SVG + '<div class="nx-city-layer"></div>';
+  const layer = map.querySelector(".nx-city-layer");
+
   function paintMap(m) {
-    if (!m) { map.style.opacity = "0"; return; }
+    if (!m) { layer.style.opacity = "0"; return; }
     map.style.opacity = "1";
+    layer.style.opacity = "1";
     const accent = m.food ? "var(--nx-food)" : "var(--nx-ride)";
-    map.innerHTML = `
+    layer.innerHTML = `
       ${m.route ? `
         <div class="nx-route" style="left:18%;top:60%;width:36%;transform:rotate(-24deg);background:linear-gradient(90deg,${accent},${accent}40);"></div>
         <div class="nx-route" style="left:50%;top:44%;width:32%;transform:rotate(9deg);background:linear-gradient(90deg,${accent}bb,${accent}30);"></div>` : ""}
@@ -273,7 +364,7 @@ const SERVICE_SCREENS = {
     sheet: `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <span class="nx-chip ride">2 min away</span>
-        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#98a5ad;">#A7F3C1</span>
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#98a5ad;">#A78BFA</span>
       </div>
       <div class="nx-row" style="margin-top:15px;padding-bottom:13px;border-bottom:1px solid #eef2f0;">
         <div class="nx-av">B</div>

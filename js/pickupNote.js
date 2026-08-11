@@ -147,7 +147,7 @@ export function mountPickupNote(container, onChange = () => {}) {
       if (levels.length > capacity) levels.shift();
 
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = getComputedStyle(canvas).color || "#12b673";
+      ctx.fillStyle = getComputedStyle(canvas).color || "#7c3aed";
       levels.forEach((level, i) => {
         // sqrt curve: quiet speech still shows visible movement, which is the
         // whole point — a flat line has to mean "not hearing you".

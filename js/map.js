@@ -143,10 +143,10 @@ export async function createMap(container, opts = {}) {
       const good = meters <= 120;
       accuracyRing = L.circle([coords.lat, coords.lng], {
         radius: meters,
-        color: good ? "#0fa968" : "#d97706",
+        color: good ? "#6d28d9" : "#d97706",
         weight: 1.5,
         opacity: 0.55,
-        fillColor: good ? "#0fa968" : "#d97706",
+        fillColor: good ? "#6d28d9" : "#d97706",
         fillOpacity: 0.10,
         className: "nx-accuracy-ring",
         interactive: false,
@@ -230,7 +230,7 @@ export async function createMap(container, opts = {}) {
 
       const latlngs = valid.map((p) => [p.lat, p.lng]);
       const accent =
-        getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#0fa968";
+        getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#6d28d9";
       const isRealRoute = valid.length > 2;
 
       if (isRealRoute) {
@@ -292,7 +292,7 @@ export async function createMap(container, opts = {}) {
       // "stale" = we have a position but it's too old to act on. It reads as
       // grey and semi-transparent so a dispatcher's eye skips it, instead of
       // it sitting there looking exactly as dispatchable as a live driver.
-      const colors = { idle: "#0fa968", busy: "#e2960a", offline: "#98a5ad", stale: "#98a5ad" };
+      const colors = { idle: "#6d28d9", busy: "#e2960a", offline: "#98a5ad", stale: "#98a5ad" };
       drivers.forEach((d) => {
         if (typeof d?.lat !== "number" || typeof d?.lng !== "number") return;
         const color = colors[d.status] || colors.idle;
