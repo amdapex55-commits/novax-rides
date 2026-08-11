@@ -99,8 +99,26 @@ Do this **in person**. Not through the app, not over WhatsApp.
 - No account sharing, ever.
 - What SOS does and when to use it.
 
+**Set up their phone with them — do not skip this, it is why riders "get no
+jobs":**
+
+- Install the driver app and log in **on their phone, in front of you**.
+- Go online once. Confirm the **"You're online"** notification appears in their
+  notification shade. No notification = no background location = no jobs.
+- Location permission must be **"Allow all the time"**, not "While using the
+  app". Android defaults to the latter and the setting is buried — most riders
+  will never find it alone. Open Settings and change it yourself.
+- **Xiaomi / Redmi / POCO (MIUI), Oppo, Realme (ColorOS) and Vivo** kill
+  background services regardless of permissions, and they are a large share of
+  the Karachi market. Go to **Settings → Battery → App auto-launch / Protected
+  apps** and allow Nova Go. On MIUI also set **Battery saver → No restrictions**.
+- **Write down which handset each rider has.** When someone reports "not getting
+  jobs", this is the first thing to check, and you can't check it from memory.
+
 **Give them:** a helmet if they don't have a spare, the support number, and
-the ops escalation number.
+the ops escalation number. Recommend a phone mount with a charger — continuous
+GPS does use battery, riders will notice, and a charger removes the complaint
+entirely.
 
 **Do not approve anyone whose documents you haven't physically seen.**
 

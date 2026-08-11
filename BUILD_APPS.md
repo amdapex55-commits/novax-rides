@@ -99,3 +99,60 @@ The script verifies `index.html` actually declares the app you asked for and abo
 - Background location plugin for the driver app — browser geolocation stops when the app is backgrounded, so a driver would silently go offline when switching apps
 - Lawyer review of the legal drafts
 - Real WhatsApp/phone/email in `js/support.config.js` (currently `TODO` placeholders)
+
+---
+
+## Background GPS — required Android setup
+
+The driver app tracks location through a **foreground service** so position
+keeps reporting when the rider locks their screen or switches to WhatsApp.
+Without it they appear online, receive no jobs, and are told nothing — the
+whole problem is written up in `BACKGROUND-GPS.md`.
+
+The plugin (`@capacitor-community/background-geolocation`) is already in
+`package.json`. Two things still have to be done **after** you generate the
+native project, because they live in files `npx cap add android` creates:
+
+### 1. Permissions — `android/app/src/main/AndroidManifest.xml`
+
+Add inside `<manifest>`, above `<application>`:
+
+```xml
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+```
+
+`ACCESS_BACKGROUND_LOCATION` and `FOREGROUND_SERVICE_LOCATION` are the two that
+matter and the two most often missed. Without them the service either never
+starts or is killed within minutes, and the symptom is identical to having no
+plugin at all.
+
+### 2. Build and sync
+
+```bash
+npm run cap:sync:driver
+npx cap open android
+```
+
+### Verifying it actually works
+
+Do not trust "it built". Test it:
+
+1. Go online in the driver app.
+2. Confirm a persistent notification appears: **"You're online — Nova Go is
+   finding you jobs"**. No notification means no foreground service.
+3. Lock the phone. Wait three minutes. Walk 100 metres.
+4. On the ops fleet map, the driver must still be green and must have moved.
+   Grey means the fix went stale and it isn't working.
+
+Step 4 is the only real test. Steps 1–3 can all look fine while location is
+silently dead.
+
+### The customer and ops apps don't need any of this
+
+Only the driver app tracks in the background. Adding these permissions to the
+customer build would mean a Play Store background-location declaration, and a
+review, for a capability that build never uses.

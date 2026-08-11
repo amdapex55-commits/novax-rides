@@ -10,6 +10,7 @@ import { icon } from "../icons.js";
 import { toast, esc, fmtMoney, trustCard } from "../ui.js";
 import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
+import { startDriverTracking, requestImmediateFix } from "../driverLocation.js";
 import { createMap } from "../map.js";
 import { getCurrentCoords } from "../geocode.js";
 import { track } from "../analytics.js";
@@ -18,9 +19,9 @@ export function renderDriverHome(root) {
   const user = Token.user;
   let online = state.isDriverOnline;
   let mode = state.driverMode || "RIDE";
-  let watchId = null;
   // Background-GPS watchdog state — see the long note in goOnline().
   let lastFixAt = 0;
+  let tracker = null;
   let staleTimer = 0;
   let onVisible = null;
   let mapHandle = null;
@@ -134,17 +135,22 @@ export function renderDriverHome(root) {
     socketManager.on("driver:notApproved", onNotApproved);
     socketManager.on("job:manuallyAssigned", onManualAssign);
 
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          lastFixAt = Date.now();
-          socketManager.emit("driver:location", { lat: pos.coords.latitude, lng: pos.coords.longitude });
-          if (mapHandle) mapHandle.setDriver({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        },
-        (err) => console.warn("[NovaGo] geolocation error:", err.message),
-        { enableHighAccuracy: false, maximumAge: 10000, timeout: 10000 },
-      );
-    }
+    // Native builds get a foreground service that keeps reporting with the
+    // screen off; browser builds get watchPosition and the stale banner below.
+    // startDriverTracking() decides which, so nothing here has to care.
+    tracker = await startDriverTracking({
+      onFix: ({ lat, lng }) => {
+        lastFixAt = Date.now();
+        socketManager.emit("driver:location", { lat, lng });
+        if (mapHandle) mapHandle.setDriver({ lat, lng });
+      },
+      onError: ({ code, message }) => {
+        console.warn(`[NovaGo] location error (${code}):`, message);
+        if (code === "NOT_AUTHORIZED") {
+          toast("Location permission is off — you won't get jobs until it's on", true);
+        }
+      },
+    });
 
     /* ---- THE BACKGROUND PROBLEM ------------------------------------
        Browser geolocation only runs while this page is in the foreground.
@@ -167,9 +173,17 @@ export function renderDriverHome(root) {
       if (!banner) return;
       if (staleFor > 90_000) {
         banner.hidden = false;
+        // Two different causes need two different instructions. On a browser
+        // build the fix is "keep the app open". On a native build the
+        // foreground service should have kept running, so a stall means the
+        // phone killed it — overwhelmingly a Xiaomi/Oppo/Vivo battery manager,
+        // and telling that rider to keep the app open would be useless advice.
         banner.innerHTML =
-          `${icon("bolt", 15)}<span><strong>Your location has stopped updating.</strong> ` +
-          `Keep Nova Go open on screen — you won't get jobs while it's in the background.</span>`;
+          tracker?.mode === "native"
+            ? `${icon("bolt", 15)}<span><strong>Your phone stopped Nova Go's location service.</strong> ` +
+              `Open Settings → Battery → App auto-launch and allow Nova Go, or call support.</span>`
+            : `${icon("bolt", 15)}<span><strong>Your location has stopped updating.</strong> ` +
+              `Keep Nova Go open on screen — you won't get jobs while it's in the background.</span>`;
       } else {
         banner.hidden = true;
       }
@@ -178,15 +192,13 @@ export function renderDriverHome(root) {
     // Re-acquire immediately on return to foreground, instead of waiting for
     // the OS to resume the watch on its own schedule.
     onVisible = () => {
-      if (document.visibilityState === "visible" && online && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            lastFixAt = Date.now();
-            socketManager.emit("driver:location", { lat: pos.coords.latitude, lng: pos.coords.longitude });
-          },
-          () => {},
-          { maximumAge: 0, timeout: 8000 },
-        );
+      // Native tracking never paused, so there is nothing to re-acquire.
+      if (tracker?.mode === "native") return;
+      if (document.visibilityState === "visible" && online) {
+        requestImmediateFix(({ lat, lng }) => {
+          lastFixAt = Date.now();
+          socketManager.emit("driver:location", { lat, lng });
+        });
       }
     };
     document.addEventListener("visibilitychange", onVisible);
@@ -197,7 +209,8 @@ export function renderDriverHome(root) {
   }
 
   function goOffline() {
-    if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+    tracker?.stop().catch(() => {});
+    tracker = null;
     clearInterval(staleTimer);
     if (onVisible) { document.removeEventListener("visibilitychange", onVisible); onVisible = null; }
     const banner = root.querySelector("#gpsStale");
@@ -296,7 +309,7 @@ export function renderDriverHome(root) {
     socketManager.off("errand:offer", onErrandOffer);
     socketManager.off("driver:notApproved", onNotApproved);
     socketManager.off("job:manuallyAssigned", onManualAssign);
-    if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+    tracker?.stop().catch(() => {});
     if (mapHandle) mapHandle.destroy();
   };
 }
