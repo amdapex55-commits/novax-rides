@@ -1,4 +1,4 @@
-// Nova X Rides — wallet, trip history, profile, settings.
+// Nova Go Rides — wallet, trip history, profile, settings.
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
@@ -155,7 +155,7 @@ export function renderProfile(root) {
       <h1 class="text-xl mb-6">Profile</h1>
       <div class="card-elevated text-center mb-6" style="padding:28px 20px;">
         <div class="avatar" style="width:80px;height:80px;font-size:28px;margin:0 auto 12px;">${esc((cached.name || "N").charAt(0))}</div>
-        <h2 id="nameText">${esc(cached.name) || "Nova X Rider"}</h2>
+        <h2 id="nameText">${esc(cached.name) || "Nova Go Rider"}</h2>
         <div class="flex items-center justify-center gap-1 mt-2">
           ${icon("star", 16)}<span id="ratingText" class="font-bold">${cached.rating || "5.0"}</span>
         </div>
@@ -192,12 +192,12 @@ export function renderProfile(root) {
           <p style="flex:1;" class="text-sm">Cancellation &amp; Refunds</p>${icon("chevronRight", 16)}
         </div>
       </div>
-      <p class="text-xs text-muted text-center mt-5">Nova X · Cash payments · Karachi</p>
+      <p class="text-xs text-muted text-center mt-5">Nova Go · Cash payments · Karachi</p>
     </div>
   `;
 
   api.getMe().then((u) => {
-    root.querySelector("#nameText").textContent = u.name || "Nova X Rider";
+    root.querySelector("#nameText").textContent = u.name || "Nova Go Rider";
     root.querySelector("#ratingText").textContent = u.rating ?? "5.0";
     root.querySelector("#nameInput").value = u.name || "";
   }).catch(() => {});

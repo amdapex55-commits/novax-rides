@@ -1,4 +1,4 @@
-# Nova X Bike — pre-launch test plan
+# Nova Go Bike — pre-launch test plan
 
 The happy path already works. **These are the tests that matter**, because
 every one of them is a way a real customer's first ride goes wrong.

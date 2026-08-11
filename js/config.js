@@ -1,10 +1,10 @@
-// Nova X Rides — where the app points its API + socket calls.
+// Nova Go Rides — where the app points its API + socket calls.
 //
 // Environment is resolved from the hostname at runtime rather than hardcoded
 // to one deployment, so the same build works locally, on GitHub Pages, and
 // inside the Capacitor native shell without hand-editing this file before
-// every test. Override explicitly by setting window.NOVAX_API_BASE (and
-// optionally window.NOVAX_SOCKET_URL) before app.js loads — useful for
+// every test. Override explicitly by setting window.NOVAGO_API_BASE (and
+// optionally window.NOVAGO_SOCKET_URL) before app.js loads — useful for
 // pointing a local build at a staging backend.
 
 const PRODUCTION = {
@@ -19,10 +19,10 @@ const LOCAL = {
 
 function resolve() {
   // Explicit override always wins.
-  if (typeof window !== "undefined" && window.NOVAX_API_BASE) {
+  if (typeof window !== "undefined" && window.NOVAGO_API_BASE) {
     return {
-      API_BASE_URL: window.NOVAX_API_BASE,
-      SOCKET_URL: window.NOVAX_SOCKET_URL || window.NOVAX_API_BASE.replace(/\/api\/v1\/?$/, ""),
+      API_BASE_URL: window.NOVAGO_API_BASE,
+      SOCKET_URL: window.NOVAGO_SOCKET_URL || window.NOVAGO_API_BASE.replace(/\/api\/v1\/?$/, ""),
     };
   }
   const host = typeof location !== "undefined" ? location.hostname : "";
@@ -41,9 +41,9 @@ function resolve() {
 // paid geocoder, without touching a single screen.
 const GEO = {
   // OSRM-compatible directions endpoint. Self-host: docker run osrm/osrm-backend
-  ROUTING_URL: (typeof window !== "undefined" && window.NOVAX_ROUTING_URL) || "",
+  ROUTING_URL: (typeof window !== "undefined" && window.NOVAGO_ROUTING_URL) || "",
   // Nominatim-compatible search endpoint.
-  GEOCODE_URL: (typeof window !== "undefined" && window.NOVAX_GEOCODE_URL) || "",
+  GEOCODE_URL: (typeof window !== "undefined" && window.NOVAGO_GEOCODE_URL) || "",
 };
 
 export const CONFIG = { ...resolve(), ...GEO };

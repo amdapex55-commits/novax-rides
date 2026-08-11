@@ -1,4 +1,4 @@
-// Nova X Rides — rider home (tri-modal Food / Bike / Taxi shell), set
+// Nova Go Rides — rider home (tri-modal Food / Bike / Taxi shell), set
 // locations, fare/vehicle selection.
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
@@ -128,7 +128,7 @@ function renderBikeTab(panel, isGuest) {
       </div>
       <div class="list-row stagger-item" data-nav="/business" style="cursor:pointer; animation-delay:120ms;">
         <div class="list-row-icon">${icon("users", 18)}</div>
-        <div style="flex:1;"><p class="font-bold text-sm">Nova X for Business</p></div>
+        <div style="flex:1;"><p class="font-bold text-sm">Nova Go for Business</p></div>
         ${icon("chevronRight", 18)}
       </div>
 
@@ -177,7 +177,7 @@ function renderTaxiTab(panel) {
           <p class="font-bold text-accent">from ${fmtMoney(Math.round(TAXI_BASE_FROM * t.multiplier))}</p>
         </button>`).join("")}
     </div>
-    <p class="text-xs text-muted mb-4 text-center">Tier sets your comfort preference — the real fare is calculated by the backend from live distance once you request, same as every Nova X ride.</p>
+    <p class="text-xs text-muted mb-4 text-center">Tier sets your comfort preference — the real fare is calculated by the backend from live distance once you request, same as every Nova Go ride.</p>
     <button id="taxiContinueBtn" class="btn btn-primary btn-block">Set Pickup & Drop-off ${icon("arrow-forward", 18)}</button>
   `;
 

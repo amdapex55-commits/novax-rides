@@ -1,4 +1,4 @@
-// Nova X Rides — the map layer.
+// Nova Go Rides — the map layer.
 //
 // Leaflet + OpenStreetMap tiles: a real, live, pannable map with zero API
 // key and zero billing account, which is why it's here instead of Google or
@@ -289,17 +289,23 @@ export async function createMap(container, opts = {}) {
     setFleet(drivers = []) {
       extraMarkers.forEach((m) => map.removeLayer(m));
       extraMarkers = [];
-      const colors = { idle: "#0fa968", busy: "#e2960a", offline: "#98a5ad" };
+      // "stale" = we have a position but it's too old to act on. It reads as
+      // grey and semi-transparent so a dispatcher's eye skips it, instead of
+      // it sitting there looking exactly as dispatchable as a live driver.
+      const colors = { idle: "#0fa968", busy: "#e2960a", offline: "#98a5ad", stale: "#98a5ad" };
       drivers.forEach((d) => {
         if (typeof d?.lat !== "number" || typeof d?.lng !== "number") return;
         const color = colors[d.status] || colors.idle;
+        const isStale = d.status === "stale";
         const marker = L.marker([d.lat, d.lng], {
           icon: L.divIcon({
             className: "nx-pin-wrap",
-            html: `<div class="nx-fleet-dot" style="--dot:${color};"></div>`,
+            html: `<div class="nx-fleet-dot${isStale ? " is-stale" : ""}" style="--dot:${color};"></div>`,
             iconSize: [18, 18],
             iconAnchor: [9, 9],
           }),
+          // Live drivers draw on top of dead ones where they overlap.
+          zIndexOffset: isStale ? -100 : 0,
         }).addTo(map);
         if (d.label) marker.bindTooltip(String(d.label), { direction: "top", offset: [0, -8] });
         extraMarkers.push(marker);

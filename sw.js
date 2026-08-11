@@ -1,4 +1,4 @@
-/* Nova X — service worker.
+/* Nova Go — service worker.
  * ===========================================================================
  * The problem this solves: a customer standing on a Karachi street with one
  * bar of signal reloads the app, and Chrome shows them the offline dinosaur.
@@ -17,7 +17,9 @@
 
 // Bump this on every deploy that changes a cached file. Old caches are
 // deleted on activate, so a stale shell can't survive a release.
-const VERSION = "novax-v1";
+// Bump on any change to SHELL — an old cache serving the previous asset list
+// is how a user ends up on a half-updated app.
+const VERSION = "novago-v2";
 const SHELL_CACHE = `${VERSION}-shell`;
 
 // Only same-origin, non-critical-path assets. Deliberately small: a service
@@ -32,6 +34,11 @@ const SHELL = [
   "./css/components.css",
   "./css/animations.css",
   "./css/premium.css",
+  "./css/fonts.css",
+  // Latin only. The latin-ext files are twice the size and are needed by
+  // almost nobody here, so they stay on-demand rather than in the shell.
+  "./fonts/inter-var-latin.woff2",
+  "./fonts/sora-var-latin.woff2",
   "./js/app.js",
   "./js/router.js",
   "./favicon.svg",
@@ -47,7 +54,7 @@ self.addEventListener("install", (event) => {
       // disabling offline support entirely.
       await Promise.all(
         SHELL.map((url) => cache.add(url).catch(() => {
-          console.warn("[NovaX SW] could not cache", url);
+          console.warn("[NovaGo SW] could not cache", url);
         })),
       );
       // Take over immediately rather than waiting for every tab to close.

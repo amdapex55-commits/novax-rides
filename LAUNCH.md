@@ -1,4 +1,4 @@
-# Nova X Bike — pilot launch runbook
+# Nova Go Bike — pilot launch runbook
 
 One service, one zone, cash, verified riders, live ops.
 
@@ -13,7 +13,7 @@ Nothing else needs editing to run the pilot.
 
 ## Do not launch if any of these is true
 
-The app checks most of these itself — open **Nova X Ops → Command** and look
+The app checks most of these itself — open **Nova Go Ops → Command** and look
 at the launch readiness panel, or check the browser console on boot.
 
 | Blocker | How it's enforced now |
@@ -48,7 +48,7 @@ Legal name, SECP registration number, NTN, registered address, effective date.
 These print into the Terms, Privacy Policy and Rider Agreement.
 
 **3. Get the policies reviewed by a Pakistani lawyer.** The text is complete
-and specific to how Nova X works, but I'm not a lawyer and it isn't legal
+and specific to how Nova Go works, but I'm not a lawyer and it isn't legal
 advice. Budget a day for this; it's the item most likely to slip.
 
 **4. Choose your zone**

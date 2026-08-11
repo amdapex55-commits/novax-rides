@@ -1,4 +1,4 @@
-// Nova X Rides — turn the address a user typed into real coordinates.
+// Nova Go Rides — turn the address a user typed into real coordinates.
 //
 // Before this existed, every booking flow collected a drop-off *label* and
 // then submitted the device's current GPS plus a fixed ~0.02° offset (or a
@@ -101,7 +101,7 @@ export function getCurrentCoords(timeout = 5000) {
  * THE PROBLEM THIS SOLVES. Before this existed, a denied or vague GPS
  * permission silently fell back to Karachi city centre, and the app booked
  * the ride anyway. The rider got dispatched to Saddar while the customer
- * stood in DHA. Both people wasted twenty minutes, both blamed Nova X, and
+ * stood in DHA. Both people wasted twenty minutes, both blamed Nova Go, and
  * the app never once said it didn't know where anyone was.
  *
  * Browser geolocation reports `coords.accuracy` — a radius in metres it's
@@ -272,7 +272,7 @@ async function search(q, origin, limit = 5, signal) {
       fn(),
       new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 5000)),
     ]).catch((err) => {
-      if (err.name !== "AbortError") console.warn("[NovaX] geocoder:", err.message);
+      if (err.name !== "AbortError") console.warn("[NovaGo] geocoder:", err.message);
       return [];
     });
 

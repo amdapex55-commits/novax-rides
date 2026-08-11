@@ -1,4 +1,4 @@
-/* Nova X — the premium layer.
+/* Nova Go — the premium layer.
    ===========================================================================
    Two jobs, both about the gap between the landing page and the product.
 
@@ -82,7 +82,7 @@
   /* Brand lockup at the top of the rail — pure CSS, no markup needed. */
   html[data-app="ops"] .bottom-nav::before,
   html[data-app="merchant"] .bottom-nav::before {
-    content: "Nova X";
+    content: "Nova Go";
     position: absolute;
     top: 26px; left: 22px;
     font-family: var(--font-display);
@@ -405,6 +405,21 @@
   content: ""; position: absolute; inset: -5px; border-radius: 50%;
   border: 1.5px solid var(--dot, var(--accent)); opacity: 0;
   animation: nx-halo 2.4s ease-out infinite;
+}
+
+/* A driver whose GPS has gone quiet. Flat, faded, and hollow — the pulsing
+   halo is the visual cue for "live", so a stale dot must not have one, or it
+   reads as the most active thing on the map while being the least real. */
+.nx-fleet-dot.is-stale {
+  opacity: 0.45;
+  background: transparent;
+  border-color: var(--dot, #98a5ad);
+  border-style: dashed;
+  box-shadow: none;
+}
+.nx-fleet-dot.is-stale::after {
+  animation: none;
+  content: none;
 }
 
 /* Driver marker points along its heading — set by map.js as it interpolates. */
@@ -1310,3 +1325,139 @@
 }
 .nx-gps-stale strong { color: #6b4503; font-weight: 800; }
 .nx-gps-stale[hidden] { display: none; }
+
+/* ===========================================================================
+   P2 features: Fair Petrol Guarantee, Fast Match tip, voice waveform,
+   full-screen driver offer card.
+   =========================================================================== */
+
+/* --- Fair Petrol Guarantee -------------------------------------------- */
+/* Sits under the fare inside the dark cockpit, so it's a light-on-dark
+   whisper: present for anyone who looks, never competing with the number. */
+.nx-petrol-guarantee {
+  display: flex; align-items: center; gap: 5px;
+  margin-top: 6px;
+  font-size: 11.5px; font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.3;
+}
+.nx-petrol-guarantee svg { flex: none; opacity: 0.8; }
+
+/* --- Fast Match tip --------------------------------------------------- */
+.nx-fastmatch {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--r-md);
+  padding: 12px;
+  background: var(--surface);
+}
+.nx-fastmatch-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+.nx-fastmatch-title {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 13px; font-weight: 800; letter-spacing: -0.01em;
+}
+.nx-fastmatch-sub { font-size: 11.5px; color: var(--text-muted); }
+.nx-fastmatch-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.nx-tip {
+  height: 42px; border-radius: var(--r-sm);
+  border: 1.5px solid var(--surface-border);
+  background: var(--surface-2);
+  font-size: 14px; font-weight: 700; color: var(--text);
+  transition: border-color 160ms var(--ease-out), background 160ms var(--ease-out),
+              color 160ms var(--ease-out), transform 120ms var(--ease-out);
+}
+.nx-tip:active { transform: scale(0.97); }
+.nx-tip.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent-strong, var(--accent));
+}
+
+/* --- Voice note waveform ---------------------------------------------- */
+/* `color` is what the canvas reads for its bars (see pickupNote.js), which
+   keeps the brand colour in CSS rather than hard-coded in the draw loop. */
+.nx-note-wave {
+  display: block; width: 100%; height: 34px;
+  margin-top: 8px;
+  color: var(--accent);
+}
+
+/* --- Full-screen driver offer ----------------------------------------- */
+.nx-offer {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; flex-direction: column;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  background: var(--bg);
+}
+.nx-offer-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.nx-offer-kind {
+  font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.nx-offer-fast {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent-strong, var(--accent));
+  font-size: 12px; font-weight: 800;
+}
+.nx-offer-body { flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+.nx-offer-label {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.nx-offer-amount {
+  font-family: var(--font-display);
+  font-size: clamp(52px, 17vw, 78px); font-weight: 800; letter-spacing: -0.045em;
+  line-height: 1; margin: 6px 0 0;
+}
+.nx-offer-breakdown { margin-top: 10px; font-size: 13.5px; color: var(--text-secondary); }
+.nx-offer-facts {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-top: 28px;
+}
+.nx-offer-facts > div {
+  background: var(--surface-2); border-radius: var(--r-md); padding: 12px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.nx-offer-facts .k { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.nx-offer-facts .v { font-size: 15px; font-weight: 800; text-transform: capitalize; }
+
+.nx-offer-actions { display: flex; flex-direction: column; gap: 10px; }
+/* 76px: comfortably past the 48px minimum touch target, because this is
+   pressed one-handed, outdoors, sometimes with gloves on. */
+.nx-offer-accept {
+  position: relative; overflow: hidden;
+  height: 76px; border: none; border-radius: var(--r-md);
+  background: var(--accent); color: #fff;
+  font-size: 19px; font-weight: 800;
+  transition: transform 120ms var(--ease-out);
+}
+.nx-offer-accept:active { transform: scale(0.985); }
+/* Drains right-to-left as the 15s window closes. transform-only so it
+   animates on the compositor and never drops a frame on a cheap phone. */
+.nx-offer-accept-fill {
+  position: absolute; inset: 0;
+  background: rgba(255, 255, 255, 0.18);
+  transform-origin: left center;
+  transform: scaleX(1);
+  transition: transform 1s linear, background 300ms var(--ease-out);
+}
+.nx-offer-accept-fill.is-urgent { background: rgba(255, 255, 255, 0.32); }
+.nx-offer-accept-text {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 9px;
+}
+.nx-offer-accept-text em {
+  font-style: normal; font-variant-numeric: tabular-nums;
+  opacity: 0.85; font-size: 15px; font-weight: 700;
+}
+/* Small and quiet on purpose — an accidental decline costs a real fare. */
+.nx-offer-decline {
+  height: 46px; border-radius: var(--r-md);
+  border: 1px solid var(--surface-border); background: transparent;
+  color: var(--text-muted); font-size: 14px; font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-offer-accept-fill { transition: none; }
+  .nx-tip { transition: none; }
+}

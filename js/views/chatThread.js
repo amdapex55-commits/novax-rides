@@ -1,4 +1,4 @@
-// Nova X Rides — in-app chat between the two people tied to an active
+// Nova Go Rides — in-app chat between the two people tied to an active
 // Trip/Delivery/FoodOrder/Errand (rider↔driver, customer↔driver,
 // requester↔driver). One generic thread screen reused from every "in
 // progress" tracking view via state.chatContext — see driverHome.js,

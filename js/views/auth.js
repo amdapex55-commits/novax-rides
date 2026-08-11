@@ -1,4 +1,4 @@
-// Nova X Rides — splash, welcome/role picker, phone entry (rider + driver +
+// Nova Go Rides — splash, welcome/role picker, phone entry (rider + driver +
 // restaurant), OTP verify. Self-service signup is real: whichever door a
 // new phone number comes through (rider / "Drive & Earn" / "List Your
 // Restaurant") sets that account's role on creation — see
@@ -29,7 +29,7 @@ export function renderSplash(root) {
     if (Token.access) {
       try {
         const user = await api.getMe();
-        window.__novaxRefreshNav();
+        window.__novagoRefreshNav();
         // Wrong app for this account — the router's own guard renders a clear
         // "use the other app" screen, so just land on this build's home and
         // let it catch them there.
@@ -62,7 +62,7 @@ export function renderSplash(root) {
 // (rickshaw, car) that doesn't exist in the pilot. That's not ambition, it's
 // a promise the product breaks two taps later.
 //
-// Now it sells the one thing Nova X actually does, with the four reasons to
+// Now it sells the one thing Nova Go actually does, with the four reasons to
 // trust it. "Coming next" lives further down, small, where it belongs.
 const CUSTOMER_PROOF = [
   { icon: "bolt",   label: "Beat traffic",   sub: "A bike gets through where a car can't" },
@@ -162,9 +162,9 @@ const PARTNER_COPY = {
     points: [
       { icon: "package", label: "Orders straight to you", sub: "Accept, prepare, hand over" },
       { icon: "utensils", label: "Your menu, your prices", sub: "Update anything, any time" },
-      { icon: "bike", label: "We handle delivery", sub: "Nova X riders collect and deliver" },
+      { icon: "bike", label: "We handle delivery", sub: "Nova Go riders collect and deliver" },
     ],
-    cta: "Partner with Nova X",
+    cta: "Partner with Nova Go",
     explainerPath: "/commission-explained",
     explainerLabel: "See exactly how payments work",
     legalPath: "/legal/restaurant-agreement",
@@ -172,7 +172,7 @@ const PARTNER_COPY = {
   },
   ops: {
     icon: "bolt",
-    heading: "Nova X Operations",
+    heading: "Nova Go Operations",
     sub: "Internal console. Dispatch, safety incidents and partner approvals.",
     points: [],
     cta: "Sign in",
@@ -353,7 +353,7 @@ export function renderPhoneEntry(role) {
 
           ${copy.internal ? `
             <p class="nx-auth-internal">
-              ${icon("shield", 13)} Ops accounts are created by Nova X. Signing in
+              ${icon("shield", 13)} Ops accounts are created by Nova Go. Signing in
               here with an unapproved number will not grant access.
             </p>` : `
             <p class="text-xs text-muted text-center mt-5">
@@ -494,7 +494,7 @@ export function renderOtp(root) {
   // ANDROID SMS AUTOFILL (WebOTP). Chrome on Android can read the code
   // straight out of the incoming SMS and fill it, so the customer never
   // leaves the app to look at their messages. Requires the SMS to end with
-  // a line like "@novax.pk #123456" — see the note in sms.service.ts.
+  // a line like "@novago.pk #123456" — see the note in sms.service.ts.
   // Silently unavailable everywhere else, which is fine: manual entry still
   // works exactly as before.
   let otpAbort = null;
@@ -546,7 +546,7 @@ export function renderOtp(root) {
       track("otp_verified");
       const user = await api.getMe();
       state.pendingPhone = null;
-      window.__novaxRefreshNav();
+      window.__novagoRefreshNav();
 
       // Resume whatever guest action triggered the login prompt (request a
       // ride, open wallet, ...) instead of always dropping them on home.

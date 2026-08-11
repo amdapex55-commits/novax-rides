@@ -1,4 +1,4 @@
-// Nova X Ops — the monitoring screens that sit alongside the command center.
+// Nova Go Ops — the monitoring screens that sit alongside the command center.
 //
 // Command center answers "what needs me right now". These answer "is the
 // marketplace healthy": who's actually working, what's being cancelled, who
@@ -177,7 +177,7 @@ export function renderOpsBalances(root) {
     <div class="page pb-0">
       <h1 class="text-xl mb-1">Wallet balances</h1>
       <p class="text-secondary text-xs mb-4">
-        Cash-only: positive means Nova X owes them a payout, negative means they're holding our cash (COD).
+        Cash-only: positive means Nova Go owes them a payout, negative means they're holding our cash (COD).
       </p>
       <div id="list" class="flex-col gap-2">${skeletonRows(4)}</div>
     </div>

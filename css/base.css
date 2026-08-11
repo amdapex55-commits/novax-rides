@@ -1,4 +1,4 @@
-/* Nova X Rides — base reset + layout scaffold. Mobile-first by construction
+/* Nova Go Rides — base reset + layout scaffold. Mobile-first by construction
    (this is the #1 thing that was wrong before: Stitch screens had no fluid
    layout rules, so a fixed mobile mock stretched badly on real viewports). */
 * { box-sizing: border-box; margin: 0; padding: 0; }

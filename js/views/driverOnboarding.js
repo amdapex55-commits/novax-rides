@@ -1,4 +1,4 @@
-// Nova X Rides — driver onboarding.
+// Nova Go Rides — driver onboarding.
 //
 // A real application, not a form: documents, vehicle, service area, payout
 // destination and emergency contact — everything a human reviewer needs
@@ -73,7 +73,7 @@ export function renderDriverOnboarding(root) {
         <div class="list-row-icon" style="color:var(--accent);">${icon("bike", 18)}</div>
         <div style="flex:1;">
           <p class="font-bold text-sm">Motorcycle</p>
-          <p class="text-secondary text-xs">Nova X is bike-only right now</p>
+          <p class="text-secondary text-xs">Nova Go is bike-only right now</p>
         </div>
       </div>
       <label class="field-label">Number plate</label>

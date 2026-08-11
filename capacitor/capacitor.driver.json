@@ -1,6 +1,6 @@
 {
-  "appId": "com.novax.driver",
-  "appName": "Nova X Driver",
+  "appId": "com.novago.driver",
+  "appName": "Nova Go Driver",
   "webDir": ".",
   "backgroundColor": "#ffffff",
   "server": {

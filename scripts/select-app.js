@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build one of the four Nova X apps for Capacitor.
+ * Build one of the four Nova Go apps for Capacitor.
  *
  * ============================================================================
  * WHY THIS NO LONGER TOUCHES index.html
@@ -28,10 +28,10 @@ const fs = require("fs");
 const path = require("path");
 
 const APPS = {
-  customer: { entry: "customer.html", config: "capacitor.customer.json", name: "Nova Go",          appId: "com.novax.app" },
-  driver:   { entry: "driver.html",   config: "capacitor.driver.json",   name: "Nova Go Rider",    appId: "com.novax.driver" },
-  merchant: { entry: "merchant.html", config: "capacitor.merchant.json", name: "Nova X Merchant",  appId: "com.novax.merchant" },
-  ops:      { entry: "ops.html",      config: "capacitor.ops.json",      name: "Nova X Ops",       appId: "com.novax.ops" },
+  customer: { entry: "customer.html", config: "capacitor.customer.json", name: "Nova Go",          appId: "com.novago.app" },
+  driver:   { entry: "driver.html",   config: "capacitor.driver.json",   name: "Nova Go Rider",    appId: "com.novago.driver" },
+  merchant: { entry: "merchant.html", config: "capacitor.merchant.json", name: "Nova Go Merchant",  appId: "com.novago.merchant" },
+  ops:      { entry: "ops.html",      config: "capacitor.ops.json",      name: "Nova Go Ops",       appId: "com.novago.ops" },
 };
 
 // Everything the apps need at runtime. Deliberately an allowlist, not a
@@ -110,10 +110,10 @@ if (fs.existsSync(p("sw.js"))) fs.copyFileSync(p("sw.js"), path.join(www, "sw.js
 // the driver app under the customer's appId is unrecoverable once it's live
 // on a store listing.
 const built = fs.readFileSync(path.join(www, "index.html"), "utf8");
-const declared = built.match(/window\.NOVAX_APP\s*=\s*["'](\w+)["']/);
+const declared = built.match(/window\.NOVAGO_APP\s*=\s*["'](\w+)["']/);
 if (!declared || declared[1] !== target) {
   console.error(
-    `\n  ABORT: ${app.entry} declares NOVAX_APP="${declared ? declared[1] : "none"}" ` +
+    `\n  ABORT: ${app.entry} declares NOVAGO_APP="${declared ? declared[1] : "none"}" ` +
     `but you asked for "${target}".\n  Refusing to build a mislabelled app.\n`,
   );
   fs.rmSync(www, { recursive: true, force: true });
@@ -138,7 +138,7 @@ console.log(`
 
     source : ${app.entry}
     output : www/
-    verified NOVAX_APP = "${target}"
+    verified NOVAGO_APP = "${target}"
 
   Next:
     npx cap sync android

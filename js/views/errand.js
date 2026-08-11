@@ -1,4 +1,4 @@
-// Nova X Rides — "Pick & Deliver to Me" errand flow: what to buy + where
+// Nova Go Rides — "Pick & Deliver to Me" errand flow: what to buy + where
 // from + budget, then live tracking. Mirrors parcel.js's shape against the
 // Errands module (POST /errands) instead of Delivery.
 import { api, Token } from "../api.js";

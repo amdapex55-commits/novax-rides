@@ -1,4 +1,4 @@
-// Nova X — LAUNCH CONFIGURATION.
+// Nova Go — LAUNCH CONFIGURATION.
 // ===========================================================================
 // This is the one file you edit before going live. Nothing else needs
 // touching to run the bike pilot.
@@ -9,7 +9,7 @@
 // Changing "are we live with food yet?" meant editing eight files and
 // missing two. Now it's one boolean here.
 //
-// STRATEGY THIS ENCODES — Nova X Bike, one zone, cash, verified riders:
+// STRATEGY THIS ENCODES — Nova Go Bike, one zone, cash, verified riders:
 // launching rides + food + parcels + errands + a restaurant marketplace
 // simultaneously means five sets of operational problems on day one, five
 // sets of support calls, and five ways to look broken. The other services
@@ -72,6 +72,25 @@ export const PRICING = {
   // Shown to the customer before they confirm. Honesty beats a surprise.
   waitingChargePerMin: 0,
   cancellationFee: 0,  // pilot: no cancellation fee while you're building trust
+
+  /* FAIR PETROL GUARANTEE
+   *
+   * The reference petrol price the per-km rate above was calculated against.
+   * Shown to the customer as "Fare calculated at Petrol Rs. 275/L".
+   *
+   * Why this earns its space on the screen: every Karachi passenger has been
+   * in the argument where a rider says petrol went up, so the meter is
+   * "wrong". Naming the number the fare was built on turns that from a
+   * negotiation into a fact the customer can check — and it's a promise we
+   * can actually keep, because the fare is fixed and the app quotes it.
+   *
+   * UPDATE THIS when you re-price after a fuel change, and update `perKm`
+   * in the same edit. Showing a stale petrol price next to a fare that no
+   * longer matches it is worse than showing nothing.
+   */
+  petrolReferencePerLitre: 275,
+  // Set to false if you'd rather not commit to a public number.
+  showPetrolGuarantee: true,
 };
 
 /* ---------------------------------------------------------------------------
@@ -150,7 +169,7 @@ export const HOURS = {
   enabled: true,
   open: "08:00",
   close: "22:00",
-  closedMessage: "Nova X Bike runs 8am–10pm while we're in pilot. We'll be back in the morning.",
+  closedMessage: "Nova Go Bike runs 8am–10pm while we're in pilot. We'll be back in the morning.",
 };
 
 /** Are we inside operating hours right now? */
@@ -169,20 +188,20 @@ export function isOpenNow(now = new Date()) {
    that names an accountable party.
 
    ⚠️ A lawyer must review these documents before public launch. The text is
-   written to be accurate and specific to how Nova X actually works, but it
+   written to be accurate and specific to how Nova Go actually works, but it
    is not legal advice and I am not a lawyer.
    --------------------------------------------------------------------------- */
 
 export const COMPANY = {
-  legalName: "",              // e.g. "Nova X Logistics (Private) Limited"
-  tradingName: "Nova X",
+  legalName: "",              // e.g. "Nova Go Logistics (Private) Limited"
+  tradingName: "Nova Go",
   registrationNumber: "",     // SECP incorporation number
   ntn: "",                    // FBR National Tax Number
   address: "",                // registered office, full postal address
   city: "Karachi",
   country: "Pakistan",
   jurisdiction: "the courts of Karachi, Sindh, Pakistan",
-  website: "",                // e.g. "https://novax.pk"
+  website: "",                // e.g. "https://novago.pk"
   effectiveDate: "",          // e.g. "1 September 2026"
 };
 
@@ -285,7 +304,7 @@ export function launchReadiness() {
 const _r = launchReadiness();
 if (!_r.ready && typeof console !== "undefined") {
   console.warn(
-    `%c[NovaX] NOT READY FOR PUBLIC LAUNCH — ${_r.blockers.length} blocker(s)`,
+    `%c[NovaGo] NOT READY FOR PUBLIC LAUNCH — ${_r.blockers.length} blocker(s)`,
     "color:#e11d48;font-weight:bold",
   );
   _r.blockers.forEach((b) => console.warn(`  ✗ ${b.label}\n    → ${b.fix}`));

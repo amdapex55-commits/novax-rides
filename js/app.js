@@ -1,4 +1,4 @@
-// Nova X Rides — app bootstrap. Renders the persistent shell (bottom nav +
+// Nova Go Rides — app bootstrap. Renders the persistent shell (bottom nav +
 // view container) once, then hands off to the router for everything else.
 import { icon } from "./icons.js";
 import { Token } from "./api.js";
@@ -26,10 +26,36 @@ function renderShell() {
   `;
 }
 
+/**
+ * Dismiss the boot splash (see the inline block in customer.html et al).
+ *
+ * It holds for a minimum of ~1.2s so the mark finishes drawing — a splash cut
+ * off mid-animation reads as a glitch, not as speed. But it is never allowed
+ * to hold longer than that just because something downstream is slow: the
+ * floor is a floor, not a delay added to boot time.
+ */
+const SPLASH_MIN_MS = 1200;
+const bootStartedAt = Date.now();
+
+function dismissSplash() {
+  const splash = document.getElementById("nxSplash");
+  if (!splash) return;
+  const wait = Math.max(0, SPLASH_MIN_MS - (Date.now() - bootStartedAt));
+  setTimeout(() => {
+    splash.classList.add("is-done");
+    // Remove from the DOM after the fade so it can't trap focus or eat taps
+    // on a device where transitionend never fires.
+    setTimeout(() => splash.remove(), 500);
+  }, wait);
+}
+
 function boot() {
   renderShell();
   renderBottomNav();
   initRouter();
+  // After initRouter(), so the first view is already painted underneath and
+  // the splash fades to real content rather than to an empty container.
+  dismissSplash();
 }
 
 document.addEventListener("DOMContentLoaded", boot);
@@ -42,10 +68,10 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch((err) => {
       // Non-fatal: the app works without it, just without offline support.
-      console.warn("[NovaX] service worker not registered:", err.message);
+      console.warn("[NovaGo] service worker not registered:", err.message);
     });
   });
 }
 
 // Exposed for views that need to trigger a nav refresh after login/role change.
-window.__novaxRefreshNav = renderBottomNav;
+window.__novagoRefreshNav = renderBottomNav;

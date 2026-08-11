@@ -1,4 +1,4 @@
-// Nova X — hash router.
+// Nova Go — hash router.
 //
 // Views are LAZY: each route holds `() => import("./views/x.js")` rather than
 // a static import, so a module is fetched the first time its route is
@@ -149,10 +149,10 @@ function roleHome(role) {
  */
 function renderWrongApp(container, userRole) {
   const APP_FOR_ROLE = {
-    RIDER: "Nova X",
-    DRIVER: "Nova X Driver",
-    RESTAURANT: "Nova X Merchant",
-    ADMIN: "Nova X Ops",
+    RIDER: "Nova Go",
+    DRIVER: "Nova Go Driver",
+    RESTAURANT: "Nova Go Merchant",
+    ADMIN: "Nova Go Ops",
   };
   container.innerHTML = `
     <div class="page flex-col items-center text-center" style="min-height:100dvh; justify-content:center;">
@@ -162,7 +162,7 @@ function renderWrongApp(container, userRole) {
       <h1 class="text-xl mb-2">Wrong app</h1>
       <p class="text-secondary mb-6">
         This number is registered as a <b>${(userRole || "").toLowerCase()}</b> account.<br/>
-        Please use <b>${APP_FOR_ROLE[userRole] || "the correct Nova X app"}</b> to sign in.
+        Please use <b>${APP_FOR_ROLE[userRole] || "the correct Nova Go app"}</b> to sign in.
       </p>
       <button id="signOutBtn" class="btn btn-secondary btn-block">Sign out and use a different number</button>
     </div>
@@ -242,7 +242,7 @@ async function renderRoute(path) {
     if (route.auth !== "any" && route.auth !== user.role) { navigate(roleHome(user.role)); return; }
   }
 
-  if (currentCleanup) { try { currentCleanup(); } catch (e) { console.error("[NovaX] cleanup error:", e); } currentCleanup = null; }
+  if (currentCleanup) { try { currentCleanup(); } catch (e) { console.error("[NovaGo] cleanup error:", e); } currentCleanup = null; }
 
   container.innerHTML = "";
   const wrap = document.createElement("div");
@@ -261,7 +261,7 @@ async function renderRoute(path) {
     const render = route.wrap ? exported(APP_CONFIG.signupRole || "RIDER") : exported;
     currentCleanup = (await render(wrap)) || null;
   } catch (e) {
-    console.error("[NovaX] render error on", path, e);
+    console.error("[NovaGo] render error on", path, e);
     wrap.innerHTML = `<div class="page text-center"><p class="text-secondary">Something broke loading this screen.</p><p class="text-xs text-muted mt-2">${(e && e.message) || e}</p></div>`;
   }
   currentRoute = path;

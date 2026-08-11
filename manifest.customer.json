@@ -1,6 +1,6 @@
 {
-  "name": "Nova X Bike",
-  "short_name": "Nova X Bike",
+  "name": "Nova Go Bike",
+  "short_name": "Nova Go Bike",
   "description": "Book a bike in Karachi. Fixed fare, cash, verified riders.",
   "start_url": "customer.html",
   "scope": ".",

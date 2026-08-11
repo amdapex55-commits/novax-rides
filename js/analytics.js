@@ -1,4 +1,4 @@
-// Nova X Rides — funnel tracking client.
+// Nova Go Rides — funnel tracking client.
 //
 // Fire-and-forget by design: analytics must never delay a booking or throw
 // into a user-facing flow. Every call is `void track(...)` — no awaits, no

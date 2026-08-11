@@ -1,4 +1,4 @@
-// Nova X — socket.io wrapper for the backend's /location namespace.
+// Nova Go — socket.io wrapper for the backend's /location namespace.
 //
 // A true SPA singleton: the connection opens once after login and survives
 // every screen navigation, instead of dying and reconnecting on each page
@@ -73,14 +73,14 @@ function ensureLibrary() {
     for (const src of SOURCES) {
       try {
         await loadScript(src);
-        console.info(`[NovaX] socket.io loaded from ${src}`);
+        console.info(`[NovaGo] socket.io loaded from ${src}`);
         return true;
       } catch (err) {
-        console.warn(`[NovaX] ${err.message}`);
+        console.warn(`[NovaGo] ${err.message}`);
       }
     }
     // Both failed. Not fatal — see `degraded` below.
-    console.warn("[NovaX] socket.io unavailable — live tracking will poll instead");
+    console.warn("[NovaGo] socket.io unavailable — live tracking will poll instead");
     return false;
   })();
 
@@ -104,7 +104,7 @@ export const socketManager = {
 
     const token = Token.access;
     if (!token) {
-      console.warn("[NovaX] socket.connect() called with no access token");
+      console.warn("[NovaGo] socket.connect() called with no access token");
       return null;
     }
 
@@ -129,7 +129,7 @@ export const socketManager = {
     });
 
     socket.on("connect_error", (err) => {
-      console.warn("[NovaX] socket connect_error:", err?.message);
+      console.warn("[NovaGo] socket connect_error:", err?.message);
     });
 
     pendingListeners.forEach(({ event, handler }) => socket.on(event, handler));

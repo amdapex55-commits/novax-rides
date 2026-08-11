@@ -1,9 +1,9 @@
-// Nova X Rides — the ops command center.
+// Nova Go Rides — the ops command center.
 //
 // This is the screen that decides whether a launch survives its first busy
 // evening. Automatic matching WILL fail — nobody online in that area,
 // everyone declined, a driver accepted then went quiet. Without this, the
-// customer stares at a spinner and nobody at Nova X knows it's happening.
+// customer stares at a spinner and nobody at Nova Go knows it's happening.
 //
 // Three surfaces, in order of urgency:
 //   1. Live safety incidents (someone pressed SOS)

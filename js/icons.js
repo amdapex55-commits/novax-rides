@@ -1,4 +1,4 @@
-// Nova X Rides — minimal inline SVG icon set (stroke-based, consistent
+// Nova Go Rides — minimal inline SVG icon set (stroke-based, consistent
 // weight). One shared function so every screen's icons stay visually
 // consistent instead of relying on an external icon font.
 const PATHS = {

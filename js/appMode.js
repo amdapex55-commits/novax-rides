@@ -1,7 +1,7 @@
-// Nova X — which app is this build?
+// Nova Go — which app is this build?
 //
 // One codebase, four products. Each entry point (index.html, driver.html,
-// merchant.html, ops.html) sets window.NOVAX_APP before app.js loads, and
+// merchant.html, ops.html) sets window.NOVAGO_APP before app.js loads, and
 // everything downstream — routes, nav, signup role, splash destination —
 // reads from here.
 //
@@ -17,7 +17,7 @@
 
 import { SERVICES } from "./launch.config.js";
 
-export const APP = (typeof window !== "undefined" && window.NOVAX_APP) || "customer";
+export const APP = (typeof window !== "undefined" && window.NOVAGO_APP) || "customer";
 
 function liveServiceCount() {
   return Object.values(SERVICES).filter((s) => s.live).length;
@@ -55,10 +55,10 @@ export function isParkedRoute(path) {
 const CONFIGS = {
   customer: {
     key: "customer",
-    // Pilot naming. "Nova X Bike" sets the expectation the app can actually
+    // Pilot naming. "Nova Go Bike" sets the expectation the app can actually
     // meet; "Rides, food, parcels & errands" promises three things that
     // aren't live and makes the app feel broken rather than focused.
-    name: SERVICES.ride.live && liveServiceCount() === 1 ? "Nova X Bike" : "Nova X",
+    name: SERVICES.ride.live && liveServiceCount() === 1 ? "Nova Go Bike" : "Nova Go",
     tagline: liveServiceCount() === 1 ? "Bike rides across Karachi" : "Rides, food, parcels & errands",
     // Role assigned when a brand-new number signs up through this app.
     signupRole: "RIDER",
@@ -98,7 +98,7 @@ const CONFIGS = {
 
   driver: {
     key: "driver",
-    name: "Nova X Driver",
+    name: "Nova Go Driver",
     tagline: "Drive. Deliver. Earn.",
     signupRole: "DRIVER",
     allowedRoles: ["DRIVER"],
@@ -124,7 +124,7 @@ const CONFIGS = {
 
   merchant: {
     key: "merchant",
-    name: "Nova X Merchant",
+    name: "Nova Go Merchant",
     tagline: "Your kitchen, online",
     signupRole: "RESTAURANT",
     allowedRoles: ["RESTAURANT"],
@@ -145,7 +145,7 @@ const CONFIGS = {
 
   ops: {
     key: "ops",
-    name: "Nova X Ops",
+    name: "Nova Go Ops",
     tagline: "Dispatch & control",
     // Nobody self-signs-up as an admin — an ops account is created by
     // promoting an existing user in the database. Signing up here just

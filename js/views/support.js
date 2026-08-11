@@ -1,4 +1,4 @@
-// Nova X Rides — help center + support ticket submission. No live chat
+// Nova Go Rides — help center + support ticket submission. No live chat
 // backend exists (that's a real realtime feature) — this is the honest
 // functional version: a real ticket lands in the database via
 // POST /support/tickets instead of a chat UI that goes nowhere.

@@ -1,6 +1,6 @@
 {
-  "appId": "com.novax.merchant",
-  "appName": "Nova X Merchant",
+  "appId": "com.novago.merchant",
+  "appName": "Nova Go Merchant",
   "webDir": ".",
   "backgroundColor": "#ffffff",
   "server": {

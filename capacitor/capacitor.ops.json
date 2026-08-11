@@ -1,6 +1,6 @@
 {
-  "appId": "com.novax.ops",
-  "appName": "Nova X Ops",
+  "appId": "com.novago.ops",
+  "appName": "Nova Go Ops",
   "webDir": ".",
   "backgroundColor": "#ffffff",
   "server": {

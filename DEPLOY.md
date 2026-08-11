@@ -1,4 +1,4 @@
-# Deploying the Nova X Bike pilot
+# Deploying the Nova Go Bike pilot
 
 Order matters. **Config → backend → frontend → verify.** Roughly 45 minutes
 the first time.
@@ -11,7 +11,7 @@ If you deploy before this, the apps still run but every support button hides
 itself and the legal pages show a "not ready to publish" banner. Ten minutes
 here saves a redeploy.
 
-Unzip `novax-bike-pilot-frontend.zip`. Open the folder in any text editor
+Unzip `novago-bike-pilot-frontend.zip`. Open the folder in any text editor
 (TextEdit on Mac is fine — use Format → Make Plain Text).
 
 **File 1: `js/support.config.js`** — around line 12:
@@ -26,11 +26,11 @@ opsEscalation: "+92 300 7654321", // YOUR number, 24h, never shown to customers
 **File 2: `js/launch.config.js`** — the `COMPANY` block, around line 155:
 
 ```js
-legalName: "Nova X Logistics (Private) Limited",
+legalName: "Nova Go Logistics (Private) Limited",
 registrationNumber: "0123456",     // SECP
 ntn: "1234567-8",                  // FBR
 address: "Office 4, Zamzama Boulevard, DHA Phase 5",
-website: "https://novax.pk",
+website: "https://novago.pk",
 effectiveDate: "1 September 2026",
 ```
 
@@ -68,7 +68,7 @@ don't handle those.
 The backend runs `prisma db push` automatically on every boot, so the schema
 changes apply themselves. No terminal needed.
 
-1. Unzip `novax-bike-pilot-backend.zip`
+1. Unzip `novago-bike-pilot-backend.zip`
 2. Open **GitHub Desktop** → your `novax-backend` repository
 3. Click **Repository → Show in Finder**
 4. Delete everything inside that folder **except the hidden `.git` folder**
@@ -122,7 +122,7 @@ serves real customers.
 2. Delete everything except `.git`
 3. Copy in everything from your **edited** `novax-rides` folder (the one with
    your real support numbers from Step 0 — not the raw unzip)
-4. Commit: `Nova X Bike pilot` → **Push origin**
+4. Commit: `Nova Go Bike pilot` → **Push origin**
 
 GitHub Pages rebuilds in 1–2 minutes.
 

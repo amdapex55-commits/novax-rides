@@ -1,4 +1,4 @@
-// Nova X Rides — driver-side Food & Errand queue: incoming offer countdown
+// Nova Go Rides — driver-side Food & Errand queue: incoming offer countdown
 // + step-through progress screens. Mirrors driverHome.js's
 // renderIncomingOffer/renderTripProgress shape exactly, just pointed at the
 // food-orders/errands endpoints instead of trips.

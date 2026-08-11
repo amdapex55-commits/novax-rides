@@ -1,4 +1,4 @@
-// Nova X Rides — Restaurant portal: onboarding, pending-approval, live order
+// Nova Go Rides — Restaurant portal: onboarding, pending-approval, live order
 // queue, menu management, store profile. Mirrors driverAuth.js's
 // pending-approval pattern (poll real status, same honest "still under
 // review" copy) and food.js's cart/menu patterns for consistency.
@@ -365,7 +365,7 @@ export function renderRestaurantProfile(root) {
         </div>
       </div>
     `;
-    root.querySelector("#logoutBtn").addEventListener("click", () => { Token.clear(); window.__novaxRefreshNav(); navigate("/home"); });
+    root.querySelector("#logoutBtn").addEventListener("click", () => { Token.clear(); window.__novagoRefreshNav(); navigate("/home"); });
     root.querySelectorAll("[data-nav]").forEach((el) => el.addEventListener("click", () => navigate(el.dataset.nav)));
 
     const toggle = root.querySelector("#openToggle");

@@ -1,4 +1,4 @@
-// Nova X Rides — the money screen: map-first ride booking.
+// Nova Go Rides — the money screen: map-first ride booking.
 //
 // One screen, one map, a docked sheet whose content advances through the
 // flow (route → vehicle + fare → searching). Replaces the old three separate
@@ -66,6 +66,9 @@ export function renderRideBooking(root) {
   let pickupAccuracy = null;
   let selectedVehicle = VEHICLE_TYPES.includes(state.selectedVehicle) ? state.selectedVehicle : VEHICLE_TYPES[0];
   let fareMode = "FIXED";
+  // "Fast Match" tip, in PKR. Zero means a normal booking — the default, and
+  // the one that must never feel like the punished option.
+  let fastMatchTip = 0;
   let destroyed = false;
   let noteCtl = null;
   let note = { text: "", audioUrl: null };
@@ -255,6 +258,14 @@ export function renderRideBooking(root) {
                  this screen, and a number that lands rather than appearing
                  draws the eye to it without a single word of instruction. -->
             <p class="nx-cockpit-fare" id="fareAmount">${fmtMoney(0)}</p>
+            <!-- Fair Petrol Guarantee. Sits directly under the number it
+                 explains, because it's only persuasive next to the fare. -->
+            ${
+              PRICING.showPetrolGuarantee && PRICING.petrolReferencePerLitre
+                ? `<p class="nx-petrol-guarantee">${icon("shield", 11)}
+                     Fare calculated at Petrol ${PRICING.currency} ${PRICING.petrolReferencePerLitre}/L</p>`
+                : ""
+            }
           </div>
           <span class="nx-lock">${icon("shield", 12)} Fare locked</span>
         </div>
@@ -300,6 +311,27 @@ export function renderRideBooking(root) {
         </div>`}
 
       ${ALLOW_BID_FARE ? `
+        <!-- FAST MATCH.
+             The problem this replaces is haggling: a rider says "traffic hai,
+             100 extra", and the customer either argues at the roadside or
+             feels cheated. Naming two fixed amounts up front turns an
+             argument into a choice — and because the fare is locked, the
+             customer knows the total before anyone sets off.
+             "No tip" is first and selected by default, so the honest cheap
+             option is the path of least resistance rather than a thing you
+             have to opt back into. -->
+        <div class="nx-fastmatch mb-3" id="fastMatch">
+          <div class="nx-fastmatch-head">
+            <span class="nx-fastmatch-title">${icon("bolt", 13)} Fast Match</span>
+            <span class="nx-fastmatch-sub">Riders see the tip — it goes to them in full</span>
+          </div>
+          <div class="nx-fastmatch-opts" role="group" aria-label="Add a tip to match faster">
+            <button type="button" class="nx-tip active" data-tip="0">No tip</button>
+            <button type="button" class="nx-tip" data-tip="20">+${PRICING.currency} 20</button>
+            <button type="button" class="nx-tip" data-tip="50">+${PRICING.currency} 50</button>
+          </div>
+        </div>
+
         <div class="top-tabs mb-3" id="fareTabs" style="grid-template-columns:1fr 1fr;">
           <div class="top-tabs-indicator" id="fareInd" style="width:50%; transform:translateX(0);"></div>
           <button class="top-tab active" data-mode="FIXED">Fixed fare</button>
@@ -338,6 +370,24 @@ export function renderRideBooking(root) {
     const confirmBtn = node.querySelector("#confirmRideBtn");
     const fareTabs = node.querySelector("#fareTabs");
     const fareInd = node.querySelector("#fareInd");
+
+    // Fast Match tip selection. Re-runs the fare count-up so the number the
+    // customer commits to always includes what they just added — a tip that
+    // doesn't move the headline total is a tip people forget they chose.
+    const fastMatch = node.querySelector("#fastMatch");
+    if (fastMatch) {
+      fastMatch.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-tip]");
+        if (!btn) return;
+        fastMatchTip = Number(btn.dataset.tip) || 0;
+        fastMatch.querySelectorAll("[data-tip]").forEach((b) => b.classList.toggle("active", b === btn));
+        track("ride_fastmatch_tip_selected", { tipAmount: fastMatchTip });
+        const el = node.querySelector("#fareAmount");
+        if (el) countUp(el, quoted + fastMatchTip, { prefix: "Rs. ", duration: 340 });
+        const cta = node.querySelector("#confirmRideBtn");
+        if (cta && !submitting) cta.textContent = `Confirm · ${fmtMoney(quoted + fastMatchTip)}`;
+      });
+    }
 
     function drawFarePanel() {
       if (fareMode === "FIXED") {
@@ -433,11 +483,13 @@ export function renderRideBooking(root) {
           pickupAccuracyMeters: pickupAccuracy ?? undefined,
           pickupNote: note.text || undefined,
           pickupNoteAudioUrl: note.audioUrl || undefined,
+          ...(fastMatchTip > 0 ? { tipAmount: fastMatchTip } : {}),
           ...(fareMode === "BID" ? { offeredFare } : {}),
         });
         track("ride_requested", {
           vehicleType: selectedVehicle, fareType: fareMode,
           distanceKm: route.km, routed: !route.estimated,
+          tipAmount: fastMatchTip,
         });
         state.activeTripId = trip.id;
         navigate("/tracking");

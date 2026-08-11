@@ -1,7 +1,7 @@
-// Nova X — the pilot customer home. Bike hailing, and nothing else.
+// Nova Go — the pilot customer home. Bike hailing, and nothing else.
 //
 // The previous home was a three-tab shell (Food / Bike / Taxi) with quick
-// links to loyalty, referrals and Nova X for Business. That's the right home
+// links to loyalty, referrals and Nova Go for Business. That's the right home
 // for a super-app with all four services running. It is the wrong home for a
 // bike pilot: a customer opening it has to work out what this app is before
 // they can use it, and two of the three tabs lead somewhere that can't serve
@@ -46,7 +46,7 @@ export function renderBikeHome(root) {
       <div class="nx-bike-topbar">
         <div class="nx-bike-brand">
           <span class="nx-bike-logo">${icon("bolt", 15)}</span>
-          <span>Nova X <b>Bike</b></span>
+          <span>Nova Go <b>Bike</b></span>
         </div>
         <button class="nx-bike-avatar" id="profileBtn" aria-label="Profile">
           ${icon("person", 19)}
@@ -270,15 +270,15 @@ export function renderBikeHome(root) {
 
 const SOON_COPY = {
   food: {
-    icon: "utensils", title: "Nova X Food",
+    icon: "utensils", title: "Nova Go Food",
     body: "We're signing up kitchens across the city now. Food goes live once we can deliver it hot and on time — not before.",
   },
   parcel: {
-    icon: "package", title: "Nova X Parcel",
+    icon: "package", title: "Nova Go Parcel",
     body: "Send anything across Karachi in under an hour. We're switching this on once our rider network is dense enough to make that promise true.",
   },
   errand: {
-    icon: "basket", title: "Nova X Errands",
+    icon: "basket", title: "Nova Go Errands",
     body: "Tell us what to buy and your budget, and a rider shops it for you. Coming after parcels.",
   },
 };
@@ -286,7 +286,7 @@ const SOON_COPY = {
 export function renderComingSoon(root) {
   const key = state.comingSoonService || "food";
   const c = SOON_COPY[key] || SOON_COPY.food;
-  const storeKey = `novax_notify_${key}`;
+  const storeKey = `novago_notify_${key}`;
   const already = (() => { try { return localStorage.getItem(storeKey) === "1"; } catch { return false; } })();
 
   root.innerHTML = `

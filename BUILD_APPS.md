@@ -1,21 +1,21 @@
-# Nova X — one landing page, four apps, one codebase
+# Nova Go — one landing page, four apps, one codebase
 
 ## Structure
 
 `index.html` is the **public landing page** — a marketing front door with a 3D city-network hero. It is not an app. It links out to four separate products:
 
-| File | What it is | `NOVAX_APP` |
+| File | What it is | `NOVAGO_APP` |
 |---|---|---|
 | `index.html` | Public landing page | *(none — not an app)* |
-| `customer.html` | **Nova X** — rides, food, parcels, errands | `customer` |
-| `driver.html` | **Nova X Driver** — go online, offers, earnings | `driver` |
-| `merchant.html` | **Nova X Merchant** — orders, menu, prep time | `merchant` |
-| `ops.html` | **Nova X Ops** — dispatch, approvals, incidents | `ops` |
+| `customer.html` | **Nova Go** — rides, food, parcels, errands | `customer` |
+| `driver.html` | **Nova Go Driver** — go online, offers, earnings | `driver` |
+| `merchant.html` | **Nova Go Merchant** — orders, menu, prep time | `merchant` |
+| `ops.html` | **Nova Go Ops** — dispatch, approvals, incidents | `ops` |
 
 Each app entry sets one line before booting:
 
 ```html
-<script>window.NOVAX_APP = "customer";</script>
+<script>window.NOVAGO_APP = "customer";</script>
 ```
 
 Everything downstream — routes, bottom nav, signup role, welcome screen — reads that from `js/appMode.js`. Views are lazy-loaded per route, so the customer app never downloads driver/merchant/ops code.
@@ -32,7 +32,7 @@ One GitHub Pages deploy serves all five:
 
 Send the landing page to the public. Send drivers the driver link directly, restaurants the merchant link. Each opens as its own product.
 
-**Tip:** all four apps work as home-screen apps. Android Chrome: ⋮ → "Add to Home screen". A driver gets a Nova X Driver icon that opens straight into the driver app — enough to run your first weeks without the Play Store.
+**Tip:** all four apps work as home-screen apps. Android Chrome: ⋮ → "Add to Home screen". A driver gets a Nova Go Driver icon that opens straight into the driver app — enough to run your first weeks without the Play Store.
 
 ## Landing page
 
@@ -49,7 +49,7 @@ Hero behaviour:
 ## Two guards that make the app split real
 
 1. **Route scoping** — each build only registers its own routes. A customer typing `/ops/command` is redirected home; that path doesn't exist in their build.
-2. **Wrong-app detection** — a driver signing into the customer app gets *"This number is registered as a driver account — please use Nova X Driver"*, not a broken screen.
+2. **Wrong-app detection** — a driver signing into the customer app gets *"This number is registered as a driver account — please use Nova Go Driver"*, not a broken screen.
 
 ## Signup roles
 
@@ -83,10 +83,10 @@ The script verifies `index.html` actually declares the app you asked for and abo
 
 | App | appId |
 |---|---|
-| Nova X | `com.novax.app` |
-| Nova X Driver | `com.novax.driver` |
-| Nova X Merchant | `com.novax.merchant` |
-| Nova X Ops | `com.novax.ops` |
+| Nova Go | `com.novago.app` |
+| Nova Go Driver | `com.novago.driver` |
+| Nova Go Merchant | `com.novago.merchant` |
+| Nova Go Ops | `com.novago.ops` |
 
 **Keep your signing keystore backed up.** Lose it and you can never update that app again.
 

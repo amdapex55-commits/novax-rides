@@ -1,4 +1,4 @@
-// Nova X Rides — shared UI helpers used across every view: toast, bottom
+// Nova Go Rides — shared UI helpers used across every view: toast, bottom
 // sheet, confetti burst, count-up numbers, skeleton loaders.
 
 export function toast(msg, isError = false) {

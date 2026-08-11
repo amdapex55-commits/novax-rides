@@ -1,4 +1,4 @@
-// Nova X — "how does the money work" screens.
+// Nova Go — "how does the money work" screens.
 //
 // Drivers and restaurants both ask the same question before they sign up:
 // what do I actually keep? Answering it plainly, in the app, with the real
@@ -26,7 +26,7 @@ function askBlock(prefill, { title = "Still not clear?", note = "We'd rather exp
       ${wa ? `<a href="${wa}" target="_blank" rel="noopener"
              class="btn btn-secondary btn-block">${icon("chat", 18)} Ask on WhatsApp</a>`
            : `<button class="btn btn-secondary btn-block" data-support-ticket>
-                ${icon("chat", 18)} Message the Nova X team
+                ${icon("chat", 18)} Message the Nova Go team
               </button>`}
     </div>`;
 }
@@ -38,7 +38,7 @@ function page(title, bodyHtml) {
         <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
         <h1 class="text-xl mb-4">${title}</h1>
         ${bodyHtml}
-        ${askBlock("Hi Nova X — I have a question about payments")}
+        ${askBlock("Hi Nova Go — I have a question about payments")}
       </div>
     `;
     root.querySelector("#backBtn").addEventListener("click", () => history.back());
@@ -59,7 +59,7 @@ export const renderDriverEarningsExplainer = page("How you get paid", `
   <h3 class="text-sm text-secondary mb-2" style="text-transform:uppercase; letter-spacing:0.04em;">A real example</h3>
   <div class="card mb-5">
     <div class="flex justify-between mb-2"><span class="text-sm text-secondary">Rider pays you (cash)</span><span class="font-bold">Rs. 300</span></div>
-    <div class="flex justify-between mb-2"><span class="text-sm text-secondary">Nova X commission (${driverCommissionPct}%)</span><span class="font-bold" style="color:var(--error);">− Rs. ${Math.round(300 * driverCommissionPct / 100)}</span></div>
+    <div class="flex justify-between mb-2"><span class="text-sm text-secondary">Nova Go commission (${driverCommissionPct}%)</span><span class="font-bold" style="color:var(--error);">− Rs. ${Math.round(300 * driverCommissionPct / 100)}</span></div>
     <div class="flex justify-between" style="border-top:1px solid var(--surface-border); padding-top:var(--sp-3);">
       <span class="font-bold">You keep</span><span class="font-bold" style="color:var(--accent);">Rs. ${300 - Math.round(300 * driverCommissionPct / 100)}</span>
     </div>
@@ -105,7 +105,7 @@ export const renderRestaurantCommissionExplainer = page("How payments work", `
   <h3 class="text-sm text-secondary mb-2" style="text-transform:uppercase; letter-spacing:0.04em;">A real example</h3>
   <div class="card mb-5">
     <div class="flex justify-between mb-2"><span class="text-sm text-secondary">Food subtotal</span><span class="font-bold">Rs. 1,000</span></div>
-    <div class="flex justify-between mb-2"><span class="text-sm text-secondary">Nova X commission (${restaurantCommissionPct}%)</span><span class="font-bold" style="color:var(--error);">− Rs. ${restaurantCommissionPct * 10}</span></div>
+    <div class="flex justify-between mb-2"><span class="text-sm text-secondary">Nova Go commission (${restaurantCommissionPct}%)</span><span class="font-bold" style="color:var(--error);">− Rs. ${restaurantCommissionPct * 10}</span></div>
     <div class="flex justify-between mb-3" style="border-top:1px solid var(--surface-border); padding-top:var(--sp-3);">
       <span class="font-bold">You receive</span><span class="font-bold" style="color:var(--accent);">Rs. ${1000 - restaurantCommissionPct * 10}</span>
     </div>
@@ -147,9 +147,9 @@ export const renderRestaurantCommissionExplainer = page("How payments work", `
 // --------------------------------------------------------------------------
 
 export function renderSupportContact(root) {
-  const wa = whatsappLink("Hi Nova X, I need help with:");
+  const wa = whatsappLink("Hi Nova Go, I need help with:");
   const tel = phoneLink();
-  const mail = emailLink("Nova X — I need help");
+  const mail = emailLink("Nova Go — I need help");
 
   // With no live channel configured, the written ticket is the ONLY honest
   // option — so it gets promoted from a footnote to the primary button
@@ -177,7 +177,7 @@ export function renderSupportContact(root) {
 
       ${ticketIsPrimary ? `
         <button id="ticketPrimary" class="btn btn-primary btn-block mb-3" style="height:56px;">
-          ${icon("chat", 20)} Message the Nova X team
+          ${icon("chat", 20)} Message the Nova Go team
         </button>
         <p class="text-secondary text-xs mb-5" style="text-align:center;">
           Usually answered the same day.

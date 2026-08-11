@@ -1,11 +1,11 @@
-// Nova X Rides — REST client for novax-backend. Every path/field here was
+// Nova Go Rides — REST client for novax-backend. Every path/field here was
 // read directly from the backend's controllers/DTOs (trips.controller.ts,
 // delivery.controller.ts, auth.controller.ts, ratings/dto/rate.dto.ts,
 // create-delivery.dto.ts), not guessed.
 import { CONFIG } from "./config.js";
 
 const BASE = CONFIG.API_BASE_URL;
-const LS = "novax_";
+const LS = "novago_";
 
 export const Token = {
   get access() { return localStorage.getItem(LS + "access"); },

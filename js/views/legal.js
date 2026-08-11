@@ -1,4 +1,4 @@
-// Nova X — legal & policy pages.
+// Nova Go — legal & policy pages.
 //
 // ⚠️ READ THIS FIRST.
 // I am not a lawyer and this is not legal advice. A qualified Pakistani
@@ -6,7 +6,7 @@
 //
 // What changed: these used to be drafts littered with [SQUARE BRACKETS] that
 // would have shipped visibly unfinished. The text below is now complete and
-// specific to how Nova X actually operates — cash fares, 15% commission,
+// specific to how Nova Go actually operates — cash fares, 15% commission,
 // weekly settlement, verified riders, a bike-only pilot in one zone. The only
 // values still pulled from outside are the ones that describe your company
 // rather than your product, and those live in js/launch.config.js.
@@ -22,7 +22,7 @@ const configured = !!(COMPANY.legalName && COMPANY.address && COMPANY.effectiveD
 
 // Fall back to the trading name so a sentence still reads as a sentence
 // during testing, while the banner above makes clear it isn't publishable.
-const NAME = COMPANY.legalName || "Nova X (company details not yet configured)";
+const NAME = COMPANY.legalName || "Nova Go (company details not yet configured)";
 const ADDR = COMPANY.address || "(registered office not yet configured)";
 const DATE = COMPANY.effectiveDate || "(effective date not yet set)";
 const EMAIL = SUPPORT_STATUS.email ? SUPPORT.email : "(support email not yet configured)";
@@ -75,15 +75,15 @@ function page(title, bodyHtml) {
    ========================================================================== */
 
 export const renderTerms = page("Terms of Service", `
-  <p>These Terms govern your use of the Nova X mobile application and website
+  <p>These Terms govern your use of the Nova Go mobile application and website
   ("the Platform"), operated by <strong>${NAME}</strong>, registered office
   ${ADDR}, ${COMPANY.city}, ${COMPANY.country}.</p>
 
   <p>By creating an account or booking a ride you accept these Terms. If you
   do not accept them, do not use the Platform.</p>
 
-  <h3>1. What Nova X is</h3>
-  <p>Nova X is a technology platform that connects passengers with independent
+  <h3>1. What Nova Go is</h3>
+  <p>Nova Go is a technology platform that connects passengers with independent
   motorcycle riders. <strong>We are not a transport company.</strong> We do not
   own vehicles and we do not employ riders. Riders are independent
   contractors who use the Platform to find passengers. The transport service
@@ -98,7 +98,7 @@ export const renderTerms = page("Terms of Service", `
   </ul>
 
   <h3>3. Service area and hours</h3>
-  <p>Nova X currently operates bike rides only, in ${ZONE.enabled ? ZONE.name : "Karachi"},
+  <p>Nova Go currently operates bike rides only, in ${ZONE.enabled ? ZONE.name : "Karachi"},
   ${HOURS.enabled ? `between ${HOURS.open} and ${HOURS.close} daily` : "during posted hours"}.
   We may change the service area, the hours or the services offered at any
   time. Requests outside the service area or hours will not be accepted.</p>
@@ -202,7 +202,7 @@ export const renderPrivacy = page("Privacy Policy", `
     <li>Location while online, whether or not on a trip</li>
   </ul>
   <p>We do <strong>not</strong> collect card numbers, CVVs, PINs or banking
-  passwords from anyone. Nova X is cash-only and will never ask you for these.</p>
+  passwords from anyone. Nova Go is cash-only and will never ask you for these.</p>
 
   <h3>2. Why we collect it</h3>
   <ul>
@@ -272,7 +272,7 @@ export const renderPrivacy = page("Privacy Policy", `
   perfectly secure, and we will tell you promptly if a breach affects you.</p>
 
   <h3>8. Children</h3>
-  <p>Nova X is not for anyone under 18. We do not knowingly collect data from
+  <p>Nova Go is not for anyone under 18. We do not knowingly collect data from
   children. If you believe a child has an account, contact us and we will
   remove it.</p>
 
@@ -288,7 +288,7 @@ export const renderPrivacy = page("Privacy Policy", `
    ========================================================================== */
 
 export const renderCancellation = page("Cancellation &amp; Refund Policy", `
-  <p>Nova X is cash-only: you pay the rider directly at the end of the trip.
+  <p>Nova Go is cash-only: you pay the rider directly at the end of the trip.
   That means in almost every case there is nothing to refund, because nothing
   has been charged. This policy explains the exceptions.</p>
 
@@ -327,7 +327,7 @@ export const renderCancellation = page("Cancellation &amp; Refund Policy", `
   overcharges is removed.</p>
 
   <h3>7. How to raise a problem</h3>
-  <p>In the app: Help → Message the Nova X team. Or ${EMAIL} / ${PHONE} during
+  <p>In the app: Help → Message the Nova Go team. Or ${EMAIL} / ${PHONE} during
   ${HOURS.open}–${HOURS.close}. We aim to resolve within two working days.</p>
 `);
 
@@ -433,7 +433,7 @@ export const renderSafety = page("Safety Policy", `
 
 export const renderDriverAgreement = page("Rider Partner Agreement", `
   <p>This agreement is between you ("Rider Partner") and <strong>${NAME}</strong>,
-  ${ADDR}. It governs your use of the Nova X Driver app.</p>
+  ${ADDR}. It governs your use of the Nova Go Driver app.</p>
 
   <h3>1. You are independent</h3>
   <p>You are an independent contractor, not an employee of ${NAME}. You choose
@@ -460,7 +460,7 @@ export const renderDriverAgreement = page("Rider Partner Agreement", `
   <ul>
     <li>Fares are <strong>cash</strong>, paid to you directly by the passenger.</li>
     <li>You keep <strong>${100 - commission}%</strong> of every fare.</li>
-    <li>Nova X commission is <strong>${commission}%</strong>, settled
+    <li>Nova Go commission is <strong>${commission}%</strong>, settled
     ${COMMERCIALS.payoutSchedule}.</li>
     <li>There is no joining fee, no charge for being online, and no deduction
     you have not agreed to here.</li>
@@ -523,7 +523,7 @@ export const renderDriverAgreement = page("Rider Partner Agreement", `
   location is tracked only while you are online and stops when you go offline.</p>
 
   <h3>10. Ending this agreement</h3>
-  <p>You may stop using Nova X at any time. Any commission you owe at that
+  <p>You may stop using Nova Go at any time. Any commission you owe at that
   point remains payable. We may end this agreement on notice, or immediately
   in the circumstances in section 7.</p>
 
@@ -539,7 +539,7 @@ export const renderDriverAgreement = page("Rider Partner Agreement", `
 export const renderRestaurantAgreement = page("Restaurant Partner Agreement", `
   <div class="nx-launch-note mb-4">
     ${icon("info", 15)}
-    <span>Nova X Food is not live yet. This agreement applies from the date
+    <span>Nova Go Food is not live yet. This agreement applies from the date
     your storefront is approved and takes its first order.</span>
   </div>
 
@@ -548,9 +548,9 @@ export const renderRestaurantAgreement = page("Restaurant Partner Agreement", `
 
   <h3>1. What you get</h3>
   <ul>
-    <li>A storefront on Nova X Food that customers can order from</li>
+    <li>A storefront on Nova Go Food that customers can order from</li>
     <li>Full control of your menu, prices, photographs and opening hours</li>
-    <li>Delivery handled by Nova X riders</li>
+    <li>Delivery handled by Nova Go riders</li>
     <li>An order screen you control — accept, set prep time, mark ready</li>
   </ul>
 
@@ -558,7 +558,7 @@ export const renderRestaurantAgreement = page("Restaurant Partner Agreement", `
   <ul>
     <li>You keep <strong>${100 - COMMERCIALS.restaurantCommissionPct}%</strong>
     of the food subtotal on every order.</li>
-    <li>Nova X commission is <strong>${COMMERCIALS.restaurantCommissionPct}%</strong>
+    <li>Nova Go commission is <strong>${COMMERCIALS.restaurantCommissionPct}%</strong>
     of the subtotal, settled ${COMMERCIALS.payoutSchedule}.</li>
     <li>The delivery fee is the rider's and is never taken from your share.</li>
     <li>No listing fee, no monthly charge, no charge for being open.</li>

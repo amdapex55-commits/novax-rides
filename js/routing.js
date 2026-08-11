@@ -1,4 +1,4 @@
-// Nova X — real road routing.
+// Nova Go — real road routing.
 //
 // Until now every route on every screen was a straight line between two pins,
 // and every ETA was that straight-line distance times a guessed speed. In a
@@ -126,7 +126,7 @@ export async function getRoute(from, to, { signal } = {}) {
     return result;
   } catch (err) {
     if (err.name !== "AbortError") {
-      console.warn("[NovaX] routing unavailable, using estimate:", err.message);
+      console.warn("[NovaGo] routing unavailable, using estimate:", err.message);
     }
     return estimate(from, to);
   }

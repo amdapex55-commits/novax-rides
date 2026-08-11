@@ -1,4 +1,4 @@
-// Nova X — support contact details and the commercial terms shown in-app.
+// Nova Go — support contact details and the commercial terms shown in-app.
 //
 // ONE place to change these. They appear on the customer support screen, the
 // driver earnings explainer, the merchant commission explainer and the legal
@@ -23,7 +23,7 @@ export const SUPPORT = {
   // line does more damage than no number at all.
   phone: "+92 300 0000000",       // TODO: display format for tel: links
 
-  email: "support@novax.pk",      // TODO: your real support inbox
+  email: "support@novago.pk",      // TODO: your real support inbox
 
   // Escalation: the number ops staff call when a ride goes badly wrong —
   // an accident, a safety incident, a driver who won't respond. NOT shown
@@ -57,7 +57,7 @@ export const SUPPORT = {
 const PLACEHOLDERS = {
   whatsapp: [/^92300{0,1}0{6,}$/, /^0+$/, /^$/],
   phone: [/0{6,}/, /^$/],
-  email: [/^support@novax\.pk$/i, /example\.com$/i, /^$/],
+  email: [/^support@novago\.pk$/i, /example\.com$/i, /^$/],
 };
 
 function isPlaceholder(field) {
@@ -83,7 +83,7 @@ SUPPORT_STATUS.configured = SUPPORT_STATUS.whatsapp && SUPPORT_STATUS.phone && S
 if (!SUPPORT_STATUS.configured && typeof console !== "undefined") {
   const missing = ["whatsapp", "phone", "email"].filter((k) => !SUPPORT_STATUS[k]);
   console.warn(
-    `[NovaX] Support contacts not configured: ${missing.join(", ")}. ` +
+    `[NovaGo] Support contacts not configured: ${missing.join(", ")}. ` +
       `Those buttons are hidden from users until you set real values in js/support.config.js. ` +
       `The in-app ticket form still works.`,
   );
@@ -107,7 +107,7 @@ export function phoneLink() {
 }
 
 /** mailto: link, or null when unconfigured. */
-export function emailLink(subject = "Nova X support") {
+export function emailLink(subject = "Nova Go support") {
   if (!SUPPORT_STATUS.email) return null;
   return `mailto:${SUPPORT.email}?subject=${encodeURIComponent(subject)}`;
 }

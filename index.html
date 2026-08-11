@@ -4,19 +4,20 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#05070a"/>
-<title>Nova X Bike — Bike rides across Karachi</title>
+<title>Nova Go Bike — Bike rides across Karachi</title>
 <meta name="description" content="Bike rides across Karachi. Fixed fare shown before you book, verified riders, pay cash. Food, parcels and errands coming soon."/>
-<meta property="og:title" content="Nova X Bike — bike rides across Karachi"/>
+<meta property="og:title" content="Nova Go Bike — bike rides across Karachi"/>
 <meta property="og:description" content="Fixed fare before you book. Verified riders. Pay cash."/>
 <meta property="og:type" content="website"/>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png"/>
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"/>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" media="print" onload="this.media='all'"/>
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"/></noscript>
+<!-- Self-hosted Inter + Sora (css/fonts.css). No third-party origin in the
+     critical path: no extra DNS + TLS before text can render, and no
+     dependency on Google being reachable. -->
+<link rel="preload" as="font" type="font/woff2" href="fonts/inter-var-latin.woff2" crossorigin/>
+<link rel="preload" as="font" type="font/woff2" href="fonts/sora-var-latin.woff2" crossorigin/>
+<link rel="stylesheet" href="css/fonts.css"/>
 <link rel="stylesheet" href="css/landing.css"/>
 <style>@keyframes nx-spin { to { transform: rotate(360deg); } }</style>
 </head>
@@ -27,7 +28,7 @@
   <div class="nx-wrap nx-nav-inner">
     <a href="#top" class="nx-logo">
       <span class="nx-logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#04120b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
-      Nova X
+      Nova Go
     </a>
     <div class="nx-nav-links">
       <a href="#how">How it works</a>
@@ -63,7 +64,7 @@
           Book a bike
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
-        <a href="driver.html" class="nx-btn nx-btn-ghost">Drive with Nova X</a>
+        <a href="driver.html" class="nx-btn nx-btn-ghost">Drive with Nova Go</a>
       </div>
 
       <div class="nx-hero-proof">
@@ -103,7 +104,7 @@
 <section class="nx-section" id="how">
   <div class="nx-wrap">
     <div class="nx-section-head nx-reveal">
-      <p class="nx-kicker">How Nova X Bike works</p>
+      <p class="nx-kicker">How Nova Go Bike works</p>
       <h2 class="nx-h2">The fare you're shown<br/>is the fare you pay.</h2>
       <p class="nx-sub">
         No meter running while you sit in traffic. No surge you find out about
@@ -211,7 +212,7 @@
   <div class="nx-wrap">
     <div class="nx-switch">
       <div class="nx-reveal">
-        <p class="nx-kicker">Drive with Nova X</p>
+        <p class="nx-kicker">Drive with Nova Go</p>
         <h2 class="nx-h2">Keep 85% of<br/>every fare.</h2>
         <p class="nx-sub" style="margin-bottom:26px;">
           Passengers pay you cash, directly, at the end of every trip. We take 15% commission
@@ -252,7 +253,7 @@
 
         <div class="nx-calc-split">
           <div class="nx-calc-cell"><div class="v" data-fares>—</div><div class="l">Fares collected</div></div>
-          <div class="nx-calc-cell"><div class="v" style="color:var(--nx-food);" data-commission>—</div><div class="l">Nova X 15%</div></div>
+          <div class="nx-calc-cell"><div class="v" style="color:var(--nx-food);" data-commission>—</div><div class="l">Nova Go 15%</div></div>
           <div class="nx-calc-cell"><div class="v" style="color:var(--nx-ride);" data-keep>—</div><div class="l">You keep</div></div>
         </div>
         <p style="font-size:11.5px;color:var(--nx-faint);margin-top:15px;line-height:1.55;">
@@ -315,7 +316,7 @@
       <p class="nx-kicker">Safety &amp; operations</p>
       <h2 class="nx-h2">A person is watching<br/>every ride.</h2>
       <p class="nx-sub">
-        We run limited hours on purpose. Every hour Nova X is bookable, someone
+        We run limited hours on purpose. Every hour Nova Go is bookable, someone
         is at the operations desk who can see your trip, call your rider, and
         act. A ride nobody is watching is a ride we can't help with.
       </p>
@@ -324,7 +325,7 @@
     <div class="nx-console nx-reveal" id="opsConsole">
       <div class="nx-console-bar">
         <span class="dots"><i></i><i></i><i></i></span>
-        <span class="nx-console-title">Nova X Ops — command center</span>
+        <span class="nx-console-title">Nova Go Ops — command center</span>
         <span class="nx-console-live"><span style="width:6px;height:6px;border-radius:50%;background:var(--nx-ride);display:inline-block;animation:nx-live 2s ease-in-out infinite;"></span> Preview</span>
       </div>
       <div class="nx-console-body">
@@ -401,7 +402,7 @@
           Book as customer
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
-        <a href="driver.html" class="nx-btn nx-btn-ghost">Drive with Nova X</a>
+        <a href="driver.html" class="nx-btn nx-btn-ghost">Drive with Nova Go</a>
         
         <a href="ops.html" class="nx-btn nx-btn-ghost">Ops command</a>
       </div>
@@ -415,7 +416,7 @@
     <div>
       <a href="#top" class="nx-logo">
         <span class="nx-logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#04120b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
-        Nova X
+        Nova Go
       </a>
       <p class="nx-footer-note">
         Bike rides across Karachi. Food, parcels and errands coming soon.
@@ -425,8 +426,8 @@
     <div class="nx-footer-cols">
       <div class="nx-footer-col">
         <h5>Apps</h5>
-        <a href="customer.html">Nova X Bike</a>
-        <a href="driver.html">Nova X Driver</a>
+        <a href="customer.html">Nova Go Bike</a>
+        <a href="driver.html">Nova Go Driver</a>
         <a href="merchant.html">Restaurants (early access)</a>
       </div>
       <div class="nx-footer-col">

@@ -1,4 +1,4 @@
-// Nova X Rides — small cross-view state store. Backed by sessionStorage so
+// Nova Go Rides — small cross-view state store. Backed by sessionStorage so
 // an accidental reload mid-flow doesn't lose the booking in progress; kept
 // behind a single get/set API so views never touch storage directly.
 const KS = "nx_";

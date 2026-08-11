@@ -1,4 +1,4 @@
-// Nova X Rides — live ride tracking. Map is the screen; a docked sheet
+// Nova Go Rides — live ride tracking. Map is the screen; a docked sheet
 // carries status, the driver's identity, and the actions that matter mid-ride
 // (message, SOS, share, cancel).
 //
@@ -125,7 +125,7 @@ export function renderRideTracking(root) {
       track("trip_shared", { tripId });
       // Native share sheet where available (real phones), clipboard otherwise.
       if (navigator.share) {
-        await navigator.share({ title: "Track my Nova X ride", text: "Follow my ride live:", url });
+        await navigator.share({ title: "Track my Nova Go ride", text: "Follow my ride live:", url });
       } else {
         await navigator.clipboard.writeText(url);
         toast("Tracking link copied — send it to anyone");
@@ -146,9 +146,9 @@ export function renderRideTracking(root) {
                   padding:var(--sp-6) var(--sp-5) calc(var(--sp-6) + var(--safe-bottom));">
         <div class="sheet-handle"></div>
         <h2 class="text-lg mb-1" style="color:var(--error);">Emergency</h2>
-        <p class="text-secondary text-sm mb-5">We'll alert Nova X support with your live location straight away.</p>
+        <p class="text-secondary text-sm mb-5">We'll alert Nova Go support with your live location straight away.</p>
         <button id="callEmergencyBtn" class="btn btn-danger btn-block mb-3">${icon("sos", 18)} Call ${EMERGENCY_NUMBER} now</button>
-        <button id="alertOpsBtn" class="btn btn-secondary btn-block mb-3">Alert Nova X support only</button>
+        <button id="alertOpsBtn" class="btn btn-secondary btn-block mb-3">Alert Nova Go support only</button>
         <button id="closeSosBtn" class="btn btn-ghost btn-block">Cancel</button>
       </div>
     `;
@@ -220,7 +220,7 @@ export function renderRideTracking(root) {
       socket.emit("trip:subscribe", { tripId });
       return;
     }
-    console.warn("[NovaX] no live socket — polling trip status every 8s");
+    console.warn("[NovaGo] no live socket — polling trip status every 8s");
     pollTimer = setInterval(async () => {
       if (destroyed) return;
       try {
@@ -315,7 +315,7 @@ export function renderSharedTrip(root) {
         <div style="border-top:1px solid var(--surface-border);">
           ${trustCard({ name: t.driverFirstName, subtitle: String(t.vehicleType || "").toLowerCase(), rating: t.driverRating })}
         </div>` : ""}
-      <p class="text-xs text-muted text-center mt-3">Shared live from Nova X · this link updates automatically</p>
+      <p class="text-xs text-muted text-center mt-3">Shared live from Nova Go · this link updates automatically</p>
     `);
 
     if (mapHandle) {

@@ -1,4 +1,4 @@
-// Nova X Merchant — storefront onboarding.
+// Nova Go Merchant — storefront onboarding.
 //
 // The old version was four inputs on a white page: name, description,
 // address, cuisine tags. Two problems with that.
@@ -34,7 +34,7 @@ import { toast, esc, confettiBurst } from "../ui.js";
 import { navigate } from "../router.js";
 import { geocode, getCurrentCoords, createSuggester } from "../geocode.js";
 
-const DRAFT_KEY = "novax_restaurant_draft";
+const DRAFT_KEY = "novago_restaurant_draft";
 
 const DAYS = [
   ["mon", "Monday"], ["tue", "Tuesday"], ["wed", "Wednesday"], ["thu", "Thursday"],
@@ -310,7 +310,7 @@ function stepMoney(d) {
     <div class="nx-launch-note">
       ${icon("shield", 16)}
       <span><strong>This is a payout destination, not a payment method.</strong>
-      Nova X never asks for a card, PIN or password. Money only ever moves
+      Nova Go never asks for a card, PIN or password. Money only ever moves
       <em>to</em> this account, ${
         // Pulled from the same config the driver/merchant explainers read.
         ""}every week.</span>
@@ -711,7 +711,7 @@ export function renderRestaurantOnboarding(root) {
         try {
           await api.addMenuItem({ name: m.name, price: m.price, category: m.category });
           added++;
-        } catch (e) { console.warn("[NovaX] menu item failed:", m.name, e.message); }
+        } catch (e) { console.warn("[NovaGo] menu item failed:", m.name, e.message); }
       }
       if (draft.menu.length && added < draft.menu.length) {
         toast(`Storefront created. ${added}/${draft.menu.length} dishes saved — add the rest from your menu.`);

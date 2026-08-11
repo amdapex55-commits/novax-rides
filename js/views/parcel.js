@@ -1,4 +1,4 @@
-// Nova X Rides — send-a-parcel flow: service selection, package details,
+// Nova Go Rides — send-a-parcel flow: service selection, package details,
 // recipient contact + confirm (creates a real delivery), live tracking.
 // Mirrors the trips flow but against the Delivery module (POST /deliveries,
 // same real matching engine on the backend).

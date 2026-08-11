@@ -1,4 +1,4 @@
-// Nova X Rides — active trip tracking (live socket) + rate trip.
+// Nova Go Rides — active trip tracking (live socket) + rate trip.
 import { api } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
@@ -164,7 +164,7 @@ export function renderRateTrip(root) {
     const rect = e.currentTarget.getBoundingClientRect();
     confettiBurst(rect.left + rect.width / 2, rect.top);
     if (tripId) {
-      try { await api.rateTrip(tripId, score); } catch (err) { console.warn("[NovaX] rate failed", err); }
+      try { await api.rateTrip(tripId, score); } catch (err) { console.warn("[NovaGo] rate failed", err); }
     }
     toast("Thanks for rating!");
     setTimeout(finish, 900);

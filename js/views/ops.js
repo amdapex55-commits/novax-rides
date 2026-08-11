@@ -1,4 +1,4 @@
-// Nova X Rides — ops/admin screens. Real list endpoints now exist
+// Nova Go Rides — ops/admin screens. Real list endpoints now exist
 // (AdminController) instead of the backend only supporting a single
 // approve-by-id action, so this dashboard is genuinely wired.
 import { api } from "../api.js";
@@ -81,20 +81,51 @@ export function renderOpsDashboard(root) {
       return;
     }
 
+    // A position older than this is shown greyed out. Deliberately shorter
+    // than the matcher's 3-minute cutoff (see MAX_FIX_AGE_MS in the backend's
+    // location.service.ts) so a dispatcher watching the map sees a driver
+    // going dark BEFORE matching gives up on them, rather than after.
+    const STALE_AFTER_SECONDS = 120;
+
+    function describeAge(seconds) {
+      if (seconds == null) return "no GPS fix yet";
+      if (seconds < 60) return `${seconds}s ago`;
+      return `${Math.round(seconds / 60)}m ago`;
+    }
+
     async function refreshFleet() {
       try {
         const drivers = await api.getLiveDrivers();
         const points = (Array.isArray(drivers) ? drivers : [])
           .filter((d) => d?.lat != null && d?.lng != null)
-          .map((d) => ({
-            lat: Number(d.lat), lng: Number(d.lng),
-            status: d.busy ? "busy" : "idle",
-            label: d.name || d.phone || "Driver",
-          }));
+          .map((d) => {
+            const age = d.fixAgeSeconds == null ? null : Number(d.fixAgeSeconds);
+            // No fix at all counts as stale — an unknown age is not a fresh one.
+            const stale = age == null || age > STALE_AFTER_SECONDS;
+            // `idle` and `currentJob` are what the API actually returns; this
+            // used to read a `busy` field that has never existed, so every
+            // driver rendered as available even mid-trip.
+            const busy = d.idle === false || Boolean(d.currentJob);
+            const name = d.name || d.user?.name || d.phone || d.user?.phone || "Driver";
+            return {
+              lat: Number(d.lat),
+              lng: Number(d.lng),
+              status: stale ? "stale" : busy ? "busy" : "idle",
+              label: stale
+                ? `${name} · last seen ${describeAge(age)}`
+                : `${name}${d.currentJob ? ` · ${d.currentJob}` : " · available"}`,
+            };
+          });
         mapHandle.setFleet(points);
-        const idle = points.filter((p) => p.status === "idle").length;
+
+        const stale = points.filter((p) => p.status === "stale").length;
+        const available = points.filter((p) => p.status === "idle").length;
+        // Stale drivers are called out separately rather than folded into the
+        // total: "12 online" when 5 of them are dead phones is the number that
+        // gets a dispatcher to promise a passenger a ride nobody will take.
         root.querySelector("#fleetCount").textContent = points.length
-          ? `${points.length} online · ${idle} available now`
+          ? `${points.length} online · ${available} available now` +
+            (stale ? ` · ${stale} stale (no recent GPS)` : "")
           : "No drivers online right now";
       } catch {
         root.querySelector("#fleetCount").textContent = "Driver positions unavailable";

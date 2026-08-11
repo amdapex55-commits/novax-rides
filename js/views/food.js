@@ -1,4 +1,4 @@
-// Nova X Rides — Food marketplace: browse restaurants, menu + cart, checkout
+// Nova Go Rides — Food marketplace: browse restaurants, menu + cart, checkout
 // (creates a real FoodOrder against food-orders.controller.ts), live tracking.
 // Mirrors the parcel.js flow shape against the FoodOrders module instead of
 // Delivery — same real matching engine, driver just has to be in FOOD_ERRAND mode.
@@ -17,7 +17,7 @@ export function renderFoodBrowse(root) {
     <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-1">Food</h1>
-      <p class="text-secondary text-sm mb-4">Delivered by Nova X riders</p>
+      <p class="text-secondary text-sm mb-4">Delivered by Nova Go riders</p>
 
       <div class="input flex items-center gap-2 mb-4">
         ${icon("eye", 16)}
@@ -80,7 +80,7 @@ export function renderFoodBrowse(root) {
         : emptyRich({
             icon: icon("utensils", 26),
             title: "Restaurants are joining this week",
-            body: "We're onboarding kitchens across Karachi right now. Tell us where you'd like Nova X Food next.",
+            body: "We're onboarding kitchens across Karachi right now. Tell us where you'd like Nova Go Food next.",
             actionLabel: "Request a restaurant",
             actionId: "requestRestaurantBtn",
           });
@@ -133,7 +133,7 @@ export function renderFoodBrowse(root) {
               Suggest a restaurant
             </button>
             <p class="text-xs text-muted mt-4" style="margin-bottom:0;">
-              Run a kitchen? <a href="merchant.html" style="color:var(--accent);font-weight:600;">Partner with Nova X</a>
+              Run a kitchen? <a href="merchant.html" style="color:var(--accent);font-weight:600;">Partner with Nova Go</a>
             </p>`}
         </div>`;
 
@@ -147,7 +147,7 @@ export function renderFoodBrowse(root) {
       });
       list.querySelector("#suggestFood")?.addEventListener("click", () => navigate("/support"));
 
-      console.warn("[NovaX] food browse failed:", err?.message);
+      console.warn("[NovaGo] food browse failed:", err?.message);
     });
   }
 

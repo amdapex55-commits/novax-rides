@@ -1,6 +1,6 @@
 {
-  "appId": "com.novax.app",
-  "appName": "Nova X",
+  "appId": "com.novago.app",
+  "appName": "Nova Go",
   "webDir": ".",
   "backgroundColor": "#ffffff",
   "server": {

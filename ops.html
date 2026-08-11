@@ -8,30 +8,78 @@
      and the Cloudflare Access note in DEPLOY.md. -->
 <meta name="robots" content="noindex, nofollow, noarchive"/>
 <meta name="theme-color" content="#ffffff"/>
-<title>Nova X Ops — Dispatch & Control</title>
+<title>Nova Go Ops — Dispatch & Control</title>
 <meta name="description" content="Internal operations console."/>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
 <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png"/>
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png"/>
 <link rel="manifest" href="manifest.ops.json"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"/>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" media="print" onload="this.media='all'"/>
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"/></noscript>
+<!-- Self-hosted Inter + Sora (css/fonts.css). No third-party origin in the
+     critical path: no extra DNS + TLS before text can render, and no
+     dependency on Google being reachable. -->
+<link rel="preload" as="font" type="font/woff2" href="fonts/inter-var-latin.woff2" crossorigin/>
+<link rel="preload" as="font" type="font/woff2" href="fonts/sora-var-latin.woff2" crossorigin/>
+<link rel="stylesheet" href="css/fonts.css"/>
 <link rel="stylesheet" href="css/tokens.css"/>
 <link rel="stylesheet" href="css/base.css"/>
 <link rel="stylesheet" href="css/components.css"/>
 <link rel="stylesheet" href="css/animations.css"/>
 <link rel="stylesheet" href="css/premium.css"/>
 <script>
-  // Which of the four Nova X apps this page is. Read by js/appMode.js before
+  // Which of the four Nova Go apps this page is. Read by js/appMode.js before
   // anything else boots — it decides the routes, the nav, the signup role and
   // the entire visible surface. See js/appMode.js for the full explanation.
-  window.NOVAX_APP = "ops";
+  window.NOVAGO_APP = "ops";
 </script>
 </head>
 <body>
+<!-- Boot splash. Inlined rather than living in a stylesheet on purpose: it has
+     to paint on the very first frame, and an external <link> is exactly the
+     round trip that would make it appear late, flash, and look worse than no
+     splash at all. Removed by js/app.js once the first view is on screen. -->
+<style>
+  #nxSplash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;
+    background:linear-gradient(150deg,#12b673,#0b8a54);
+    transition:opacity .38s ease,visibility .38s ease}
+  #nxSplash.is-done{opacity:0;visibility:hidden;pointer-events:none}
+  #nxSplash .nxs-stage{position:relative;display:grid;place-items:center;width:150px;height:150px}
+  /* Rings pulse OUTWARD from behind the mark: motion that reads as a signal
+     going out, which is what the app is about to do. */
+  #nxSplash .nxs-ring{position:absolute;width:74px;height:74px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.55);opacity:0;
+    animation:nxs-pulse 1.9s cubic-bezier(.22,.61,.36,1) infinite}
+  #nxSplash .nxs-ring:nth-child(2){animation-delay:.45s}
+  #nxSplash .nxs-ring:nth-child(3){animation-delay:.9s}
+  @keyframes nxs-pulse{0%{transform:scale(.7);opacity:.7}70%{opacity:.12}100%{transform:scale(2.15);opacity:0}}
+  #nxSplash svg{position:relative;width:74px;height:74px;filter:drop-shadow(0 6px 16px rgba(0,0,0,.22))}
+  /* The bolt draws itself in, then fills. dasharray is set to comfortably
+     exceed the path length so the stroke starts fully hidden. */
+  #nxSplash .nxs-bolt{stroke-dasharray:240;stroke-dashoffset:240;fill-opacity:0;
+    animation:nxs-draw .74s ease-out forwards,nxs-fill .34s ease-out .62s forwards}
+  @keyframes nxs-draw{to{stroke-dashoffset:0}}
+  @keyframes nxs-fill{to{fill-opacity:1}}
+  #nxSplash .nxs-word{position:absolute;bottom:-6px;font-family:Sora,Inter,sans-serif;
+    font-size:15px;font-weight:800;letter-spacing:.14em;color:#fff;opacity:0;
+    animation:nxs-word .4s ease-out .72s forwards}
+  @keyframes nxs-word{to{opacity:.95}}
+  /* Vestibular safety: no draw, no pulse, no scale — just the mark. */
+  @media (prefers-reduced-motion:reduce){
+    #nxSplash .nxs-ring{animation:none;opacity:.25}
+    #nxSplash .nxs-bolt{animation:none;stroke-dashoffset:0;fill-opacity:1}
+    #nxSplash .nxs-word{animation:none;opacity:.95}
+  }
+</style>
+<div id="nxSplash" role="status" aria-label="Nova Go is starting">
+  <div class="nxs-stage">
+    <span class="nxs-ring"></span><span class="nxs-ring"></span><span class="nxs-ring"></span>
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <path class="nxs-bolt" d="M36 8 18 36h12l-2 20 18-28H34l2-20z"
+            fill="#fff" stroke="#fff" stroke-width="2.5"
+            stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>
+    <span class="nxs-word">NOVA GO</span>
+  </div>
+</div>
 <div id="app-root"></div>
 <script type="module" src="js/app.js"></script>
 </body>

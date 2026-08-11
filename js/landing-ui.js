@@ -1,4 +1,4 @@
-// Nova X landing — the interactive product surfaces.
+// Nova Go landing — the interactive product surfaces.
 //
 // The thing that separates a real company's site from a template is that it
 // SHOWS THE PRODUCT WORKING. So instead of describing the app in prose, this

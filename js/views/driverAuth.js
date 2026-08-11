@@ -1,4 +1,4 @@
-// Nova X Rides — driver pending-approval (polls real KYC status) and KYC
+// Nova Go Rides — driver pending-approval (polls real KYC status) and KYC
 // document upload (wired to the real presign endpoint; actual file PUT only
 // succeeds once R2 credentials are configured on the backend — see README).
 import { api, Token } from "../api.js";
@@ -66,7 +66,7 @@ export function renderKycUpload(root) {
           </div>`
         ).join("")}
       </div>
-      <p class="text-xs text-muted text-center">Uploads go directly to Nova X's secure storage via a signed URL — files never pass through this app's own server.</p>
+      <p class="text-xs text-muted text-center">Uploads go directly to Nova Go's secure storage via a signed URL — files never pass through this app's own server.</p>
     </div>
   `;
   root.querySelector("#backBtn").addEventListener("click", () => history.back());

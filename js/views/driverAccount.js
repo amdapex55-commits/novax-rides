@@ -1,4 +1,4 @@
-// Nova X Rides — driver earnings, profile, vehicle, notifications, incentives.
+// Nova Go Rides — driver earnings, profile, vehicle, notifications, incentives.
 import { api, Token } from "../api.js";
 import { icon } from "../icons.js";
 import { toast, fmtMoney, fmtDate, countUp, skeletonRows } from "../ui.js";
@@ -48,7 +48,7 @@ export function renderDriverProfile(root) {
       <h1 class="text-xl mb-6">Driver Profile</h1>
       <div class="card-elevated text-center mb-6" style="padding:28px 20px;">
         <div class="avatar" style="width:80px;height:80px;font-size:28px;margin:0 auto 12px;">${(cached.name || "N").charAt(0)}</div>
-        <h2 id="nameText">${cached.name || "Nova X Driver"}</h2>
+        <h2 id="nameText">${cached.name || "Nova Go Driver"}</h2>
         <div class="flex items-center justify-center gap-1 mt-2">
           ${icon("star", 16)}<span id="ratingText" class="font-bold">${cached.rating || "5.0"}</span>
         </div>
@@ -80,7 +80,7 @@ export function renderDriverProfile(root) {
   `;
 
   api.getMe().then((u) => {
-    root.querySelector("#nameText").textContent = u.name || "Nova X Driver";
+    root.querySelector("#nameText").textContent = u.name || "Nova Go Driver";
     root.querySelector("#ratingText").textContent = u.rating ?? "5.0";
     root.querySelector("#nameInput").value = u.name || "";
   }).catch(() => {});

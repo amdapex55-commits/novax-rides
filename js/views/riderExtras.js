@@ -1,4 +1,4 @@
-// Nova X Rides — loyalty, referral, business lead capture. Real backend
+// Nova Go Rides — loyalty, referral, business lead capture. Real backend
 // behind all three now: points/tiers accrue from actual completed trips
 // and deliveries (LoyaltyService), referral codes are real + credited on
 // signup, and the business form lands a real row for manual follow-up
@@ -112,7 +112,7 @@ export function renderRefer(root) {
         catch { toast("Couldn't copy — code is " + code, true); }
       });
       root.querySelector("#shareBtn").addEventListener("click", async () => {
-        const text = `Ride with Nova X — use my code ${code} when you sign up!`;
+        const text = `Ride with Nova Go — use my code ${code} when you sign up!`;
         if (navigator.share) {
           try { await navigator.share({ text }); } catch { /* user cancelled */ }
         } else {
@@ -128,7 +128,7 @@ export function renderBusiness(root) {
   root.innerHTML = `
     <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
-      <h1 class="text-xl mb-4">Nova X for Business</h1>
+      <h1 class="text-xl mb-4">Nova Go for Business</h1>
       <div class="card mb-4">
         <p class="font-bold mb-1">Team Travel, Simplified</p>
         <p class="text-secondary text-sm">Centralized billing and ride management for your organization. Tell us about your team and we'll reach out to set it up — self-serve corporate accounts aren't live yet.</p>

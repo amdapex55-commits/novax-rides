@@ -1,4 +1,4 @@
-// Nova X — landing page hero: the city as a live movement network.
+// Nova Go — landing page hero: the city as a live movement network.
 //
 // What's being shown, and why: an abstract Karachi-like grid seen from a low
 // aerial angle. Blocks rise from the plate, arterial routes glow between
@@ -46,7 +46,7 @@ export async function initHero(canvas, heroEl) {
   try {
     run(THREE, canvas, heroEl);
   } catch (err) {
-    console.warn("[NovaX] hero scene failed:", err);
+    console.warn("[NovaGo] hero scene failed:", err);
     heroEl.classList.add("no-webgl");
   }
 }

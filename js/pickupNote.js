@@ -67,6 +67,11 @@ export function mountPickupNote(container, onChange = () => {}) {
             ${icon("chat", 16)}<span id="noteMicLabel">Record</span>
           </button>` : ""}
       </div>
+      <!-- Live level meter while recording. Its job is to answer "is this
+           thing actually hearing me?" — without it, a muted mic and a working
+           one look identical until playback, by which point the moment to
+           re-record has passed. -->
+      <canvas class="nx-note-wave" id="noteWave" hidden aria-hidden="true"></canvas>
       <div class="nx-note-audio" id="noteAudio" hidden></div>
     </div>
   `;
@@ -81,9 +86,96 @@ export function mountPickupNote(container, onChange = () => {}) {
     onChange(getNote());
   });
 
+  /* --------------------------------------------------------- waveform --- */
+
+  // Web Audio bits, created on record and torn down on stop. Held here rather
+  // than module scope so two mounted notes can't fight over one AudioContext.
+  let audioCtx = null;
+  let analyser = null;
+  let waveRaf = 0;
+  // Bars scroll right-to-left, newest at the right, so it reads like a tape
+  // going past rather than a meter twitching in place.
+  let levels = [];
+
+  function startWaveform(mediaStream) {
+    const canvas = $("#noteWave");
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    // Web Audio is absent on some older Android WebViews. The recording still
+    // works there; it just records without a picture, which is the correct
+    // way for this to degrade.
+    if (!canvas || !Ctor) return;
+
+    try {
+      audioCtx = new Ctor();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      audioCtx.createMediaStreamSource(mediaStream).connect(analyser);
+    } catch {
+      audioCtx = null;
+      return;
+    }
+
+    canvas.hidden = false;
+    const buf = new Uint8Array(analyser.frequencyBinCount);
+    const ctx = canvas.getContext("2d");
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    levels = [];
+
+    const draw = () => {
+      waveRaf = requestAnimationFrame(draw);
+      if (!analyser) return;
+
+      analyser.getByteTimeDomainData(buf);
+      // RMS around the 128 midpoint — a peak reading makes every syllable a
+      // full-height bar, which tells you nothing about whether you're loud
+      // enough to be understood.
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) {
+        const v = (buf[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / buf.length);
+
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (canvas.width !== w * dpr) { canvas.width = w * dpr; canvas.height = h * dpr; }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const barW = 3, gap = 2;
+      const capacity = Math.max(1, Math.floor(w / (barW + gap)));
+      levels.push(rms);
+      if (levels.length > capacity) levels.shift();
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = getComputedStyle(canvas).color || "#12b673";
+      levels.forEach((level, i) => {
+        // sqrt curve: quiet speech still shows visible movement, which is the
+        // whole point — a flat line has to mean "not hearing you".
+        const barH = Math.max(2, Math.min(h, Math.sqrt(level) * h * 1.7));
+        const x = i * (barW + gap);
+        ctx.fillRect(x, (h - barH) / 2, barW, barH);
+      });
+    };
+    draw();
+  }
+
+  function stopWaveform() {
+    cancelAnimationFrame(waveRaf);
+    waveRaf = 0;
+    analyser = null;
+    // Close the context or the tab keeps an audio graph alive for the rest of
+    // the session — on mobile that shows as a persistent audio indicator.
+    audioCtx?.close?.().catch(() => {});
+    audioCtx = null;
+    levels = [];
+    const canvas = $("#noteWave");
+    if (canvas) canvas.hidden = true;
+  }
+
   /* ------------------------------------------------------------- voice --- */
 
   function resetMic() {
+    stopWaveform();
     const mic = $("#noteMic");
     if (!mic) return;
     mic.classList.remove("recording");
@@ -113,6 +205,7 @@ export function mountPickupNote(container, onChange = () => {}) {
     recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
     recorder.onstop = handleStop;
     recorder.start();
+    startWaveform(stream);
 
     const mic = $("#noteMic");
     mic.classList.add("recording");

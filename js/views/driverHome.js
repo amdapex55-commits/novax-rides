@@ -1,4 +1,4 @@
-// Nova X Rides — driver home. This is the driver's whole workday, so it's
+// Nova Go Rides — driver home. This is the driver's whole workday, so it's
 // built around the two things they actually care about: what they've earned,
 // and whether they're online.
 //
@@ -141,7 +141,7 @@ export function renderDriverHome(root) {
           socketManager.emit("driver:location", { lat: pos.coords.latitude, lng: pos.coords.longitude });
           if (mapHandle) mapHandle.setDriver({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         },
-        (err) => console.warn("[NovaX] geolocation error:", err.message),
+        (err) => console.warn("[NovaGo] geolocation error:", err.message),
         { enableHighAccuracy: false, maximumAge: 10000, timeout: 10000 },
       );
     }
@@ -315,59 +315,75 @@ export function renderIncomingOffer(root) {
   const total = 15;
   let seconds = total;
 
+  const tip = Number(offer.tipAmount) > 0 ? Number(offer.tipAmount) : 0;
+  const fare = offer.fare != null ? Number(offer.fare) : null;
+  // What actually lands in the driver's pocket. A tip shown as a separate
+  // line under a smaller "fare" is a tip that doesn't influence the decision —
+  // the total is the number worth deciding on, so it's the number that's big.
+  const earn = fare == null ? null : fare + tip;
+
+  // FULL-SCREEN, ONE-TAP. This screen is read at a roadside, in sunlight,
+  // often with a helmet on and possibly while still rolling to a stop. So:
+  // one enormous accept target that's hard to miss with a gloved thumb, and
+  // the decline deliberately small and out of the primary thumb arc, because
+  // an accidental decline costs a passenger a ride and the driver a fare.
   root.innerHTML = `
-    <div class="page flex-col" style="height:100dvh; justify-content:center;">
-      <!-- Timer ring: a countdown you feel, not a number you read -->
-      <div class="text-center mb-5">
-        <div style="position:relative; width:96px; height:96px; margin:0 auto;">
-          <svg width="96" height="96" style="transform:rotate(-90deg);">
-            <circle cx="48" cy="48" r="42" fill="none" stroke="var(--surface-2)" stroke-width="7"/>
-            <circle id="ring" cx="48" cy="48" r="42" fill="none" stroke="var(--accent)" stroke-width="7"
-              stroke-linecap="round" stroke-dasharray="${2 * Math.PI * 42}" stroke-dashoffset="0"
-              style="transition:stroke-dashoffset 1s linear;"/>
-          </svg>
-          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
-            <span style="font-size:30px; font-weight:800;" id="countdown">${seconds}</span>
-          </div>
-        </div>
-        <span class="badge ${isBid ? "badge-warning" : "badge-accent"} mt-4">${isBid ? "Rider's offer" : "New ride request"}</span>
+    <div class="nx-offer${tip > 0 ? " has-tip" : ""}">
+      <div class="nx-offer-head">
+        <span class="nx-offer-kind">${isBid ? "Rider's offer" : "New ride request"}</span>
+        ${tip > 0 ? `<span class="nx-offer-fast">${icon("bolt", 13)} Fast Match · +${fmtMoney(tip)} tip</span>` : ""}
       </div>
 
-      <div class="card-elevated mb-4">
-        <div class="text-center" style="padding-bottom:var(--sp-4); border-bottom:1px solid var(--surface-border);">
-          <p class="text-secondary text-xs">You earn</p>
-          <h1 style="font-size:34px;">${offer.fare != null ? fmtMoney(offer.fare) : "—"}</h1>
-          ${isBid ? `<p class="text-xs text-muted mt-1">Rider named this fare</p>` : ""}
-        </div>
-        <div class="flex justify-between mt-4">
+      <div class="nx-offer-body">
+        <p class="nx-offer-label">You earn</p>
+        <h1 class="nx-offer-amount">${earn != null ? fmtMoney(earn) : "—"}</h1>
+        ${
+          tip > 0
+            ? `<p class="nx-offer-breakdown">${fmtMoney(fare)} fare + ${fmtMoney(tip)} tip — the tip is yours in full</p>`
+            : isBid
+              ? `<p class="nx-offer-breakdown">Rider named this fare</p>`
+              : ""
+        }
+
+        <div class="nx-offer-facts">
           <div>
-            <p class="text-xs text-muted">Pickup</p>
-            <p class="font-bold text-sm">${offer.distanceKm != null ? `${Number(offer.distanceKm).toFixed(1)} km away` : "Nearby"}</p>
+            <span class="k">Pickup</span>
+            <span class="v">${offer.distanceKm != null ? `${Number(offer.distanceKm).toFixed(1)} km away` : "Nearby"}</span>
           </div>
-          <div style="text-align:right;">
-            <p class="text-xs text-muted">Vehicle</p>
-            <p class="font-bold text-sm">${esc(String(offer.vehicleType || "—").toLowerCase())}</p>
+          <div>
+            <span class="k">Vehicle</span>
+            <span class="v">${esc(String(offer.vehicleType || "—").toLowerCase())}</span>
           </div>
         </div>
       </div>
 
-      <button id="acceptBtn" class="btn btn-primary btn-block mb-3" style="height:58px; font-size:17px;">
-        ${icon("check", 20)} Accept${offer.fare != null ? ` · ${fmtMoney(offer.fare)}` : ""}
-      </button>
-      <button id="declineBtn" class="btn btn-secondary btn-block">Decline</button>
+      <div class="nx-offer-actions">
+        <!-- The countdown lives INSIDE the accept button. It's the only place
+             the eye is already going, and it means the driver never has to
+             look somewhere else to know how long is left. -->
+        <button id="acceptBtn" class="nx-offer-accept">
+          <span class="nx-offer-accept-fill" id="ring"></span>
+          <span class="nx-offer-accept-text">
+            ${icon("check", 22)} Accept${earn != null ? ` · ${fmtMoney(earn)}` : ""}
+            <em id="countdown">${seconds}s</em>
+          </span>
+        </button>
+        <button id="declineBtn" class="nx-offer-decline">Decline</button>
+      </div>
     </div>
   `;
   if (!tripId) { navigate("/driver/home"); return; }
 
   const countdownEl = root.querySelector("#countdown");
   const ring = root.querySelector("#ring");
-  const circumference = 2 * Math.PI * 42;
 
   const timer = setInterval(() => {
     seconds--;
-    countdownEl.textContent = Math.max(seconds, 0);
-    ring.style.strokeDashoffset = String(circumference * (1 - seconds / total));
-    if (seconds <= 5) ring.setAttribute("stroke", "var(--error)");
+    countdownEl.textContent = `${Math.max(seconds, 0)}s`;
+    // The button drains left-to-right as the window closes — peripheral
+    // information, readable without focusing on it.
+    ring.style.transform = `scaleX(${Math.max(seconds, 0) / total})`;
+    if (seconds <= 5) ring.classList.add("is-urgent");
     if (seconds <= 0) { clearInterval(timer); navigate("/driver/home"); }
   }, 1000);
 
