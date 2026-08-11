@@ -1461,3 +1461,25 @@
   .nx-offer-accept-fill { transition: none; }
   .nx-tip { transition: none; }
 }
+
+/* Live supply chip on the booking map. Sits top-centre between the two FABs,
+   where it's readable without covering the pickup pin the customer is
+   checking. */
+.nx-nearby-chip {
+  position: absolute;
+  top: calc(18px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 400;
+  padding: 7px 13px;
+  border-radius: var(--r-full);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 16px rgba(22, 18, 31, 0.12);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  pointer-events: none;
+}

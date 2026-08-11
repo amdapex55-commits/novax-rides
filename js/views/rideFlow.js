@@ -52,6 +52,9 @@ export function renderRideBooking(root) {
       <div class="nx-map" id="mapEl"></div>
       <button id="backBtn" class="map-fab" style="top:calc(14px + var(--safe-top)); left:14px;">${icon("arrow-back", 20)}</button>
       <button id="recenterBtn" class="map-fab" style="top:calc(14px + var(--safe-top)); right:14px;">${icon("locate", 20)}</button>
+      <!-- Real supply count. Hidden until we actually have an answer, so it
+           never flashes a wrong number while the request is in flight. -->
+      <span id="nearbyCount" class="nx-nearby-chip" hidden></span>
     </div>
   `;
 
@@ -60,6 +63,7 @@ export function renderRideBooking(root) {
   root.querySelector("#backBtn").addEventListener("click", () => navigate("/home"));
 
   let mapHandle = null;
+  let nearbyPoll = 0;
   let pickup = null;   // { lat, lng, label } — set ONLY when trustworthy
   let dropoff = null;
   let route = null;    // { km, minutes, coordinates, estimated } from routing.js
@@ -528,6 +532,37 @@ export function renderRideBooking(root) {
         mapHandle.setPickup(pickup);
       }
       root.querySelector("#recenterBtn").addEventListener("click", () => mapHandle.center(here, 15));
+
+      /* LIVE SUPPLY — real riders, not decorative ones.
+         Every ride-hailing app in this market draws vehicles on the booking
+         map; almost none of them are real. These come from the matching
+         service's own geo index, anonymised server-side to positions only —
+         no id, no name, nothing followable (see location.controller.ts).
+         Two things that buys us: "4 riders nearby" is a claim the customer
+         can trust, and an empty map honestly says nobody is around instead
+         of promising a pickup that won't come.
+         Best-effort throughout: this is reassurance, and a booking must
+         never depend on it. */
+      const paintNearby = async () => {
+        if (destroyed || !mapHandle) return;
+        try {
+          const riders = await api.getNearbyRiders(here.lat, here.lng);
+          if (destroyed || !mapHandle) return;
+          const points = Array.isArray(riders) ? riders : [];
+          mapHandle.setNearbyRiders(points);
+          const label = root.querySelector("#nearbyCount");
+          if (label) {
+            label.textContent = points.length
+              ? `${points.length} rider${points.length === 1 ? "" : "s"} nearby`
+              : "No riders nearby right now";
+            label.hidden = false;
+          }
+        } catch { /* supply indicator is never worth failing a booking over */ }
+      };
+      await paintNearby();
+      // Slow poll: riders move, but a booking screen redrawing every few
+      // seconds is visual noise on a phone the customer is reading.
+      nearbyPoll = setInterval(paintNearby, 20000);
     } catch {
       // Map failed (offline / CDN blocked) — booking must still work.
       const el = root.querySelector("#mapEl");
@@ -539,6 +574,7 @@ export function renderRideBooking(root) {
 
   return () => {
     destroyed = true;
+    clearInterval(nearbyPoll);
     // Releases the microphone if a recording was in progress.
     noteCtl?.destroy();
     if (mapHandle) mapHandle.destroy();
