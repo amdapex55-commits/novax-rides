@@ -1,0 +1,85 @@
+name: Deploy to GitHub Pages
+
+# Why this exists, rather than letting Pages serve the repo root:
+#
+#   1. THE MAPBOX TOKEN. GitHub's push protection rejects Mapbox tokens in a
+#      repo, and it's right to — once a token is in history it stays there
+#      after any rotation. So js/map-token.js is gitignored and written here
+#      from a repository secret at build time. It reaches the deployed site
+#      and never enters git history.
+#
+#   2. OPS WAS PUBLIC. Serving the repo root published ops.html and
+#      manifest.ops.json to the open internet. scripts/deploy-public.js exists
+#      precisely to exclude them, and nothing was running it.
+#
+# Without the MAPBOX_TOKEN secret the build still succeeds and the site falls
+# back to the free basemap — a missing secret must not break a deploy.
+
+on:
+  push:
+    branches: [main]
+  # So a token can be rotated and published without an empty commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race. Queue rather than cancel: a half-published
+# site is worse than a slightly late one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Write the Mapbox token
+        env:
+          MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+        run: |
+          if [ -z "$MAPBOX_TOKEN" ]; then
+            echo "::warning::MAPBOX_TOKEN is not set — the site will use the free Carto basemap."
+            exit 0
+          fi
+          printf 'window.NOVAGO_MAP_TOKEN = "%s";\n' "$MAPBOX_TOKEN" > js/map-token.js
+          # Print only the length, never the value — Actions logs are visible
+          # to anyone who can read the repo.
+          echo "Wrote js/map-token.js (${#MAPBOX_TOKEN} chars)"
+
+      - name: Build the public site
+        # Copies the customer/driver/merchant apps and every asset directory
+        # into public/, deliberately leaving ops.html behind.
+        run: node scripts/deploy-public.js
+
+      - name: Fail if ops leaked into the build
+        # A guard, not a formality: ops is the dispatch console, and the whole
+        # point of this workflow is that it never ships to the public site.
+        run: |
+          if [ -f public/ops.html ] || [ -f public/manifest.ops.json ]; then
+            echo "::error::ops.html reached the public build — refusing to publish."
+            exit 1
+          fi
+          echo "ops.html correctly excluded"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
