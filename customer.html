@@ -27,6 +27,66 @@
   // the entire visible surface. See js/appMode.js for the full explanation.
   window.NOVAGO_APP = "customer";
 </script>
+<!-- Sentry (error reporting).
+     Loaded from Sentry's CDN and async, so it never blocks first paint. If it
+     fails to load — blocked, offline, CDN down — the app is completely
+     unaffected; we lose visibility, not function. That's a different trade
+     from socket.io and the fonts, which are vendored precisely because the
+     product breaks without them.
+
+     sentryOnLoad runs before init, and is where the privacy rules live. This
+     app handles phone numbers, OTP codes and live coordinates, none of which
+     have any business leaving the country to debug a stack trace. -->
+<script>
+  window.sentryOnLoad = function () {
+    Sentry.init({
+      environment: location.hostname === "localhost" ? "development" : "production",
+      tracesSampleRate: 0.1,
+      sendDefaultPii: false,
+
+      // Strip location and identity out of captured URLs. /location/nearby
+      // carries lat/lng in its query string, so an unscrubbed breadcrumb is a
+      // customer's position sitting in a third-party dashboard.
+      beforeBreadcrumb: function (crumb) {
+        if (crumb.data && typeof crumb.data.url === "string") {
+          crumb.data.url = crumb.data.url.replace(
+            /([?&])(lat|lng|phone|code|token)=[^&]*/gi,
+            "$1$2=[redacted]"
+          );
+        }
+        // Console breadcrumbs are noise here and can echo anything a view
+        // logged, including an API payload.
+        if (crumb.category === "console") return null;
+        return crumb;
+      },
+
+      beforeSend: function (event) {
+        if (event.request && typeof event.request.url === "string") {
+          event.request.url = event.request.url.replace(
+            /([?&])(lat|lng|phone|code|token)=[^&]*/gi,
+            "$1$2=[redacted]"
+          );
+        }
+        return event;
+      },
+
+      ignoreErrors: [
+        // A phone losing signal mid-request is normal in Karachi, not an
+        // incident. Alerting on it teaches everyone to ignore Sentry.
+        "Network request failed",
+        "Failed to fetch",
+        "NetworkError",
+        "AbortError",
+        // Browser extensions injecting into the page.
+        "ResizeObserver loop limit exceeded",
+      ],
+    });
+  };
+</script>
+<script
+  src="https://js.sentry-cdn.com/442644e14b6db81bb4e2760698f85120.min.js"
+  crossorigin="anonymous"
+></script>
 </head>
 <body>
 <!-- BOOT SPLASH — "BAS NOVA KRO."
