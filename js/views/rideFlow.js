@@ -382,10 +382,11 @@ export function renderRideBooking(root) {
         fastMatchTip = Number(btn.dataset.tip) || 0;
         fastMatch.querySelectorAll("[data-tip]").forEach((b) => b.classList.toggle("active", b === btn));
         track("ride_fastmatch_tip_selected", { tipAmount: fastMatchTip });
+        // Only the headline fare moves. The CTA is deliberately left alone —
+        // its label carries an inline icon, and setting textContent on it
+        // would strip the SVG and silently rename the button.
         const el = node.querySelector("#fareAmount");
         if (el) countUp(el, quoted + fastMatchTip, { prefix: "Rs. ", duration: 340 });
-        const cta = node.querySelector("#confirmRideBtn");
-        if (cta && !submitting) cta.textContent = `Confirm · ${fmtMoney(quoted + fastMatchTip)}`;
       });
     }
 
