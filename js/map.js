@@ -11,13 +11,46 @@
 // viewport. That's the difference between "app that looks like a demo" and
 // "app people trust with their location."
 
+import { CONFIG } from "./config.js";
+
 const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
 
-// Carto's light basemap — cleaner and less visually noisy than raw OSM, and
-// it sits properly under our light UI instead of fighting it.
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
-const TILE_ATTRIB = '&copy; OpenStreetMap &copy; CARTO';
+// BASEMAP.
+//
+// Mapbox when a token is configured, Carto's free basemap when it isn't.
+//
+// The fallback is not a nicety. A map provider must never be a single point
+// of failure for booking a ride: if the token is missing, expired, over quota
+// or restricted to the wrong domain, every screen still works — it just looks
+// plainer. Silently degrading beats a blank grey rectangle where the map
+// should be.
+//
+// navigation-day-v1 over the general streets style: it's tuned for someone
+// following a route, so road hierarchy is clearer and label density is lower,
+// which is what you want on a 5-inch screen in daylight.
+//
+// @2x tiles because almost every phone in this market is a retina-class
+// display, and 1x tiles look visibly soft on them.
+const CARTO_TILES = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+const CARTO_ATTRIB = "&copy; OpenStreetMap &copy; CARTO";
+
+function basemap() {
+  const token = CONFIG.MAP?.TOKEN;
+  if (!token) {
+    return { url: CARTO_TILES, attribution: CARTO_ATTRIB, maxZoom: 19 };
+  }
+  const style = CONFIG.MAP.STYLE || "mapbox/navigation-day-v1";
+  return {
+    url: `https://api.mapbox.com/styles/v1/${style}/tiles/512/{z}/{x}/{y}@2x?access_token=${token}`,
+    attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    // 512px tiles carry a zoom offset of -1, or every label renders a zoom
+    // level too large and the map reads as permanently zoomed in.
+    tileSize: 512,
+    zoomOffset: -1,
+    maxZoom: 20,
+  };
+}
 
 const KARACHI = { lat: 24.8607, lng: 67.0011 };
 
@@ -93,7 +126,20 @@ export async function createMap(container, opts = {}) {
     tap: true,
   });
 
-  L.tileLayer(TILE_URL, { attribution: TILE_ATTRIB, maxZoom: 19 }).addTo(map);
+  const tiles = basemap();
+  const layer = L.tileLayer(tiles.url, tiles).addTo(map);
+  // If Mapbox refuses (bad token, wrong URL restriction, quota exhausted),
+  // swap to Carto rather than leaving the customer looking at nothing.
+  if (CONFIG.MAP?.TOKEN) {
+    let swapped = false;
+    layer.on("tileerror", () => {
+      if (swapped) return;
+      swapped = true;
+      console.warn("[NovaGo] Mapbox tiles failed — falling back to the free basemap.");
+      map.removeLayer(layer);
+      L.tileLayer(CARTO_TILES, { attribution: CARTO_ATTRIB, maxZoom: 19 }).addTo(map);
+    });
+  }
 
   let pickupMarker = null;
   let dropoffMarker = null;

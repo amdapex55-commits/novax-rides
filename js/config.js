@@ -39,6 +39,27 @@ function resolve() {
 // runs with zero billing setup. Each can be repointed independently — at
 // volume you'd move ROUTING_URL to your own OSRM box and GEOCODE_URL to a
 // paid geocoder, without touching a single screen.
+/* MAPBOX.
+ *
+ * Leave MAP_TOKEN empty and the app uses Carto's free basemap — no key, no
+ * billing, and every screen still works. That fallback is deliberate: a map
+ * provider is not allowed to be a single point of failure for booking a ride.
+ *
+ * The token below is a PUBLIC token (pk.*). Mapbox designs these to ship in
+ * client code, so it being visible here is expected and not a leak — but it
+ * is still your quota. RESTRICT IT BY URL in Mapbox → Tokens → your token →
+ * URL restrictions, to your Pages domain and novago.pk. Without that, anyone
+ * who views source can spend your free tier.
+ *
+ * Style: navigation-day-v1 is built for exactly this use — road hierarchy and
+ * label density tuned for someone following a route, rather than the
+ * general-purpose streets style.
+ */
+const MAP = {
+  TOKEN: (typeof window !== "undefined" && window.NOVAGO_MAP_TOKEN) || "",
+  STYLE: "mapbox/navigation-day-v1",
+};
+
 const GEO = {
   // OSRM-compatible directions endpoint. Self-host: docker run osrm/osrm-backend
   ROUTING_URL: (typeof window !== "undefined" && window.NOVAGO_ROUTING_URL) || "",
@@ -46,4 +67,4 @@ const GEO = {
   GEOCODE_URL: (typeof window !== "undefined" && window.NOVAGO_GEOCODE_URL) || "",
 };
 
-export const CONFIG = { ...resolve(), ...GEO };
+export const CONFIG = { ...resolve(), ...GEO, MAP };
