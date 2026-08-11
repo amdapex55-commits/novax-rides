@@ -56,6 +56,21 @@ function resolve() {
  * general-purpose streets style.
  */
 const MAP = {
+  // Public token (pk.*). Mapbox designs these to ship in client code, so this
+  // being readable in the bundle is expected, not a leak — but it is still
+  // your quota, and URL restrictions are the only thing stopping a stranger
+  // spending it. window.NOVAGO_MAP_TOKEN overrides, for a staging build that
+  // should bill against a different token.
+  // NOT COMMITTED. GitHub's push protection blocks Mapbox tokens in the repo,
+  // and it's right to: once a token is in history it stays there even after
+  // you rotate it, and this repo is public.
+  //
+  // Set it in js/map-token.js instead — that file is gitignored, and both
+  // scripts/deploy-public.js and GitHub Pages read it at runtime. See
+  // js/map-token.example.js.
+  //
+  // With no token the app uses Carto's free basemap and every screen still
+  // works, so a missing token degrades the look and nothing else.
   TOKEN: (typeof window !== "undefined" && window.NOVAGO_MAP_TOKEN) || "",
   STYLE: "mapbox/navigation-day-v1",
 };

@@ -28,6 +28,9 @@ const FILES = [
   "manifest.customer.json", "manifest.driver.json", "manifest.merchant.json",
 ];
 const DIRS = ["css", "js", "icons", "vendor", "fonts"];
+// js/map-token.js is gitignored but MUST ship — copyDir picks it up from
+// the working tree, so a deploy from a checkout that has it keeps Mapbox.
+
 
 // NOT copied, on purpose.
 const EXCLUDED = ["ops.html", "manifest.ops.json"];

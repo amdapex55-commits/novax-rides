@@ -91,6 +91,11 @@
   src="https://js.sentry-cdn.com/442644e14b6db81bb4e2760698f85120.min.js"
   crossorigin="anonymous"
 ></script>
+<!-- Mapbox token. Gitignored (see js/map-token.example.js) because GitHub's
+     push protection rejects Mapbox tokens in a repo — once one is in history
+     it stays there, rotated or not. Absent, the app falls back to the free
+     basemap and every screen still works. -->
+<script src="js/map-token.js" onerror="void 0"></script>
 </head>
 <body>
 <!-- BOOT SPLASH — "BAS NOVA KRO."

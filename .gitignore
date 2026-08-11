@@ -22,3 +22,6 @@ ios/
 # NOTE: vendor/ and fonts/ are deliberately COMMITTED. They are the
 # self-hosted socket.io client and woff2 files — the whole point is that a
 # deploy doesn't depend on a CDN being reachable.
+
+# Mapbox token — public, but kept out of git (see js/map-token.example.js)
+js/map-token.js
