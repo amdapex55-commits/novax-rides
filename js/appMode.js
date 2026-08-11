@@ -165,7 +165,7 @@ const CONFIGS = {
       { tab: "live", icon: "car", label: "Live", path: "/ops/live" },
       { tab: "approvals", icon: "check-circle", label: "Approve", path: "/ops/approvals" },
       { tab: "tickets", icon: "chat", label: "Support", path: "/ops/tickets" },
-      { tab: "users", icon: "users", label: "Users", path: "/ops/users" },
+      { tab: "settle", icon: "wallet", label: "Settle", path: "/ops/settle" },
     ],
   },
 };

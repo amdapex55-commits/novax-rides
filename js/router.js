@@ -89,6 +89,7 @@ export const ROUTES = {
   "/ops/command": { view: () => import("./views/opsCommand.js"), fn: "renderOpsCommand", auth: "ADMIN", nav: true, tab: "command" },
   "/ops/dashboard": { view: () => import("./views/ops.js"), fn: "renderOpsDashboard", auth: "ADMIN", nav: true, tab: "dashboard" },
   "/ops/approvals": { view: () => import("./views/ops.js"), fn: "renderOpsApprovals", auth: "ADMIN", nav: true, tab: "approvals" },
+  "/ops/settle": { view: () => import("./views/opsSettle.js"), fn: "renderOpsSettle", auth: "ADMIN", nav: true, tab: "settle" },
   "/ops/users": { view: () => import("./views/ops.js"), fn: "renderOpsUsers", auth: "ADMIN", nav: true, tab: "users" },
   "/ops/live": { view: () => import("./views/opsLive.js"), fn: "renderOpsLiveDrivers", auth: "ADMIN", nav: true, tab: "live" },
   "/ops/cancellations": { view: () => import("./views/opsLive.js"), fn: "renderOpsCancellations", auth: "ADMIN", nav: false },

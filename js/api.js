@@ -246,6 +246,7 @@ export const api = {
   getBalances: () => request("/admin/balances"),
   getTickets: (status) => request(`/admin/tickets${status ? `?status=${status}` : ""}`),
   resolveTicket: (id) => request(`/admin/tickets/${id}/resolve`, { method: "POST" }),
+  getDriverBalances: () => request("/admin/drivers/balances"),
   adminTopUp: (userId, amount) => request(`/wallet/admin/topup/${userId}`, { method: "POST", body: { amount } }),
 
   // --- Errands (Pick & Deliver to Me) ---

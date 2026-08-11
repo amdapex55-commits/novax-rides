@@ -68,6 +68,17 @@ export const PRICING = {
                        // arguments about traffic time on a fixed quote
     minimum: 150,      // Rs — no trip earns less than this
   },
+  /* Parcel and errand share the ride's per-km rate — same bike, same petrol,
+     same road. Only the base differs, and only where the work does.
+
+     THESE MUST MATCH src/trips/fare.util.ts ON THE BACKEND. The backend is
+     authoritative; this copy exists so the app can quote a fare before it has
+     a server answer. If the two drift, a customer is shown one number and
+     charged another, which is the fastest way to lose trust in a cash market.
+     TESTING.md has a check that compares them. */
+  PARCEL: { base: 60, perKm: 22, perMin: 0, minimum: 150 },
+  ERRAND: { base: 80, perKm: 22, perMin: 0, minimum: 180 },
+
   currency: "Rs.",
   // Shown to the customer before they confirm. Honesty beats a surprise.
   waitingChargePerMin: 0,
