@@ -33,6 +33,11 @@ export const ROUTES = {
   // "are you a driver?" isn't a consumer product.
   // `wrap: true` — renderPhoneEntry is a factory: it takes the role and
   // returns the actual render function.
+  // Password auth is the live path while SMS is being provisioned. The OTP
+  // routes below still resolve, so nothing breaks for an account created that
+  // way and the flow can be switched back with a redirect.
+  "/signin": { view: () => import("./views/account.js"), fn: "renderSignIn", auth: "none", nav: false },
+  "/signup": { view: () => import("./views/account.js"), fn: "renderSignUp", auth: "none", nav: false },
   "/phone": { view: () => import("./views/auth.js"), fn: "renderPhoneEntry", wrap: true, auth: "none", nav: false },
   "/otp": { view: () => import("./views/auth.js"), fn: "renderOtp", auth: "none", nav: false },
   // Home swaps with the pilot. With one service live the customer gets the
@@ -239,7 +244,7 @@ async function renderRoute(path) {
     if (Token.access && user && user.role !== "RIDER") { navigate(roleHome(user.role)); return; }
   } else if (route.auth !== "none") {
     const user = Token.user;
-    if (!Token.access || !user) { state.postAuthRedirect = path; navigate("/phone"); return; }
+    if (!Token.access || !user) { state.postAuthRedirect = path; navigate("/signin"); return; }
     if (route.auth !== "any" && route.auth !== user.role) { navigate(roleHome(user.role)); return; }
   }
 

@@ -131,7 +131,7 @@ function renderCustomerWelcome(root) {
 
   root.querySelector("#startBtn").addEventListener("click", () => {
     track("welcome_role_selected", { role: "RIDER" });
-    navigate("/phone");
+    navigate("/signin");
   });
   root.querySelector("#guestBtn").addEventListener("click", () => navigate("/home"));
 }
@@ -243,7 +243,7 @@ function renderPartnerWelcome(root) {
   `;
   root.querySelector("#startBtn").addEventListener("click", () => {
     track("welcome_role_selected", { role: APP_CONFIG.signupRole || "ADMIN" });
-    navigate("/phone");
+    navigate("/signin");
   });
   root.querySelector("#explainerBtn")?.addEventListener("click", () => navigate(c.explainerPath));
 }

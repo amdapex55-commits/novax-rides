@@ -18,7 +18,7 @@ function signInPrompt(title, body) {
 function wireSignInPrompt(root, resumePath) {
   root.querySelector("#promptSignInBtn")?.addEventListener("click", () => {
     state.postAuthRedirect = resumePath;
-    navigate("/phone");
+    navigate("/signin");
   });
 }
 
@@ -234,7 +234,7 @@ export function renderSettings(root) {
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
   root.querySelector("#logoutBtn").addEventListener("click", () => {
     api.logout();
-    navigate("/phone");
+    navigate("/signin");
   });
 }
 

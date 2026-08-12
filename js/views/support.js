@@ -33,7 +33,7 @@ export function renderChat(root) {
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
   root.querySelector("#promptSignInBtn")?.addEventListener("click", () => {
     state.postAuthRedirect = "/chat";
-    navigate("/phone");
+    navigate("/signin");
   });
   root.querySelector("#sendTicketBtn")?.addEventListener("click", async (e) => {
     const subject = root.querySelector("#subjectInput").value.trim();

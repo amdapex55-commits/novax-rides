@@ -454,7 +454,7 @@ export function renderRideBooking(root) {
       // stays open right up until the action that genuinely needs an account.
       if (!Token.access) {
         state.postAuthRedirect = "/ride";
-        navigate("/phone");
+        navigate("/signin");
         return;
       }
 

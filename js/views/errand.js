@@ -55,7 +55,7 @@ export function renderErrandDetails(root) {
 
     if (!Token.access) {
       state.postAuthRedirect = "/errand/details";
-      navigate("/phone");
+      navigate("/signin");
       return;
     }
     const btn = e.currentTarget;

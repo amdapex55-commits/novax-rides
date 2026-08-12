@@ -46,7 +46,7 @@ export function renderHome(root) {
     </div>
   `;
 
-  root.querySelector("#signInCard")?.addEventListener("click", () => { state.postAuthRedirect = null; navigate("/phone"); });
+  root.querySelector("#signInCard")?.addEventListener("click", () => { state.postAuthRedirect = null; navigate("/signin"); });
 
   const indicator = root.querySelector("#tabsIndicator");
   const tabBtns = Array.from(root.querySelectorAll(".top-tab"));
@@ -546,7 +546,7 @@ export function renderFareSelection(root) {
   requestBtn.addEventListener("click", async () => {
     if (!Token.access) {
       state.postAuthRedirect = "/fare";
-      navigate("/phone");
+      navigate("/signin");
       return;
     }
     let offeredFare;

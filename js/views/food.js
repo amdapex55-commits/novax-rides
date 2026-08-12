@@ -384,7 +384,7 @@ export function renderFoodCart(root) {
 
     if (!Token.access) {
       state.postAuthRedirect = "/food/cart";
-      navigate("/phone");
+      navigate("/signin");
       return;
     }
     const btn = e.currentTarget;

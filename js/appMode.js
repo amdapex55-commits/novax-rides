@@ -73,7 +73,7 @@ const CONFIGS = {
     // /coming-soon instead. See routeAllowed() below, which redirects any
     // parked service route to the coming-soon screen.
     routes: [
-      "/splash", "/welcome", "/phone", "/otp",
+      "/splash", "/welcome", "/signin", "/signup", "/phone", "/otp",
       "/home", "/ride", "/set-locations", "/fare", "/tracking", "/rate", "/shared",
       "/coming-soon",
       "/food/browse", "/food/restaurant", "/food/cart", "/food/tracking",
@@ -104,7 +104,7 @@ const CONFIGS = {
     allowedRoles: ["DRIVER"],
     home: "/driver/home",
     routes: [
-      "/splash", "/welcome", "/phone", "/otp",
+      "/splash", "/welcome", "/signin", "/signup", "/phone", "/otp",
       "/driver/onboarding", "/driver/pending", "/driver/kyc",
       "/driver/home", "/driver/offer", "/driver/progress",
       "/driver/food-offer", "/driver/food-progress",
@@ -130,7 +130,7 @@ const CONFIGS = {
     allowedRoles: ["RESTAURANT"],
     home: "/restaurant/orders",
     routes: [
-      "/splash", "/welcome", "/phone", "/otp",
+      "/splash", "/welcome", "/signin", "/signup", "/phone", "/otp",
       "/restaurant/onboarding", "/restaurant/pending",
       "/restaurant/orders", "/restaurant/menu", "/restaurant/profile",
       "/chat", "/support", "/help", "/commission-explained",
@@ -154,9 +154,10 @@ const CONFIGS = {
     allowedRoles: ["ADMIN"],
     home: "/ops/command",
     routes: [
-      "/splash", "/welcome", "/phone", "/otp",
+      "/splash", "/welcome", "/signin", "/signup", "/phone", "/otp",
       "/ops/command", "/ops/dashboard", "/ops/approvals", "/ops/users",
       "/ops/live", "/ops/cancellations", "/ops/balances", "/ops/tickets",
+      "/ops/settle",
       "/support", "/help",
       "/legal/terms", "/legal/privacy",
     ],
@@ -173,7 +174,35 @@ const CONFIGS = {
 export const APP_CONFIG = CONFIGS[APP] || CONFIGS.customer;
 
 /** Is this route part of this build at all? */
+/**
+ * Routes every build must be able to reach, whatever its own allowlist says.
+ *
+ * These are the screens the auth guard REDIRECTS TO. If one is ever missing
+ * from an app's `routes` array, the result isn't a missing page — it's an
+ * infinite loop: the guard sends an unauthenticated visitor to /signin,
+ * routeAllowed() rejects it, the scope guard sends them to the app's home,
+ * home needs auth, and round it goes. The user sees a permanently blank
+ * screen and nothing is logged, because nothing threw.
+ *
+ * That exact loop happened once already with the wrong-app guard (see the
+ * comment in router.js). Listing the redirect targets here makes the whole
+ * class of bug impossible rather than relying on four allowlists staying in
+ * sync by hand.
+ */
+const UNIVERSAL_ROUTES = new Set([
+  "/splash",
+  "/welcome",
+  "/signin",
+  "/signup",
+  "/phone",
+  "/otp",
+  "/coming-soon",
+]);
+
 export function routeAllowed(path) {
+  if (UNIVERSAL_ROUTES.has(path)) return true;
+  // Legal pages are linked from signup and from the footer of every app.
+  if (path.startsWith("/legal/")) return true;
   if (path.startsWith("/shared/")) return APP_CONFIG.routes.includes("/shared");
   return APP_CONFIG.routes.includes(path);
 }

@@ -101,6 +101,12 @@ async function request(path, opts = {}, isRetry = false) {
 
 export const api = {
   // --- Auth ---
+  // Password auth. OTP below still works and is kept deliberately — when an
+  // SMS sender is provisioned, both flows run side by side.
+  register: (dto) => request("/auth/register", { method: "POST", body: dto }),
+  login: (identifier, password) =>
+    request("/auth/login", { method: "POST", body: { identifier, password } }),
+
   requestOtp: (phone, referralCode, role) =>
     request("/auth/otp/request", { method: "POST", body: { phone, ...(referralCode ? { referralCode } : {}), ...(role ? { role } : {}) } }),
   verifyOtp: (phone, code) =>

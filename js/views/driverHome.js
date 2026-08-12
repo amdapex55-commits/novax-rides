@@ -125,7 +125,7 @@ export function renderDriverHome(root) {
         toast("Can't reach the live network right now — check your connection", true);
       } else {
         toast("Session expired — log in again", true);
-        navigate("/phone");
+        navigate("/signin");
       }
       return;
     }

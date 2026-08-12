@@ -121,7 +121,7 @@ export function renderParcelContact(root) {
       // Save what they've typed so it's still here after they log in.
       state.parcelDraft = { ...draft, recipientName: name, recipientPhoneLocal: phoneLocal, pickupLabel, dropoffLabel };
       state.postAuthRedirect = "/parcel/contact";
-      navigate("/phone");
+      navigate("/signin");
       return;
     }
     const btn = e.currentTarget;

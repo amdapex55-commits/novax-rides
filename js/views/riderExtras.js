@@ -23,7 +23,7 @@ function signInPrompt(title, body) {
 function wireSignInPrompt(root, resumePath) {
   root.querySelector("#promptSignInBtn")?.addEventListener("click", () => {
     state.postAuthRedirect = resumePath;
-    navigate("/phone");
+    navigate("/signin");
   });
 }
 function backBtn(root) {
