@@ -39,6 +39,12 @@ export function renderWallet(root) {
         <p class="text-secondary text-sm mb-2">Available Balance</p>
         <h1 class="text-xl" id="balanceText" style="font-size:34px;">Rs. 0.00</h1>
       </div>
+      <!-- Withdraw only appears when there is something to withdraw. A COD
+           sender is credited the moment their recipient pays the driver, and
+           until this existed that balance had no way out of the app at all. -->
+      <button id="withdrawBtn" class="btn btn-primary btn-block mb-2" hidden>
+        ${icon("wallet", 18)} Withdraw to JazzCash / Easypaisa
+      </button>
       <button id="addMoneyBtn" class="btn btn-secondary btn-block mb-6">${icon("bolt", 18)} Add Money</button>
       <h3 class="text-sm text-secondary mb-3" style="text-transform:uppercase; letter-spacing:0.04em;">Recent Activity</h3>
       <div id="historyList">${skeletonRows(4)}</div>
@@ -47,11 +53,59 @@ export function renderWallet(root) {
   const balanceText = root.querySelector("#balanceText");
   const historyList = root.querySelector("#historyList");
 
+  let currentBalance = 0;
+
   function loadBalance() {
     return api.getWalletBalance()
-      .then((data) => countUp(balanceText, Number(data.balance || 0), { prefix: "Rs. ", decimals: 2 }))
+      .then((data) => {
+        currentBalance = Number(data.balance || 0);
+        countUp(balanceText, currentBalance, { prefix: "Rs. ", decimals: 2 });
+        const w = root.querySelector("#withdrawBtn");
+        if (w) w.hidden = !(currentBalance > 0);
+      })
       .catch((e) => { balanceText.textContent = "Rs. 0.00"; console.warn(e); });
   }
+
+  root.querySelector("#withdrawBtn")?.addEventListener("click", async () => {
+    const method = window.prompt(
+      `You can withdraw up to ${fmtMoney(currentBalance)}.\n\n` +
+      "Where should we send it? Type JAZZCASH, EASYPAISA or BANK.",
+    );
+    if (!method) return;
+    const m = method.trim().toUpperCase();
+    if (!["JAZZCASH", "EASYPAISA", "BANK"].includes(m)) {
+      toast("Type JAZZCASH, EASYPAISA or BANK", true);
+      return;
+    }
+
+    const destination = window.prompt(
+      m === "BANK" ? "Your bank account number" : "Your mobile wallet number",
+    );
+    if (!destination?.trim()) return;
+
+    const amountRaw = window.prompt(
+      `How much? Up to ${fmtMoney(currentBalance)}.`,
+      String(Math.floor(currentBalance)),
+    );
+    if (!amountRaw) return;
+    const amount = Number(amountRaw);
+    // Checked here for a fast, clear message; the server checks it again
+    // against the real balance, because a client-supplied amount is a
+    // request, not a fact.
+    if (!Number.isFinite(amount) || amount <= 0 || amount > currentBalance) {
+      toast(`Enter an amount between 1 and ${fmtMoney(currentBalance)}`, true);
+      return;
+    }
+
+    try {
+      const res = await api.requestWithdrawal(amount, m, destination.trim());
+      toast(res?.message || "Withdrawal requested");
+      loadBalance();
+      loadHistory();
+    } catch (err) {
+      toast(err.message || "Couldn't request that withdrawal", true);
+    }
+  });
   function loadHistory() {
     return api.getWalletHistory()
       .then((entries) => {

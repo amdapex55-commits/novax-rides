@@ -5,7 +5,7 @@
 import { icon } from "../icons.js";
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
-import { toast } from "../ui.js";
+import { toast, esc, fmtDate } from "../ui.js";
 import { navigate } from "../router.js";
 
 export function renderChat(root) {
@@ -31,6 +31,35 @@ export function renderChat(root) {
     </div>
   `;
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
+
+  function loadMyTickets() {
+    const box = root.querySelector("#myTickets");
+    if (!box) return;
+    api.listMySupportTickets()
+      .then((tickets) => {
+        const rows = Array.isArray(tickets) ? tickets : [];
+        if (rows.length === 0) { box.innerHTML = ""; return; }
+        box.innerHTML = `
+          <h3 class="text-sm text-secondary mb-3" style="text-transform:uppercase;letter-spacing:0.04em;">
+            Your messages
+          </h3>
+          ${rows.slice(0, 20).map((tk) => `
+            <div class="list-row">
+              <div class="flex-col" style="flex:1;min-width:0;">
+                <p class="font-bold text-sm">${esc(tk.subject) || "Support request"}</p>
+                <p class="text-xs text-muted">${fmtDate(tk.createdAt)}</p>
+              </div>
+              <span class="badge ${tk.status === "RESOLVED" ? "badge-accent" : "badge-warning"}">
+                ${tk.status === "RESOLVED" ? "Resolved" : "Open"}
+              </span>
+            </div>`).join("")}`;
+      })
+      // Silent: supplementary. Failing to load past tickets must never stop
+      // someone raising a new one.
+      .catch(() => { box.innerHTML = ""; });
+  }
+  loadMyTickets();
+
   root.querySelector("#promptSignInBtn")?.addEventListener("click", () => {
     state.postAuthRedirect = "/chat";
     navigate("/signin");

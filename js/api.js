@@ -105,6 +105,11 @@ export const api = {
   // SMS sender is provisioned, both flows run side by side.
   // Google Play requires in-app deletion. Anonymises server-side; anonymous
   // financial records survive (see users.service.ts).
+  // Cash out a COD balance. Server re-checks the amount against the real
+  // balance — a client-supplied number is a request, not a fact.
+  requestWithdrawal: (amount, method, destination) =>
+    request("/wallet/withdraw", { method: "POST", body: { amount, method, destination } }),
+
   deleteAccount: () => request("/users/me", { method: "DELETE" }),
 
   register: (dto) => request("/auth/register", { method: "POST", body: dto }),
@@ -138,6 +143,11 @@ export const api = {
   markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: "PATCH" }),
 
   // --- Support ---
+  // The user's own tickets. The endpoint existed and nothing called it, so
+  // someone could raise a ticket and then never see it again — no status, no
+  // reply, no evidence it had been received.
+  listMySupportTickets: () => request("/support/tickets/me"),
+
   submitSupportTicket: (subject, message) => request("/support/tickets", { method: "POST", body: { subject, message } }),
 
   // --- Business leads (public — no auth) ---

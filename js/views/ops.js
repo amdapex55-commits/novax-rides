@@ -142,54 +142,153 @@ export function renderOpsDashboard(root) {
 export function renderOpsApprovals(root) {
   root.innerHTML = `
     <div class="page nx-stagger">
-      <h1 class="text-xl mb-4">Driver Approvals</h1>
+      <h1 class="text-xl mb-1">Driver approvals</h1>
+      <p class="text-secondary text-sm mb-5">
+        Check every document against the original before approving. This is the
+        gate that decides who carries a passenger.
+      </p>
       <div id="approvalsList">${skeletonRows(3)}</div>
     </div>
   `;
-  api.getPendingDrivers()
-    .then((drivers) => {
-      const list = root.querySelector("#approvalsList");
-      if (!Array.isArray(drivers) || drivers.length === 0) {
-        list.innerHTML = `<div class="empty-state"><div class="icon">${icon("check-circle", 32)}</div><p>No pending approvals</p></div>`;
-        return;
-      }
-      list.innerHTML = drivers.map((d) => `
-        <div class="card mb-3" data-id="${d.id}">
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <p class="font-bold">${esc(d.name) || "Unnamed driver"}</p>
-              <p class="text-secondary text-sm">${esc(d.phone)}</p>
-            </div>
-            <span class="badge badge-warning">Pending</span>
+
+  const list = root.querySelector("#approvalsList");
+
+  const empty = () => `
+    <div class="empty-state">
+      <div class="icon">${icon("check-circle", 32)}</div>
+      <p>No pending approvals</p>
+    </div>`;
+
+  /* A document tile. Opens the R2 object in a new tab at full size — a
+     thumbnail is not enough to read a licence expiry or match a face, and
+     approving from a thumbnail is the same as approving blind. */
+  function doc(label, url) {
+    if (!url) {
+      return `
+        <div class="nx-doc-cell missing">
+          <span class="nx-doc-cell-label">${esc(label)}</span>
+          <span class="nx-doc-cell-state">Not uploaded</span>
+        </div>`;
+    }
+    return `
+      <a class="nx-doc-cell" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
+        <img src="${esc(url)}" alt="${esc(label)}" loading="lazy"/>
+        <span class="nx-doc-cell-label">${esc(label)}</span>
+        <span class="nx-doc-cell-state">Tap to enlarge</span>
+      </a>`;
+  }
+
+  function card(d) {
+    const p = d.driverProfile || {};
+    return `
+      <div class="card mb-3" data-id="${esc(d.id)}">
+        <div class="flex justify-between items-start mb-2">
+          <div style="min-width:0;">
+            <p class="font-bold">${esc([d.name, d.lastName].filter(Boolean).join(" ")) || "Unnamed driver"}</p>
+            <p class="text-secondary text-sm">${esc(d.phone) || "no phone"}</p>
+            ${d.email ? `<p class="text-xs text-muted">${esc(d.email)}</p>` : ""}
           </div>
-          <p class="text-xs text-muted mb-3">
-            ${d.driverProfile ? `${esc(d.driverProfile.vehicleType) || "No vehicle set"} · ${esc(d.driverProfile.vehiclePlate) || "no plate"}` : "No vehicle info submitted yet"}
-            · Applied ${fmtDate(d.createdAt)}
-          </p>
-          <button class="btn btn-primary btn-block approveBtn">${icon("check-circle", 16)} Approve</button>
-        </div>`).join("");
-      list.querySelectorAll(".approveBtn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const card = btn.closest("[data-id]");
-          const id = card.dataset.id;
-          btn.disabled = true;
-          btn.innerHTML = `<span class="spinner"></span>`;
-          try {
-            await api.approveKyc(id);
-            toast("Driver approved");
-            card.remove();
-            if (!list.querySelector("[data-id]")) {
-              list.innerHTML = `<div class="empty-state"><div class="icon">${icon("check-circle", 32)}</div><p>No pending approvals</p></div>`;
-            }
-          } catch (err) {
-            toast(err.message || "Couldn't approve", true);
-            btn.disabled = false;
-            btn.innerHTML = `${icon("check-circle", 16)} Approve`;
-          }
-        });
+          <span class="badge badge-warning">Pending</span>
+        </div>
+
+        <div class="nx-kv mb-3">
+          <div><span>Vehicle</span><span>${esc(p.vehicleType) || "—"} · ${esc(p.vehiclePlate) || "no plate"}</span></div>
+          <div><span>CNIC</span><span>${esc(p.cnicNumber) || "—"}</span></div>
+          <div><span>Zone</span><span>${esc(p.serviceZone) || "—"}</span></div>
+          <div><span>Address</span><span>${esc(d.address) || "—"}</span></div>
+          <div><span>Payout</span><span>${esc(p.payoutMethod) || "—"} ${esc(p.payoutAccountNumber) || ""}</span></div>
+          <div><span>Applied</span><span>${fmtDate(d.createdAt)}</span></div>
+        </div>
+
+        <p class="field-label" style="margin-bottom:8px;">Documents</p>
+        <div class="nx-doc-review mb-3">
+          ${doc("Licence front", p.licenseFrontUrl || p.licenseDocUrl)}
+          ${doc("Licence back", p.licenseBackUrl)}
+          ${doc("CNIC front", p.cnicFrontUrl)}
+          ${doc("CNIC back", p.cnicBackUrl)}
+        </div>
+
+        <button class="btn btn-primary btn-block approveBtn mb-2">
+          ${icon("check-circle", 16)} Approve
+        </button>
+        <button class="btn btn-ghost btn-block rejectBtn" style="color:var(--error);">
+          Reject application
+        </button>
+      </div>`;
+  }
+
+  function load() {
+    api.getPendingDrivers()
+      .then(async (drivers) => {
+        if (!Array.isArray(drivers) || drivers.length === 0) {
+          list.innerHTML = empty();
+          return;
+        }
+        // The list endpoint returns a summary; the documents live on the full
+        // application. Fetched per driver so the reviewer sees everything
+        // without a second click.
+        const full = await Promise.all(
+          drivers.map((d) =>
+            api.getDriverApplication(d.id).then((a) => ({ ...d, ...a })).catch(() => d),
+          ),
+        );
+        list.innerHTML = full.map(card).join("");
+      })
+      .catch(() => {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">${icon("info", 28)}</div>
+            <p>Couldn't load applications. Check the connection.</p>
+          </div>`;
       });
-    })
-    .catch(() => { root.querySelector("#approvalsList").innerHTML = `<div class="empty-state"><p>Couldn't load pending drivers</p></div>`; });
+  }
+
+  list.addEventListener("click", async (e) => {
+    const approve = e.target.closest(".approveBtn");
+    const reject = e.target.closest(".rejectBtn");
+    if (!approve && !reject) return;
+
+    const btn = approve || reject;
+    const card = btn.closest("[data-id]");
+    const id = card.dataset.id;
+
+    if (reject) {
+      // A reason is required, not optional: the driver is told why, and
+      // "rejected, no reason recorded" is not something ops can defend later.
+      const reason = window.prompt(
+        "Why is this application being rejected?\n\nThe driver is shown this.",
+      );
+      if (!reason?.trim()) return;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span>`;
+      try {
+        await api.rejectDriverKyc(id, reason.trim());
+        toast("Application rejected — the driver has been notified");
+        card.remove();
+        if (!list.querySelector("[data-id]")) list.innerHTML = empty();
+      } catch (err) {
+        toast(err.message || "Couldn't reject", true);
+        btn.disabled = false;
+        btn.textContent = "Reject application";
+      }
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span>`;
+    try {
+      await api.approveKyc(id);
+      toast("Driver approved — they can go online now");
+      card.remove();
+      if (!list.querySelector("[data-id]")) list.innerHTML = empty();
+    } catch (err) {
+      toast(err.message || "Couldn't approve", true);
+      btn.disabled = false;
+      btn.innerHTML = `${icon("check-circle", 16)} Approve`;
+    }
+  });
+
+  load();
 }
 
 const ROLE_BADGE = { ADMIN: "badge-accent", DRIVER: "badge-warning", RIDER: "badge-success" };
@@ -208,15 +307,50 @@ export function renderOpsUsers(root) {
         list.innerHTML = `<div class="empty-state"><div class="icon">${icon("users", 32)}</div><p>No users yet</p></div>`;
         return;
       }
+      // isActive was being fetched and thrown away — a suspended account looked
+      // identical to a working one, and there was no way to reverse a
+      // suspension from anywhere in ops. Suspending with no path back is a
+      // one-way door on a real person's income.
       list.innerHTML = users.map((u, i) => `
-        <div class="list-row stagger-item" style="animation-delay:${Math.min(i, 10) * 30}ms;">
+        <div class="list-row stagger-item" data-user="${esc(u.id)}" style="animation-delay:${Math.min(i, 10) * 30}ms;">
           <div class="list-row-icon">${icon("person", 18)}</div>
-          <div class="flex-col" style="flex:1;">
-            <p class="font-bold text-sm">${esc(u.name || u.phone)}</p>
+          <div class="flex-col" style="flex:1;min-width:0;">
+            <p class="font-bold text-sm">${esc([u.name, u.lastName].filter(Boolean).join(" ") || u.phone)}</p>
             <p class="text-secondary text-xs">${esc(u.phone)} · joined ${fmtDate(u.createdAt)}</p>
           </div>
-          <span class="badge ${ROLE_BADGE[u.role] || "badge-accent"}">${esc(u.role)}</span>
+          <div class="flex items-center gap-2">
+            <span class="badge ${ROLE_BADGE[u.role] || "badge-accent"}">${esc(u.role)}</span>
+            ${u.isActive === false
+              ? `<span class="badge badge-error">Suspended</span>
+                 <button class="btn btn-secondary btn-sm" data-reactivate="${esc(u.id)}">Reactivate</button>`
+              : `<button class="btn btn-ghost btn-sm" data-suspend="${esc(u.id)}" style="color:var(--error);">Suspend</button>`}
+          </div>
         </div>`).join("");
+
+      list.addEventListener("click", async (e) => {
+        const susp = e.target.closest("[data-suspend]");
+        const react = e.target.closest("[data-reactivate]");
+        if (!susp && !react) return;
+        const btn = susp || react;
+        btn.disabled = true;
+        try {
+          if (susp) {
+            // The person is shown this, and "suspended, no reason recorded"
+            // becomes a support call ops can't answer.
+            const reason = window.prompt("Why is this account being suspended?\n\nThey will see this message.");
+            if (reason === null) { btn.disabled = false; return; }
+            await api.suspendUser(susp.dataset.suspend, reason.trim() || undefined);
+            toast("Account suspended");
+          } else {
+            await api.reactivateUser(react.dataset.reactivate);
+            toast("Account reactivated");
+          }
+          renderOpsUsers(root);
+        } catch (err) {
+          toast(err.message || "Couldn't update that account", true);
+          btn.disabled = false;
+        }
+      });
     })
     .catch(() => { root.querySelector("#usersList").innerHTML = `<div class="empty-state"><p>Couldn't load users</p></div>`; });
 }
