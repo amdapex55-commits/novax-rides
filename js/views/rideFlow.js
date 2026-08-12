@@ -17,6 +17,7 @@ import { mountPickupNote } from "../pickupNote.js";
 import {
   PRICING, VEHICLE_TYPES, ALLOW_BID_FARE, GPS, ZONE, inZone, isOpenNow, HOURS,
 } from "../launch.config.js";
+import { haptic } from "../haptics.js";
 
 const ALL_VEHICLES = [
   { type: "BIKE", name: "Nova Moto", desc: "Fastest through traffic", icon: "bike", tag: "Bike" },
@@ -383,6 +384,7 @@ export function renderRideBooking(root) {
       fastMatch.addEventListener("click", (e) => {
         const btn = e.target.closest("[data-tip]");
         if (!btn) return;
+        haptic.light();
         fastMatchTip = Number(btn.dataset.tip) || 0;
         fastMatch.querySelectorAll("[data-tip]").forEach((b) => b.classList.toggle("active", b === btn));
         track("ride_fastmatch_tip_selected", { tipAmount: fastMatchTip });
@@ -472,6 +474,7 @@ export function renderRideBooking(root) {
       }
 
       submitting = true;
+      haptic.medium();
       confirmBtn.disabled = true;
       confirmBtn.innerHTML = `<span class="spinner"></span>`;
       try {

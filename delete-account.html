@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" data-app="customer">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#ffffff"/>
+<title>Delete your account — Nova Go</title>
+<meta name="description" content="Request deletion of your Nova Go account and personal data."/>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<link rel="stylesheet" href="css/fonts.css"/>
+<link rel="stylesheet" href="css/tokens.css"/>
+<link rel="stylesheet" href="css/base.css"/>
+<link rel="stylesheet" href="css/components.css"/>
+<!--
+  Google Play requires a deletion route reachable WITHOUT the app installed,
+  so this is a standalone page: no app shell, no router, no auth. It posts to
+  a real public endpoint (POST /api/v1/users/deletion-request) — a form that
+  only shows a success alert would be worse than none, because Google tests
+  this URL and a user would believe their data was gone when it wasn't.
+
+  Signed-in users get instant deletion in the app (Profile → Delete account).
+  This page is for people who already uninstalled.
+-->
+<style>
+  body {
+    min-height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    background: var(--surface);
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--r-lg);
+    padding: 28px;
+    box-shadow: 0 12px 40px rgba(22, 18, 31, 0.08);
+  }
+  .mark {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: var(--accent-gradient);
+    display: grid; place-items: center; margin-bottom: 18px;
+  }
+  h1 { font-size: 22px; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .lede { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 22px; }
+  .what {
+    background: var(--surface); border-radius: var(--r-md);
+    padding: 14px 16px; margin-bottom: 22px;
+    font-size: 13px; color: var(--text-secondary); line-height: 1.65;
+  }
+  .what strong { color: var(--text-primary); }
+  .what ul { margin: 8px 0 0; padding-left: 18px; }
+  .what li { margin-bottom: 4px; }
+  .danger {
+    width: 100%; height: 52px; border: none; border-radius: var(--r-md);
+    background: var(--error); color: #fff; font-size: 15px; font-weight: 800;
+    cursor: pointer;
+  }
+  .danger:disabled { opacity: 0.6; cursor: default; }
+  .msg { margin-top: 14px; font-size: 13.5px; line-height: 1.55; }
+  .msg.ok { color: var(--success); }
+  .msg.err { color: var(--error); }
+  .foot { margin-top: 18px; font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.6; }
+  .foot a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="mark">
+      <svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M36 8 18 36h12l-2 20 18-28H34l2-20z" fill="#fff"/>
+      </svg>
+    </div>
+
+    <h1>Delete your Nova Go account</h1>
+    <p class="lede">
+      Enter the phone number or email you signed up with. We verify every request
+      and complete it within 24 hours.
+    </p>
+
+    <div class="what">
+      <strong>What gets deleted</strong>
+      <ul>
+        <li>Your name, email address and home address</li>
+        <li>Your phone number and password</li>
+        <li>Your CNIC and driving licence photos, if you're a rider</li>
+        <li>Your payout details</li>
+      </ul>
+      <div style="margin-top:12px;">
+        <strong>What we keep, and why</strong>
+        <ul>
+          <li>Anonymous records of completed trips and payments — required for
+              accounting, and a trip belongs to two people, so erasing one side
+              would destroy the other's history</li>
+          <li>Any safety incident report, anonymised</li>
+        </ul>
+        Once this is done, nothing remaining identifies you. This cannot be undone.
+      </div>
+    </div>
+
+    <form id="form" novalidate>
+      <label class="field-label" for="contact">Phone number or email</label>
+      <input id="contact" class="input" type="text" autocomplete="tel"
+             placeholder="0300 1234567 or you@example.com" required
+             style="margin-bottom:12px;"/>
+
+      <label class="field-label" for="note">Anything you'd like to tell us? (optional)</label>
+      <textarea id="note" class="input" rows="2" maxlength="500"
+                placeholder="Optional" style="margin-bottom:18px;resize:vertical;"></textarea>
+
+      <button type="submit" class="danger" id="submitBtn">Request permanent deletion</button>
+      <p class="msg" id="msg"></p>
+    </form>
+
+    <p class="foot">
+      Still have the app? Delete instantly from <strong>Profile → Delete account</strong>.<br/>
+      See our <a href="index.html#/legal/privacy">Privacy Policy</a> ·
+      Questions? <a href="index.html#/support">Contact support</a>
+    </p>
+  </div>
+</div>
+
+<script type="module">
+  import { CONFIG } from "./js/config.js";
+
+  const form = document.getElementById("form");
+  const btn = document.getElementById("submitBtn");
+  const msg = document.getElementById("msg");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const contact = document.getElementById("contact").value.trim();
+    const note = document.getElementById("note").value.trim();
+
+    if (contact.length < 5) {
+      msg.textContent = "Enter the phone number or email you signed up with.";
+      msg.className = "msg err";
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+    msg.textContent = "";
+    msg.className = "msg";
+
+    try {
+      const res = await fetch(`${CONFIG.API_BASE_URL}/users/deletion-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contact, note: note || undefined }),
+      });
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      const data = await res.json().catch(() => ({}));
+
+      form.querySelectorAll("input, textarea, button").forEach((el) => (el.disabled = true));
+      msg.textContent =
+        data.message ||
+        "Request received. We'll verify it and delete your account within 24 hours.";
+      msg.className = "msg ok";
+    } catch (err) {
+      // Never claim success on failure — someone would walk away believing
+      // their data was gone.
+      msg.textContent =
+        "Couldn't send that just now. Please try again, or email us and we'll do it manually.";
+      msg.className = "msg err";
+      btn.disabled = false;
+      btn.textContent = "Request permanent deletion";
+    }
+  });
+</script>
+</body>
+</html>

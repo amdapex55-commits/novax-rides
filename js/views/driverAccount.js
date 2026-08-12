@@ -76,6 +76,11 @@ export function renderDriverProfile(root) {
         </div>
       </div>
       <button id="logoutBtn" class="btn btn-danger btn-block mt-6">${icon("logout", 18)} Log Out</button>
+      <!-- Google Play requires in-app account deletion for any app with
+           signup. Below Log Out and styled as a quiet text link, not a red
+           button: it is genuinely irreversible and should not sit next to Log
+           Out looking like an equally casual choice. -->
+      <button id="deleteAccountBtn" class="nx-delete-account">Delete my account</button>
     </div>
   `;
 
@@ -95,7 +100,26 @@ export function renderDriverProfile(root) {
       toast("Profile updated");
     } catch (err) { toast(err.message || "Couldn't update", true); }
   });
-  root.querySelector("#logoutBtn").addEventListener("click", () => { api.logout(); location.hash = "/phone"; });
+  root.querySelector("#logoutBtn").addEventListener("click", () => { api.logout(); location.hash = "/signin"; });
+  root.querySelector("#deleteAccountBtn")?.addEventListener("click", async () => {
+    // Typed confirmation. A single confirm() on an irreversible action is how
+    // an account gets deleted by a phone in someone's pocket.
+    const typed = window.prompt(
+      "This permanently deletes your account.\n\n" +
+      "Your name, phone, email and documents are erased. Anonymous records of " +
+      "completed trips are kept for accounting, as set out in the Privacy Policy.\n\n" +
+      "Type DELETE to confirm.",
+    );
+    if (typed?.trim().toUpperCase() !== "DELETE") return;
+    try {
+      const res = await api.deleteAccount();
+      api.logout();
+      toast(res?.message || "Your account has been deleted");
+      location.hash = "/signin";
+    } catch (err) {
+      toast(err.message || "Couldn't delete your account — contact support", true);
+    }
+  });
   root.querySelectorAll("[data-nav]").forEach((r) => r.addEventListener("click", () => (location.hash = r.dataset.nav)));
 }
 

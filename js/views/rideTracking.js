@@ -12,7 +12,13 @@ import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
 import { createMap } from "../map.js";
 import { track } from "../analytics.js";
+import { renderTripStatus } from "../tripCopy.js";
+import { haptic } from "../haptics.js";
 
+// Badge labels stay English — a status chip is scanned, not read, and mixing
+// scripts in a 2-word badge is harder to parse, not friendlier. The warm
+// Roman Urdu lives in the status BLOCK below it (see js/tripCopy.js), which is
+// the part people actually read while they're waiting.
 const STATUS = {
   REQUESTED: { label: "Finding a driver", copy: "Matching you with a driver nearby..." },
   MATCHING: { label: "Finding a driver", copy: "Matching you with a driver nearby..." },
@@ -22,6 +28,9 @@ const STATUS = {
   COMPLETED: { label: "Completed", copy: "You've arrived" },
   CANCELLED: { label: "Cancelled", copy: "This trip was cancelled" },
 };
+
+/** Statuses worth a vibration — the ones a customer is waiting on. */
+const HAPTIC_ON = { MATCHED: "success", ARRIVED: "success", COMPLETED: "success", CANCELLED: "warning" };
 
 // Pakistan emergency services. tel: works on real devices; on desktop the
 // browser will simply ignore it, which is why we ALSO file the incident.
@@ -137,6 +146,9 @@ export function renderRideTracking(root) {
 
   // ---------- SOS ----------
   root.querySelector("#sosBtn").addEventListener("click", () => {
+    // Deliberately the only place this pattern is used: someone who can't
+    // look at their screen still needs to know the press registered.
+    haptic.emergency();
     const overlay = document.createElement("div");
     overlay.className = "overlay open";
     overlay.style.zIndex = "1200";
@@ -230,7 +242,14 @@ export function renderRideTracking(root) {
     }, 8000);
   });
 
-  const setStatus = (s) => { currentStatus = s; drawSheet(); };
+  const setStatus = (s) => {
+    // Only buzz on a real transition. Polling and socket events can both
+    // deliver the same status twice, and a phone that vibrates every 8 seconds
+    // is a phone that gets put face down.
+    if (s !== currentStatus && HAPTIC_ON[s]) haptic[HAPTIC_ON[s]]();
+    currentStatus = s;
+    drawSheet();
+  };
   const onMatched = async () => {
     track("ride_driver_matched", { tripId });
     try { const t = await api.getTrip(tripId); if (!destroyed) applyTrip(t); } catch { setStatus("MATCHED"); }

@@ -19,7 +19,7 @@
 // deleted on activate, so a stale shell can't survive a release.
 // Bump on any change to SHELL — an old cache serving the previous asset list
 // is how a user ends up on a half-updated app.
-const VERSION = "novago-v5";
+const VERSION = "novago-v6";
 const SHELL_CACHE = `${VERSION}-shell`;
 
 // Only same-origin, non-critical-path assets. Deliberately small: a service

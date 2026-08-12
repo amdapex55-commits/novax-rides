@@ -156,3 +156,41 @@ img { max-width: 100%; display: block; }
     overflow: hidden;
   }
 }
+
+/* ===========================================================================
+   WebView touch responsiveness.
+
+   These target the two things that make a WebView feel like a website rather
+   than an app on mid-range Android: the legacy 300ms tap delay, and the grey
+   flash + text selection from long-pressing a control.
+
+   Deliberately NOT here: a blanket `will-change: transform` on sheets and
+   maps. It pins GPU layers permanently, and on the low-end Redmi/Infinix
+   hardware that is most of this market it costs more memory than it saves in
+   paint time. Promote a layer for the duration of an animation, not forever.
+   =========================================================================== */
+button,
+a,
+[role="button"],
+.card,
+.list-row,
+.option-card,
+.nav-item,
+.top-tab,
+.nx-tip,
+.nx-doc {
+  /* Removes the 300ms double-tap-to-zoom wait without disabling pinch zoom
+     on the page as a whole. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Selection is meaningful on content, meaningless on controls — and a long
+   press that selects a button label looks broken. */
+button,
+[role="button"],
+.nav-item,
+.top-tab {
+  -webkit-user-select: none;
+  user-select: none;
+}

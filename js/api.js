@@ -103,6 +103,10 @@ export const api = {
   // --- Auth ---
   // Password auth. OTP below still works and is kept deliberately — when an
   // SMS sender is provisioned, both flows run side by side.
+  // Google Play requires in-app deletion. Anonymises server-side; anonymous
+  // financial records survive (see users.service.ts).
+  deleteAccount: () => request("/users/me", { method: "DELETE" }),
+
   register: (dto) => request("/auth/register", { method: "POST", body: dto }),
   login: (identifier, password) =>
     request("/auth/login", { method: "POST", body: { identifier, password } }),

@@ -11,9 +11,11 @@ import { toast, esc, fmtMoney, trustCard } from "../ui.js";
 import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
 import { startDriverTracking, requestImmediateFix } from "../driverLocation.js";
+import { showLocationDisclosure } from "../locationDisclosure.js";
 import { createMap } from "../map.js";
 import { getCurrentCoords } from "../geocode.js";
 import { track } from "../analytics.js";
+import { haptic } from "../haptics.js";
 
 export function renderDriverHome(root) {
   const user = Token.user;
@@ -134,6 +136,22 @@ export function renderDriverHome(root) {
     socketManager.on("errand:offer", onErrandOffer);
     socketManager.on("driver:notApproved", onNotApproved);
     socketManager.on("job:manuallyAssigned", onManualAssign);
+
+    // PROMINENT DISCLOSURE — must come BEFORE any location permission request
+    // or foreground service starts. Google Play rejects driver apps that go
+    // straight to the Android system prompt, and the rejection costs a full
+    // review cycle. See js/locationDisclosure.js for the policy wording.
+    //
+    // Declining leaves the driver offline rather than proceeding silently:
+    // "we asked and they said no" has to actually mean something.
+    const consented = await showLocationDisclosure();
+    if (!consented) {
+      toast("You won't receive jobs without location access", true);
+      online = false;
+      state.isDriverOnline = false;
+      paintOnline();
+      return;
+    }
 
     // Native builds get a foreground service that keeps reporting with the
     // screen off; browser builds get watchPosition and the stale banner below.
@@ -401,6 +419,8 @@ export function renderIncomingOffer(root) {
   }, 1000);
 
   root.querySelector("#acceptBtn").addEventListener("click", async () => {
+    // Confirms the tap through a glove, before the network round trip.
+    haptic.medium();
     clearInterval(timer);
     try {
       await api.acceptTrip(tripId);
@@ -508,6 +528,7 @@ export function renderTripProgress(root) {
   }
 
   root.querySelector("#sosBtn").addEventListener("click", async () => {
+    haptic.emergency();
     try {
       const pos = await new Promise((resolve) => {
         if (!navigator.geolocation) return resolve(null);

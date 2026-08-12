@@ -26,6 +26,10 @@ const FILES = [
   "index.html", "customer.html", "driver.html", "merchant.html",
   "landing.html", "offline.html", "sw.js", "robots.txt", "favicon.svg",
   "manifest.customer.json", "manifest.driver.json", "manifest.merchant.json",
+  // Google Play requires a deletion route reachable without the app installed.
+  // If this stops shipping, the Play listing's data-deletion URL 404s and the
+  // app is out of compliance — so it belongs in this list, not in a dir.
+  "delete-account.html",
 ];
 const DIRS = ["css", "js", "icons", "vendor", "fonts"];
 // js/map-token.js is gitignored but MUST ship — copyDir picks it up from

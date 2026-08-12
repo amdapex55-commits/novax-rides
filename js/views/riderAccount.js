@@ -229,9 +229,36 @@ export function renderSettings(root) {
         ${settingsRow("document", "Terms & Policies")}
       </div>
       <button id="logoutBtn" class="btn btn-danger btn-block">${icon("logout", 18)} Log Out</button>
+      <!-- Google Play requires in-app account deletion for any app with
+           signup. Placed below Log Out and styled as a quiet text link, not a
+           red button: it is genuinely irreversible, and it should not sit next
+           to Log Out looking like an equally casual choice. -->
+      <button id="deleteAccountBtn" class="nx-delete-account">Delete my account</button>
     </div>
   `;
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
+  root.querySelector("#deleteAccountBtn")?.addEventListener("click", async () => {
+    // Two-step, typed confirmation. A single confirm() on an irreversible,
+    // policy-mandated action is how people delete an account by accident on a
+    // phone in their pocket.
+    const typed = window.prompt(
+      "This permanently deletes your account.\n\n" +
+      "Your name, phone, email and documents are erased. Anonymous records of " +
+      "completed trips are kept for accounting, as set out in the Privacy Policy.\n\n" +
+      "Type DELETE to confirm.",
+    );
+    if (typed?.trim().toUpperCase() !== "DELETE") return;
+
+    try {
+      const res = await api.deleteAccount();
+      api.logout();
+      toast(res?.message || "Your account has been deleted");
+      location.hash = "/signin";
+    } catch (err) {
+      toast(err.message || "Couldn't delete your account — contact support", true);
+    }
+  });
+
   root.querySelector("#logoutBtn").addEventListener("click", () => {
     api.logout();
     navigate("/signin");
