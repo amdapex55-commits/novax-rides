@@ -15,16 +15,35 @@ const STAT_CARDS = [
   ["statTotalUsers", "Total users", "totalUsers", "var(--text-primary)"],
 ];
 
+/**
+ * OPS HOME — "what needs me right now".
+ *
+ * The previous dashboard showed six counters and a map. Counters tell you the
+ * state of the world; they don't tell you what to DO, and an ops desk during a
+ * pilot is a queue of small interventions, not a monitoring exercise.
+ *
+ * So this leads with the action list: everything waiting on a human, worst
+ * first, each item a link to the screen that resolves it. When that list is
+ * empty the desk is genuinely clear — which is the single most useful thing a
+ * dispatcher can know.
+ *
+ * Every panel loads independently and fails independently. One dead endpoint
+ * must never blank the screen someone is running the day from.
+ */
 export function renderOpsDashboard(root) {
   root.innerHTML = `
     <div class="page nx-stagger">
       <div class="flex items-center gap-3 mb-1">
-        <h1 class="text-xl">Live operations</h1>
-        <span class="nx-live-dot" style="background:#2563eb;"></span>
+        <h1 class="text-xl">Today</h1>
+        <span class="nx-live-dot"></span>
       </div>
-      <p class="text-secondary text-sm mb-5">Everything moving in Karachi right now.</p>
+      <p class="text-secondary text-sm mb-5" id="opsGreeting">Karachi &middot; loading…</p>
 
-      <div class="nx-desk-grid nx-stat-grid mb-5">
+      <!-- Action queue first. This is the part that changes what someone does
+           in the next five minutes. -->
+      <div id="actionQueue" class="mb-5">${skeletonRows(3)}</div>
+
+      <div class="nx-desk-grid nx-stat-grid mb-5" id="statGrid">
         ${STAT_CARDS.map(([id, label, , color]) => `
           <div class="card nx-lift" style="padding:16px 18px;">
             <p class="text-xs text-secondary mb-1">${label}</p>
@@ -32,9 +51,6 @@ export function renderOpsDashboard(root) {
           </div>`).join("")}
       </div>
 
-      <!-- The fleet map. Real Leaflet, real driver positions from the admin
-           live-drivers endpoint — dispatchers were previously being shown a
-           decorative radar sweep with an apology written across it. -->
       <div class="card nx-desk-wide" style="padding:0; overflow:hidden;">
         <div class="flex items-center justify-between" style="padding:14px 18px;">
           <div>
@@ -44,6 +60,7 @@ export function renderOpsDashboard(root) {
           <div class="flex gap-3 text-xs text-secondary">
             <span class="flex items-center gap-1"><i class="nx-key-dot" style="--dot:#6d28d9;"></i>Idle</span>
             <span class="flex items-center gap-1"><i class="nx-key-dot" style="--dot:#e2960a;"></i>Busy</span>
+            <span class="flex items-center gap-1"><i class="nx-key-dot" style="--dot:#94a1a9;"></i>Stale</span>
           </div>
         </div>
         <div id="fleetMap" style="height:340px;">${mapSkeleton("340px")}</div>
@@ -51,18 +68,110 @@ export function renderOpsDashboard(root) {
     </div>
   `;
 
+  const hour = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Karachi", hour: "2-digit", hour12: false });
+  const greet = Number(hour) < 12 ? "Good morning" : Number(hour) < 17 ? "Good afternoon" : "Good evening";
+  root.querySelector("#opsGreeting").textContent = `${greet} — everything moving in Karachi right now.`;
+
+  /* ---------------------------------------------------- action queue --- */
+
+  function actionRow({ count, label, detail, path, tone }) {
+    return `
+      <a class="nx-action-row ${tone}" href="#${path}">
+        <span class="nx-action-count">${count}</span>
+        <span class="nx-action-text">
+          <span class="nx-action-label">${label}</span>
+          <span class="nx-action-detail">${detail}</span>
+        </span>
+        ${icon("chevronRight", 18)}
+      </a>`;
+  }
+
+  async function loadActionQueue() {
+    const box = root.querySelector("#actionQueue");
+
+    // Each source is independent — settle() so one failure can't blank the
+    // queue that the whole desk runs from.
+    const [approvals, incidents, stuck, tickets, balances] = await Promise.allSettled([
+      api.getPendingDrivers(),
+      api.listOpenIncidents(),
+      api.getStuckJobs(3),
+      api.getTickets("OPEN"),
+      api.getDriverBalances(),
+    ]);
+
+    const val = (r) => (r.status === "fulfilled" && Array.isArray(r.value) ? r.value : []);
+    const rows = [];
+
+    // Ordered by how badly it goes if ignored, not by count.
+    const sos = val(incidents);
+    if (sos.length) {
+      rows.push(actionRow({
+        count: sos.length, tone: "danger",
+        label: sos.length === 1 ? "Open safety incident" : "Open safety incidents",
+        detail: "Someone pressed SOS. Handle before anything else.",
+        path: "/ops/live",
+      }));
+    }
+
+    const jobs = val(stuck);
+    if (jobs.length) {
+      rows.push(actionRow({
+        count: jobs.length, tone: "warn",
+        label: jobs.length === 1 ? "Job with no driver" : "Jobs with no driver",
+        detail: "Unmatched for 3+ minutes — assign someone by hand.",
+        path: "/ops/command",
+      }));
+    }
+
+    const pending = val(approvals);
+    if (pending.length) {
+      rows.push(actionRow({
+        count: pending.length, tone: "warn",
+        label: pending.length === 1 ? "Driver waiting for approval" : "Drivers waiting for approval",
+        detail: "Check the licence against the original before approving.",
+        path: "/ops/approvals",
+      }));
+    }
+
+    const blocked = val(balances).filter((d) => d.blocked);
+    if (blocked.length) {
+      rows.push(actionRow({
+        count: blocked.length, tone: "warn",
+        label: blocked.length === 1 ? "Driver blocked on balance" : "Drivers blocked on balance",
+        detail: "Over the credit limit — not receiving jobs until they settle.",
+        path: "/ops/settle",
+      }));
+    }
+
+    const open = val(tickets);
+    if (open.length) {
+      rows.push(actionRow({
+        count: open.length, tone: "info",
+        label: open.length === 1 ? "Open support ticket" : "Open support tickets",
+        detail: "The same complaint three times is a product bug.",
+        path: "/ops/tickets",
+      }));
+    }
+
+    box.innerHTML = rows.length
+      ? rows.join("")
+      : `<div class="nx-action-clear">
+           ${icon("check-circle", 20)}
+           <div>
+             <p class="font-bold text-sm">Nothing needs you right now</p>
+             <p class="text-xs text-muted">No SOS, no stuck jobs, no approvals, no open tickets.</p>
+           </div>
+         </div>`;
+  }
+
+  /* ----------------------------------------------------- counters ------ */
+
   api.getAdminStats()
-    .then((s) => {
-      STAT_CARDS.forEach(([id, , key]) => {
-        const el = root.querySelector(`#${id}`);
-        const value = Number(s?.[key] ?? 0);
-        countUp(el, value);
-      });
-    })
+    .then((s) => STAT_CARDS.forEach(([id, , key]) => countUp(root.querySelector(`#${id}`), Number(s?.[key] ?? 0))))
     .catch(() => toast("Couldn't load stats", true));
 
-  // Map + fleet. Both are best-effort: a dispatcher must still get their
-  // numbers if the tile CDN or the drivers endpoint is having a bad minute.
+  /* ------------------------------------------------------- map -------- */
+
   let mapHandle = null;
   let poll = 0;
 
@@ -81,17 +190,8 @@ export function renderOpsDashboard(root) {
       return;
     }
 
-    // A position older than this is shown greyed out. Deliberately shorter
-    // than the matcher's 3-minute cutoff (see MAX_FIX_AGE_MS in the backend's
-    // location.service.ts) so a dispatcher watching the map sees a driver
-    // going dark BEFORE matching gives up on them, rather than after.
     const STALE_AFTER_SECONDS = 120;
-
-    function describeAge(seconds) {
-      if (seconds == null) return "no GPS fix yet";
-      if (seconds < 60) return `${seconds}s ago`;
-      return `${Math.round(seconds / 60)}m ago`;
-    }
+    const describeAge = (s) => (s == null ? "no GPS fix yet" : s < 60 ? `${s}s ago` : `${Math.round(s / 60)}m ago`);
 
     async function refreshFleet() {
       try {
@@ -100,32 +200,22 @@ export function renderOpsDashboard(root) {
           .filter((d) => d?.lat != null && d?.lng != null)
           .map((d) => {
             const age = d.fixAgeSeconds == null ? null : Number(d.fixAgeSeconds);
-            // No fix at all counts as stale — an unknown age is not a fresh one.
             const stale = age == null || age > STALE_AFTER_SECONDS;
-            // `idle` and `currentJob` are what the API actually returns; this
-            // used to read a `busy` field that has never existed, so every
-            // driver rendered as available even mid-trip.
             const busy = d.idle === false || Boolean(d.currentJob);
             const name = d.name || d.user?.name || d.phone || d.user?.phone || "Driver";
             return {
-              lat: Number(d.lat),
-              lng: Number(d.lng),
+              lat: Number(d.lat), lng: Number(d.lng),
               status: stale ? "stale" : busy ? "busy" : "idle",
-              label: stale
-                ? `${name} · last seen ${describeAge(age)}`
-                : `${name}${d.currentJob ? ` · ${d.currentJob}` : " · available"}`,
+              label: stale ? `${name} · last seen ${describeAge(age)}`
+                           : `${name}${d.currentJob ? ` · ${d.currentJob}` : " · available"}`,
             };
           });
         mapHandle.setFleet(points);
 
         const stale = points.filter((p) => p.status === "stale").length;
         const available = points.filter((p) => p.status === "idle").length;
-        // Stale drivers are called out separately rather than folded into the
-        // total: "12 online" when 5 of them are dead phones is the number that
-        // gets a dispatcher to promise a passenger a ride nobody will take.
         root.querySelector("#fleetCount").textContent = points.length
-          ? `${points.length} online · ${available} available now` +
-            (stale ? ` · ${stale} stale (no recent GPS)` : "")
+          ? `${points.length} online · ${available} available now` + (stale ? ` · ${stale} stale (no recent GPS)` : "")
           : "No drivers online right now";
       } catch {
         root.querySelector("#fleetCount").textContent = "Driver positions unavailable";
@@ -136,7 +226,12 @@ export function renderOpsDashboard(root) {
     poll = setInterval(refreshFleet, 15000);
   })();
 
-  return () => { clearInterval(poll); mapHandle?.destroy(); };
+  loadActionQueue();
+  // The action queue is the reason to keep this tab open, so it refreshes
+  // itself — a dispatcher shouldn't have to remember to reload.
+  const queuePoll = setInterval(loadActionQueue, 30000);
+
+  return () => { clearInterval(poll); clearInterval(queuePoll); mapHandle?.destroy(); };
 }
 
 export function renderOpsApprovals(root) {

@@ -152,7 +152,7 @@ const CONFIGS = {
     // makes a rider account that then gets bounced.
     signupRole: null,
     allowedRoles: ["ADMIN"],
-    home: "/ops/command",
+    home: "/ops/dashboard",
     routes: [
       "/splash", "/welcome", "/signin", "/signup", "/phone", "/otp",
       "/ops/command", "/ops/dashboard", "/ops/approvals", "/ops/users",
@@ -162,11 +162,13 @@ const CONFIGS = {
       "/legal/terms", "/legal/privacy",
     ],
     nav: [
-      { tab: "command", icon: "bolt", label: "Command", path: "/ops/command" },
+      // Today first: it's the screen that says what to do next, and it's
+      // where a dispatcher should land every morning.
+      { tab: "dashboard", icon: "dashboard", label: "Today", path: "/ops/dashboard" },
       { tab: "live", icon: "car", label: "Live", path: "/ops/live" },
       { tab: "approvals", icon: "check-circle", label: "Approve", path: "/ops/approvals" },
-      { tab: "tickets", icon: "chat", label: "Support", path: "/ops/tickets" },
       { tab: "settle", icon: "wallet", label: "Settle", path: "/ops/settle" },
+      { tab: "tickets", icon: "chat", label: "Support", path: "/ops/tickets" },
     ],
   },
 };

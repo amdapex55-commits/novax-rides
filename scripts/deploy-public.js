@@ -26,6 +26,10 @@ const FILES = [
   "index.html", "customer.html", "driver.html", "merchant.html",
   "landing.html", "offline.html", "sw.js", "robots.txt", "favicon.svg",
   "manifest.customer.json", "manifest.driver.json", "manifest.merchant.json",
+  // Ops: browser only. Deliberately no native build (see capacitor/ — there
+  // is no ops app to install), because a dispatcher works at a desk on a
+  // real screen, not on a phone.
+  "ops.html", "manifest.ops.json",
   // Google Play requires a deletion route reachable without the app installed.
   // If this stops shipping, the Play listing's data-deletion URL 404s and the
   // app is out of compliance — so it belongs in this list, not in a dir.
@@ -36,8 +40,25 @@ const DIRS = ["css", "js", "icons", "vendor", "fonts"];
 // the working tree, so a deploy from a checkout that has it keeps Mapbox.
 
 
-// NOT copied, on purpose.
-const EXCLUDED = ["ops.html", "manifest.ops.json"];
+// OPS IS WEB-ONLY, AND IT DOES SHIP.
+//
+// It was excluded here on the reasoning that a dispatch console shouldn't sit
+// on the public internet. But excluding it doesn't hide it — it just means
+// there is nowhere to USE it from, which is worse: the desk ends up run from
+// someone's laptop off a local file, with no shared URL and no way to hand
+// over a shift.
+//
+// What actually protects it is not obscurity:
+//   - every ops route requires a logged-in ADMIN (js/router.js auth: "ADMIN")
+//   - every admin endpoint is behind JwtAuthGuard + RolesGuard("ADMIN")
+//   - nobody can self-register as an ADMIN; the role is set in the database
+// So an unauthenticated visitor gets a login screen and nothing else.
+//
+// HARDEN IT ANYWAY before real volume: put Cloudflare Access (or basic auth)
+// in front of ops.html on its own hostname. That removes even the login
+// screen from public view and gives you an audit trail of who opened the
+// desk. Until then the ADMIN gate is the control.
+const EXCLUDED = [];
 
 function copyDir(src, dest) {
   fs.mkdirSync(dest, { recursive: true });
@@ -76,5 +97,5 @@ console.log(`
     ${copied} files + ${DIRS.length} asset directories
     EXCLUDED: ${EXCLUDED.join(", ")}
 
-  Push public/ to GitHub Pages. Ops stays off the public origin.
+  Push public/ to GitHub Pages. Ops ships too — it's browser-only\n  and gated on the ADMIN role.
 `);

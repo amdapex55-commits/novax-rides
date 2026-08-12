@@ -133,7 +133,7 @@ let currentRoute = null;
 
 function roleHome(role) {
   if (role === "DRIVER") return Token.user?.kycStatus === "APPROVED" ? "/driver/home" : "/driver/pending";
-  if (role === "ADMIN") return "/ops/command";
+  if (role === "ADMIN") return "/ops/dashboard";
   // RESTAURANT's real home depends on onboarding/approval status, which
   // isn't in the JWT — auth.js's restaurantHomePath() resolves that with a
   // real API call right after login. Bouncing mid-navigation here (e.g. a
