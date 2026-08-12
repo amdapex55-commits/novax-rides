@@ -29,12 +29,21 @@ function renderShell() {
 /**
  * Dismiss the boot splash (see the inline block in customer.html et al).
  *
- * It holds for a minimum of ~1.2s so the mark finishes drawing — a splash cut
- * off mid-animation reads as a glitch, not as speed. But it is never allowed
- * to hold longer than that just because something downstream is slow: the
- * floor is a floor, not a delay added to boot time.
+ * WHY THIS NUMBER CAME DOWN
+ *
+ * The shell is interactive in about 100ms. Holding the splash for 1750ms so
+ * the tagline could finish animating meant ~94% of every app open was a delay
+ * we were adding on purpose. That is the single biggest reason the app felt
+ * slow: not the code, the wait we chose.
+ *
+ * 600ms is enough for the mark to read as intentional rather than a flash,
+ * and short enough that opening the app feels instant. The tagline animation
+ * is retimed to finish inside it.
+ *
+ * A returning user (service worker warm) now sees roughly half a second
+ * instead of nearly two.
  */
-const SPLASH_MIN_MS = 1750;
+const SPLASH_MIN_MS = 600;
 const bootStartedAt = Date.now();
 
 function dismissSplash() {

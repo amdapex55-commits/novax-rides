@@ -88,7 +88,7 @@ function renderBikeTab(panel, isGuest) {
   panel.innerHTML = `
     <div class="glow-card mb-4" id="whereToCard" style="cursor:pointer;">
       <div class="flex items-center gap-3">
-        <div class="list-row-icon" style="background:rgba(35, 214, 138, 0.12); color:var(--accent);">${icon("bike", 22)}</div>
+        <div class="list-row-icon" style="background:rgba(124, 58, 237, 0.12); color:var(--accent);">${icon("bike", 22)}</div>
         <div class="flex-col" style="flex:1;">
           <p class="font-bold">Book a Bike Ride</p>
           <p class="text-secondary text-sm">Fastest way through traffic — where to?</p>
@@ -202,7 +202,7 @@ function renderFoodTab(panel, isGuest) {
   panel.innerHTML = `
     <div class="glow-card mb-4" id="foodSearchCard" style="cursor:pointer;">
       <div class="flex items-center gap-3">
-        <div class="list-row-icon" style="background:rgba(35, 214, 138, 0.12); color:var(--accent);">${icon("utensils", 22)}</div>
+        <div class="list-row-icon" style="background:rgba(124, 58, 237, 0.12); color:var(--accent);">${icon("utensils", 22)}</div>
         <div class="flex-col" style="flex:1;">
           <p class="font-bold">Order food</p>
           <p class="text-secondary text-sm">Browse restaurants near you</p>

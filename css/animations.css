@@ -2,11 +2,23 @@
 
 /* Page transition: views fade+rise+focus in as the router swaps them —
    the slight blur-to-sharp adds a depth cue flat fades don't have. */
+/* This runs on EVERY route change, so it's the animation most responsible for
+   how the app feels to move through.
+   
+   The blur was the problem. filter: blur() forces a fresh off-screen raster of
+   the entire incoming screen on every frame, and it can't be composited — on
+   the mid-range Android this app is built for, that's the stutter you feel
+   between screens. transform and opacity give the same sense of arrival for
+   free.
+   
+   420ms was also simply long. A screen transition you can consciously watch
+   reads as the app being slow, even when nothing is. 260ms still registers as
+   motion without making anyone wait for it. */
 @keyframes nx-view-in {
-  from { opacity: 0; transform: translateY(16px) scale(0.98); filter: blur(4px); }
-  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
 }
-.view-enter { animation: nx-view-in 420ms var(--ease-spring) forwards; }
+.view-enter { animation: nx-view-in 260ms var(--ease-out) forwards; }
 
 /* Staggered list items */
 @keyframes nx-stagger-in {
@@ -15,16 +27,34 @@
 }
 .stagger-item { opacity: 0; animation: nx-stagger-in 0.45s var(--ease-spring) forwards; }
 
-/* Skeleton shimmer */
+/* Skeleton shimmer.
+   
+   Animating background-position repaints the element every frame, and
+   skeletons are on screen at exactly the moment the device is busiest —
+   parsing a response and building the real view. That's the worst possible
+   time to be asking for a repaint per frame, per placeholder, and a list of
+   them multiplies it.
+   
+   Same effect, composited: the base stays a flat colour, and a gradient
+   overlay slides across on transform alone. */
 @keyframes nx-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
 }
 .skeleton {
+  position: relative;
+  overflow: hidden;
   border-radius: var(--r-md);
-  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%, var(--surface) 63%);
-  background-size: 400% 100%;
+  background: var(--surface);
+}
+.skeleton::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, var(--surface-2), transparent);
   animation: nx-shimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; }
 }
 
 /* Count-up pulse (applied for one beat when a number finishes animating) */
@@ -36,14 +66,29 @@
 .count-pulse { display: inline-block; animation: nx-count-pulse 0.35s var(--ease-out); }
 
 /* Glow pulse — used on the live-tracking driver dot / active states */
+/* Was an animated box-shadow, which repaints the element on the main thread
+   every single frame — and this runs forever, on the "live" dot that sits on
+   screen the whole time a trip is active. Same visual, done as a scaled
+   pseudo-element: transform and opacity only, so it runs on the compositor
+   and costs nothing per frame. */
 @keyframes nx-glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(35, 214, 138, 0.32); }
-  50% { box-shadow: 0 0 0 10px rgba(35, 214, 138, 0); }
+  0%   { transform: scale(1);   opacity: 0.32; }
+  100% { transform: scale(2.4); opacity: 0; }
 }
 .pulse-dot {
+  position: relative;
   width: 14px; height: 14px; border-radius: 50%;
   background: var(--accent);
+}
+/* The ring is the pseudo-element, so the dot itself stays put and only the
+   halo is animated. */
+.pulse-dot::after {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: var(--accent);
   animation: nx-glow-pulse 1.8s ease-out infinite;
+  pointer-events: none;
 }
 
 /* Success ring — trip/delivery completed, KYC approved, etc. */
@@ -84,7 +129,7 @@
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 45%, rgba(35, 214, 138, 0.12), transparent 60%),
+    radial-gradient(circle at 50% 45%, rgba(124, 58, 237, 0.12), transparent 60%),
     repeating-linear-gradient(0deg, rgba(14,29,22,0.05) 0, rgba(14,29,22,0.05) 1px, transparent 1px, transparent 32px),
     repeating-linear-gradient(90deg, rgba(14,29,22,0.05) 0, rgba(14,29,22,0.05) 1px, transparent 1px, transparent 32px),
     var(--bg-elevated);
@@ -95,7 +140,7 @@
 }
 .radar-sweep {
   position: absolute; inset: -20%;
-  background: conic-gradient(from 0deg, rgba(35, 214, 138, 0.18), transparent 25%);
+  background: conic-gradient(from 0deg, rgba(124, 58, 237, 0.18), transparent 25%);
   animation: nx-radar-sweep 4s linear infinite;
   opacity: 0.5;
 }

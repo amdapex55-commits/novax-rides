@@ -117,7 +117,7 @@
       transparent 9deg 28deg,rgba(255,255,255,.32) 29deg 30deg,transparent 31deg 60deg);
     -webkit-mask:radial-gradient(circle,transparent 34%,#000 36%,#000 62%,transparent 64%);
     mask:radial-gradient(circle,transparent 34%,#000 36%,#000 62%,transparent 64%);
-    opacity:0;animation:nxs-rays 2.6s cubic-bezier(.2,.7,.3,1) forwards}
+    opacity:0;animation:nxs-rays 1.1s cubic-bezier(.2,.7,.3,1) forwards}
   @keyframes nxs-rays{0%{opacity:0;transform:scale(.55) rotate(-40deg)}
     40%{opacity:.85}100%{opacity:.28;transform:scale(1) rotate(18deg)}}
 
@@ -132,19 +132,19 @@
   /* The bolt draws itself, then fills. dasharray comfortably exceeds the path
      length so the stroke starts fully hidden. */
   #nxSplash .nxs-bolt{stroke-dasharray:240;stroke-dashoffset:240;fill-opacity:0;
-    animation:nxs-draw .8s ease-out .12s forwards,nxs-fill .36s ease-out .78s forwards}
+    animation:nxs-draw .34s ease-out .04s forwards,nxs-fill .2s ease-out .32s forwards}
   @keyframes nxs-draw{to{stroke-dashoffset:0}}
   @keyframes nxs-fill{to{fill-opacity:1}}
 
   #nxSplash .nxs-words{position:absolute;top:calc(50% + 74px);text-align:center;width:100%}
   #nxSplash .nxs-mark{display:block;font-family:Sora,Inter,system-ui,sans-serif;
     font-size:17px;font-weight:800;letter-spacing:.22em;color:#fff;opacity:0;
-    animation:nxs-in .45s ease-out .85s forwards}
+    animation:nxs-in .26s ease-out .3s forwards}
   /* The tagline. Gold, because it is the thing we want remembered. */
   #nxSplash .nxs-tag{display:block;margin-top:9px;font-family:Sora,Inter,system-ui,sans-serif;
     font-size:clamp(19px,5.6vw,25px);font-weight:800;letter-spacing:-.01em;
     color:#fbbf24;opacity:0;transform:translateY(7px);
-    animation:nxs-in .5s cubic-bezier(.16,1,.3,1) 1.12s forwards}
+    animation:nxs-in .3s cubic-bezier(.16,1,.3,1) .42s forwards}
   @keyframes nxs-in{to{opacity:1;transform:none}}
 
   /* Vestibular safety: no draw, no sweep, no scale — just the finished frame. */

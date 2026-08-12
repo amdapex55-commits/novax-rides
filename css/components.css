@@ -97,13 +97,13 @@
 }
 .glow-card {
   position: relative;
-  background: linear-gradient(160deg, rgba(35, 214, 138, 0.07), var(--glass-bg) 55%);
+  background: linear-gradient(160deg, rgba(124, 58, 237, 0.07), var(--glass-bg) 55%);
   border-radius: var(--r-lg);
   padding: var(--sp-5);
-  border: 1px solid rgba(35, 214, 138, 0.28);
+  border: 1px solid rgba(124, 58, 237, 0.28);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  box-shadow: 0 0 0 1px rgba(35, 214, 138, 0.06), var(--accent-glow), var(--glass-highlight);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.06), var(--accent-glow), var(--glass-highlight);
   transition: transform var(--dur-fast) var(--ease-bounce), box-shadow var(--dur-fast);
 }
 .glow-card:active { transform: scale(0.985); }
@@ -132,7 +132,7 @@
 .input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(35, 214, 138, 0.15);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
 }
 .input::placeholder { color: var(--text-muted); }
 textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resize: none; }
@@ -148,7 +148,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   border-radius: var(--r-sm);
   color: var(--text-primary);
 }
-.otp-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(35, 214, 138, 0.15); }
+.otp-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15); }
 
 /* ---------- Header ---------- */
 .topbar {
@@ -190,7 +190,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 }
 .nav-item svg { width: 22px; height: 22px; transition: transform var(--dur-fast) var(--ease-bounce); }
 .nav-item:active { transform: scale(0.9); }
-.nav-item.active { color: var(--accent); background: rgba(35, 214, 138, 0.1); }
+.nav-item.active { color: var(--accent); background: rgba(124, 58, 237, 0.1); }
 .nav-item.active svg { transform: translateY(-1px); }
 
 /* ---------- List items / rows ---------- */
@@ -226,7 +226,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 .badge-success { background: rgba(46, 230, 166, 0.12); color: var(--success); }
 .badge-warning { background: rgba(255, 181, 71, 0.12); color: var(--warning); }
 .badge-error { background: rgba(255, 84, 112, 0.12); color: var(--error); }
-.badge-accent { background: rgba(35, 214, 138, 0.12); color: var(--accent); }
+.badge-accent { background: rgba(124, 58, 237, 0.12); color: var(--accent); }
 
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
@@ -240,7 +240,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   transition: all var(--dur-fast);
 }
 .chip.selected {
-  background: rgba(35, 214, 138, 0.1);
+  background: rgba(124, 58, 237, 0.1);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -283,7 +283,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 }
 .option-card.selected {
   border-color: var(--accent);
-  background: linear-gradient(135deg, rgba(35, 214, 138, 0.1), rgba(255, 182, 72, 0.1));
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(255, 182, 72, 0.1));
   box-shadow: var(--accent-glow), var(--glass-highlight);
   transform: scale(1.01);
 }
@@ -488,7 +488,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   box-shadow: var(--glass-highlight);
   transition: transform var(--dur-fast) var(--ease-bounce), border-color var(--dur-fast);
 }
-.restaurant-card:active { transform: scale(0.98); border-color: rgba(35, 214, 138, 0.3); }
+.restaurant-card:active { transform: scale(0.98); border-color: rgba(124, 58, 237, 0.3); }
 .restaurant-card-thumb {
   width: 64px; height: 64px; flex: none;
   border-radius: var(--r-md);
@@ -544,12 +544,25 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 }
 /* Live driver position — pulses so it reads as "moving/live", not a static pin. */
 .nx-driver-marker {
+  position: relative;
   width: 22px; height: 22px;
   border-radius: 50%;
   background: var(--accent);
   border: 3px solid #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+/* Halo on a pseudo-element rather than the marker itself. This one matters
+   most: it's on screen for an entire trip AND the marker is being moved every
+   few seconds, so a per-frame repaint here fights the position animation on
+   exactly the screen the customer stares at. */
+.nx-driver-marker::after {
+  content: "";
+  position: absolute; inset: -3px;
+  border-radius: 50%;
+  background: var(--accent);
   animation: nx-glow-pulse 1.8s ease-out infinite;
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* ============================================================
@@ -691,6 +704,9 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
    ============================================================ */
 
 .pos-order {
+  /* Needed so .is-new::before can position its pulsing border. */
+  position: relative;
+  overflow: hidden;
   border-radius: var(--r-lg);
   border: 1px solid var(--surface-border);
   border-left: 5px solid var(--surface-3);
@@ -701,13 +717,22 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 .pos-order.is-new {
   border-left-color: var(--error);
   background: rgba(225, 29, 72, 0.04);
+}
+/* Pulse the left border only, not the row. */
+.pos-order.is-new::before {
+  content: "";
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px; background: var(--error);
   animation: nx-pos-attention 1.6s ease-in-out infinite;
 }
 .pos-order.is-preparing { border-left-color: var(--warning); }
 .pos-order.is-ready { border-left-color: var(--accent); }
+/* Was an animated box-shadow on a whole list row, which repaints the row and
+   its text every frame, forever, for every new order on screen. Opacity on a
+   border colour is the same signal for free. */
 @keyframes nx-pos-attention {
-  0%, 100% { box-shadow: var(--shadow-sm); }
-  50% { box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.10); }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.72; }
 }
 .pos-order-head {
   display: flex; justify-content: space-between; align-items: flex-start;
