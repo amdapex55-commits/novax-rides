@@ -142,3 +142,55 @@ link it in the declaration form.
 - [ ] Background location video recorded and linked
 - [ ] Ship **Android first.** The market here is overwhelmingly Android and
       Apple's review is slower and stricter.
+
+---
+
+## Android build state (2026-08-13)
+
+`android/` is now generated and gitignored. `scripts/select-app.js` rewrites
+`AndroidManifest.xml` on every build, so permissions follow whichever app you
+built — this is the part that is easy to get wrong and expensive to undo.
+
+| Build | Permissions | Why |
+|---|---|---|
+| customer | INTERNET, ACCESS_NETWORK_STATE, COARSE, FINE | Foreground pin only. **No background location** — adding it means a Play background-location declaration and a policy review for a capability this build never uses, which is a common rejection. |
+| driver | the above + BACKGROUND_LOCATION, FOREGROUND_SERVICE, FOREGROUND_SERVICE_LOCATION, POST_NOTIFICATIONS | Tracked through a whole shift with the screen off. Without these, position updates stop the moment the phone locks. |
+| merchant / ops | INTERNET, ACCESS_NETWORK_STATE | A kitchen tablet and a dispatch desk never need a position. |
+
+To build one:
+
+```bash
+npm run cap:sync:driver && npx cap open android
+```
+
+### What still cannot be done from this machine
+
+There is **no JDK and no Android SDK installed here**, so no AAB was produced.
+`npx cap add android` only scaffolds the Gradle project; compiling needs
+Android Studio. Everything below is yours to do on a machine with it:
+
+1. Install Android Studio (brings its own JDK and SDK).
+2. `npm run cap:sync:customer` → `npx cap open android` → Build → Generate
+   Signed Bundle → **create a keystore and back it up somewhere you will not
+   lose it.** Losing it means you can never update that listing again; the
+   only remedy is publishing a new app under a new package name.
+3. Repeat for `cap:sync:driver` — separate keystore is fine, separate listing
+   is required (different appId: `com.novago.app` vs `com.novago.driver`).
+4. Set `targetSdk` per Google's current floor. Capacitor 6 ships API 34;
+   check `android/variables.gradle` against the requirement in force on your
+   submission date and raise it if needed.
+5. `minSdk` 23–24 is the right call for this market — it covers the Tecno /
+   Infinix / Realme hardware most Karachi riders carry.
+
+### Blocking items that are decisions, not code
+
+- Play Console account ($25, government ID, two-step verification).
+- **Closed testing: 12–20 real testers for 14 consecutive days** before a
+  personal account gets production access. This is the long pole. Start it the
+  day the first AAB builds, not after everything else is polished.
+- Store listing copy and graphics (feature graphic 1024×500, 8 screenshots).
+  Screenshots can be captured from the deployed web app on a phone-sized
+  viewport — the UI is identical.
+- Support contacts in `js/support.config.js` and `COMPANY` in
+  `js/launch.config.js`. The app currently logs 5 launch blockers on every
+  boot because of these; they appear in Terms, Privacy and both agreements.
