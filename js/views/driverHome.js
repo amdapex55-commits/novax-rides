@@ -492,6 +492,14 @@ export function renderTripProgress(root) {
         <p class="text-sm"><span class="text-muted text-xs">Pickup</span><br/>${esc(state.pickup?.label || "Pickup point")}</p>
         <p class="text-sm mt-2"><span class="text-muted text-xs">Drop-off</span><br/>${esc(state.dropoff?.label || "Destination")}</p>
       </div>
+      <!-- Calling the passenger is how a rider actually finds a Karachi
+           address. It's a full-width primary action, above Message, because
+           it is the thing they reach for while stopped at the gate. -->
+      ${trip?.rider?.phone ? `
+        <a id="callRiderBtn" class="btn btn-primary btn-block mb-2"
+           href="tel:${esc(trip.rider.phone)}">
+          ${icon("phone", 18)} Call ${esc((trip.rider.name || "passenger").split(" ")[0])}
+        </a>` : ""}
       <div class="flex gap-2 mb-3">
         <button id="chatBtn" class="btn btn-secondary" style="flex:1;">${icon("chat", 18)} Message</button>
         <button id="supportBtn" class="btn btn-secondary" style="flex:1;">${icon("bolt", 18)} Support</button>
@@ -499,6 +507,10 @@ export function renderTripProgress(root) {
       <button id="actionBtn" class="btn btn-primary btn-block" style="height:56px;">${step.btn}</button>
     `;
 
+    body.querySelector("#callRiderBtn")?.addEventListener("click", () => {
+      haptic.medium();
+      track("driver_called_customer", { tripId });
+    });
     body.querySelector("#chatBtn").addEventListener("click", () => {
       state.chatContext = { contextType: "TRIP", contextId: tripId, otherPartyLabel: trip?.rider?.name || "Rider" };
       navigate("/chat-thread");

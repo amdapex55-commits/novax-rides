@@ -31,9 +31,24 @@ export const SERVICES = {
   // "coming soon" screen they can register interest on — which gives you a
   // waiting list instead of a dead end, and tells you which service to turn
   // on next based on real demand rather than a guess.
+  // Parcels and errands are LIVE. Both ride the same bike, the same rider and
+  // the same matching pool as a passenger trip — what differs is what the
+  // rider carries and who pays at the far end.
+  //
+  // What each one adds operationally, so nobody is surprised by it:
+  //   PARCEL  — the recipient pays cash on delivery. The driver's wallet is
+  //     debited that amount and the sender is credited it, so the driver never
+  //     rides back to the shop. Between drop-off and settlement the driver is
+  //     holding your customer's money.
+  //   ERRAND  — the driver fronts their OWN cash at the shop and is repaid at
+  //     the door. Capped at Rs 2,000 so nobody is asked to lay out more than
+  //     they carry.
+  parcel: { live: true,  label: "Parcel",  eta: null },
+  errand: { live: true,  label: "Errands", eta: null },
+
+  // Food stays parked: it needs restaurants onboarded and a kitchen actually
+  // accepting orders — a supply problem the other two don't have.
   food:   { live: false, label: "Food",   eta: "Coming soon" },
-  parcel: { live: false, label: "Parcel", eta: "Coming soon" },
-  errand: { live: false, label: "Errands", eta: "Coming soon" },
 };
 
 /** Vehicle types a customer can actually book. Bike only for the pilot:

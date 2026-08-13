@@ -5,6 +5,8 @@ import { icon } from "../icons.js";
 import { toast, confettiBurst } from "../ui.js";
 import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
+import { savePlace, listSavedPlaces } from "../savedPlaces.js";
+import { haptic } from "../haptics.js";
 
 const STATUS_COPY = {
   REQUESTED: "Looking for a driver...",
@@ -144,10 +146,50 @@ export function renderRateTrip(root) {
       <div class="flex gap-2 mb-8" id="stars">
         ${Array.from({ length: 5 }).map((_, i) => `<button data-star="${i + 1}" style="color:${i < 5 ? "var(--warning)" : "var(--surface-border)"};">${icon("star", 36)}</button>`).join("")}
       </div>
-      <button id="submitBtn" class="btn btn-primary btn-block">Submit Rating</button>
+      <!-- Offer to save the destination, here and nowhere else. This is the
+           one moment we know the address was real: a rider actually took them
+           there. Asking at booking time would be asking someone to configure
+           the app before they've used it. -->
+      <div class="nx-save-place" id="savePlacePrompt" hidden>
+        <span style="color:var(--text-muted);">${icon("location", 18)}</span>
+        <span class="text-xs" style="flex:1;min-width:0;">
+          Save <strong id="savePlaceLabel"></strong> for next time?
+        </span>
+        <span class="nx-save-place-actions">
+          <button data-save="home">Home</button>
+          <button data-save="work">Work</button>
+        </span>
+      </div>
+
+      <button id="submitBtn" class="btn btn-primary btn-block mt-4">Submit Rating</button>
       <button id="skipBtn" class="btn btn-ghost btn-block mt-2">Skip</button>
     </div>
   `;
+  /* Only offer to save a destination we actually have, and only if it isn't
+     saved already — otherwise a regular commuter is asked the same question
+     after every single trip. */
+  const dropoff = state.dropoff;
+  const prompt = root.querySelector("#savePlacePrompt");
+  if (dropoff?.lat != null && dropoff?.label) {
+    const already = listSavedPlaces().some(
+      (pl) => pl.lat === dropoff.lat && pl.lng === dropoff.lng,
+    );
+    if (!already) {
+      prompt.hidden = false;
+      root.querySelector("#savePlaceLabel").textContent = dropoff.label;
+      prompt.querySelectorAll("[data-save]").forEach((b) =>
+        b.addEventListener("click", () => {
+          haptic.light();
+          savePlace(b.dataset.save, dropoff);
+          track("place_saved", { kind: b.dataset.save });
+          prompt.innerHTML = `<span class="text-xs" style="color:var(--success);font-weight:800;">
+            ${icon("check-circle", 16)} Saved as ${b.dataset.save === "home" ? "Home" : "Work"}
+          </span>`;
+        }),
+      );
+    }
+  }
+
   const stars = Array.from(root.querySelectorAll("#stars button"));
   function paint() {
     stars.forEach((s, i) => { s.style.color = i < score ? "var(--warning)" : "var(--surface-border)"; });

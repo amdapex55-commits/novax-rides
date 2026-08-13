@@ -193,7 +193,14 @@ export const api = {
   arriveTrip: (id) => request(`/trips/${id}/arrive`, { method: "POST" }),
   startTrip: (id) => request(`/trips/${id}/start`, { method: "POST" }),
   completeTrip: (id) => request(`/trips/${id}/complete`, { method: "POST" }),
-  cancelTrip: (id) => request(`/trips/${id}/cancel`, { method: "POST" }),
+  // reason is optional on the wire so an older cached bundle can still
+  // cancel — nobody should be trapped in a booking because their app is a
+  // version behind.
+  cancelTrip: (id, reason, note) =>
+    request(`/trips/${id}/cancel`, {
+      method: "POST",
+      ...(reason ? { body: { reason, ...(note ? { note } : {}) } } : {}),
+    }),
   rateTrip: (id, score, comment) => request(`/trips/${id}/rate`, { method: "POST", body: { score, comment } }),
   getTrip: (id) => request(`/trips/${id}`),
   listMyTrips: () => request("/trips"),

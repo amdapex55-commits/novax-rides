@@ -8,11 +8,26 @@ import { navigate } from "../router.js";
 import { resolveRoute, geocode, getCurrentCoords, createSuggester } from "../geocode.js";
 import { createMap, mapSkeleton } from "../map.js";
 import { getRoute, routeSummary } from "../routing.js";
+import { VEHICLE_TYPES } from "../launch.config.js";
+import { listSavedPlaces, touchPlace, PLACE_META } from "../savedPlaces.js";
+import { haptic } from "../haptics.js";
+
+/* TABS ARE DERIVED, NOT HARDCODED.
+   The Taxi tab was a live path to a booking the platform cannot fulfil: it
+   offered car tiers from Rs 450 while VEHICLE_TYPES is bike-only and the
+   backend's LaunchPolicyService rejects any non-BIKE trip. A customer could
+   pick a tier, set pickup and drop-off, and be refused at the last step —
+   the worst possible place to find out.
+
+   Now a tab only exists if we can actually serve it. Food keeps its tab while
+   parked because its screens route to coming-soon and the tap is a real
+   demand signal; Taxi has no such screen, so it goes entirely. */
+const CAN_BOOK_CAR = VEHICLE_TYPES.includes("CAR");
 
 const TABS = [
   { key: "FOOD", label: "Food", icon: "utensils" },
   { key: "BIKE", label: "Bike", icon: "bike" },
-  { key: "TAXI", label: "Taxi", icon: "taxi" },
+  ...(CAN_BOOK_CAR ? [{ key: "TAXI", label: "Taxi", icon: "taxi" }] : []),
 ];
 
 export function renderHome(root) {
@@ -33,7 +48,7 @@ export function renderHome(root) {
       ${isGuest ? `
       <div class="card mb-4 flex items-center gap-3" id="signInCard" style="cursor:pointer;">
         <div class="list-row-icon" style="background:rgba(255, 182, 72, 0.14); color:var(--accent-2);">${icon("bolt", 18)}</div>
-        <div style="flex:1;"><p class="font-bold text-sm">Sign in</p><p class="text-secondary text-xs">Just a phone number + code — only needed to book</p></div>
+        <div style="flex:1;"><p class="font-bold text-sm">Sign in</p><p class="text-secondary text-xs">Takes a minute — only needed to book</p></div>
         ${icon("chevronRight", 18)}
       </div>` : ""}
 
@@ -54,6 +69,10 @@ export function renderHome(root) {
   let cleanupPanel = null;
 
   function setTab(key, { animate = true } = {}) {
+    // A previously-saved tab (state.homeTab) can name one that no longer
+    // exists — Taxi, after cars were switched off. Fall back rather than
+    // leaving the indicator at -1 and the panel blank.
+    if (!TABS.some((tb) => tb.key === key)) key = "BIKE";
     active = key;
     state.homeTab = key;
     const idx = TABS.findIndex((t) => t.key === key);
@@ -97,6 +116,11 @@ function renderBikeTab(panel, isGuest) {
       </div>
     </div>
 
+    <!-- Saved places: one tap to somewhere you go constantly, instead of
+         retyping a Karachi address every booking. Hidden until something is
+         saved, so a new customer never meets an empty rail. -->
+    <div class="nx-places mb-4" id="savedPlaces" hidden></div>
+
     <div class="flex gap-3 mb-6">
       <button id="rideBtn" class="option-card selected" style="flex:1; flex-direction:column; align-items:flex-start; gap:8px;">
         ${icon("bike", 22)}
@@ -134,6 +158,44 @@ function renderBikeTab(panel, isGuest) {
 
     </div>
   `;
+
+  (function paintSavedPlaces() {
+    const rail = panel.querySelector("#savedPlaces");
+    if (!rail) return;
+    const places = listSavedPlaces();
+    if (places.length === 0) return;
+
+    rail.hidden = false;
+    rail.innerHTML = places
+      .map((pl, i) => {
+        const meta = PLACE_META[pl.kind] || PLACE_META.other;
+        const title = pl.kind === "other" ? pl.label : meta.label;
+        return `
+          <button class="nx-place" data-place="${i}">
+            <span class="nx-place-icon">${icon(meta.icon, 16)}</span>
+            <span class="nx-place-text">
+              <span class="nx-place-title">${esc(title)}</span>
+              ${pl.kind === "other" ? "" : `<span class="nx-place-sub">${esc(pl.label)}</span>`}
+            </span>
+          </button>`;
+      })
+      .join("");
+
+    rail.querySelectorAll("[data-place]").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        const pl = places[Number(btn.dataset.place)];
+        if (!pl) return;
+        haptic.light();
+        touchPlace(pl.lat, pl.lng);
+        // The destination is the only thing the next screen exists to
+        // collect, and we already have it.
+        state.selectedVehicle = "BIKE";
+        state.dropoff = { label: pl.label, lat: pl.lat, lng: pl.lng };
+        track("saved_place_used", { kind: pl.kind });
+        navigate("/set-locations");
+      }),
+    );
+  })();
 
   panel.querySelector("#whereToCard").addEventListener("click", () => { state.selectedVehicle = "BIKE"; navigate("/set-locations"); });
   const rideBtn = panel.querySelector("#rideBtn");

@@ -24,6 +24,8 @@ import { track } from "../analytics.js";
 import { createMap } from "../map.js";
 import { getPickupFix, reverseGeocode } from "../geocode.js";
 import { SERVICES, GPS, HOURS, isOpenNow, ZONE, inZone, PRICING } from "../launch.config.js";
+import { listSavedPlaces, touchPlace, PLACE_META } from "../savedPlaces.js";
+import { haptic } from "../haptics.js";
 
 const SOON = [
   { key: "food",   icon: "utensils", label: "Food",    sub: "Restaurants near you" },
@@ -73,6 +75,12 @@ export function renderBikeHome(root) {
           <span class="nx-whereto-text">Enter your destination</span>
           <span class="nx-whereto-go">${icon("arrow-forward", 17)}</span>
         </button>
+
+        <!-- SAVED PLACES. One tap to a destination people go to constantly,
+             instead of retyping a Karachi address every single booking. Only
+             rendered once something is saved, so a new customer never sees an
+             empty rail asking them to configure the app before using it. -->
+        <div class="nx-places" id="savedPlaces" hidden></div>
 
         <!-- Pickup status. This line is the GPS accuracy gate made visible:
              the customer always knows whether we actually know where they
@@ -249,6 +257,50 @@ export function renderBikeHome(root) {
     state.selectedVehicle = "BIKE";
     navigate("/set-locations");
   });
+
+  /* ------------------------------------------------------ Saved places --- */
+
+  function paintSavedPlaces() {
+    const rail = $("#savedPlaces");
+    if (!rail) return;
+    const places = listSavedPlaces();
+    if (places.length === 0) { rail.hidden = true; rail.innerHTML = ""; return; }
+
+    rail.hidden = false;
+    rail.innerHTML = places
+      .map((p, i) => {
+        const meta = PLACE_META[p.kind] || PLACE_META.other;
+        // Home/Work show their name; a saved "other" shows its address,
+        // because "Saved" three times over tells you nothing.
+        const title = p.kind === "other" ? p.label : meta.label;
+        return `
+          <button class="nx-place" data-place="${i}">
+            <span class="nx-place-icon">${icon(meta.icon, 16)}</span>
+            <span class="nx-place-text">
+              <span class="nx-place-title">${esc(title)}</span>
+              ${p.kind === "other" ? "" : `<span class="nx-place-sub">${esc(p.label)}</span>`}
+            </span>
+          </button>`;
+      })
+      .join("");
+
+    rail.querySelectorAll("[data-place]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!open) { toast(HOURS.closedMessage, true); return; }
+        const place = places[Number(btn.dataset.place)];
+        if (!place) return;
+        haptic.light();
+        touchPlace(place.lat, place.lng);
+        // Straight to the fare screen: the destination is the only thing
+        // /set-locations exists to collect, and we already have it.
+        state.selectedVehicle = "BIKE";
+        state.dropoff = { label: place.label, lat: place.lat, lng: place.lng };
+        track("saved_place_used", { kind: place.kind });
+        navigate("/set-locations");
+      });
+    });
+  }
+  paintSavedPlaces();
 
   /* -------------------------------------------------------------- Boot --- */
 

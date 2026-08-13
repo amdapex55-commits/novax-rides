@@ -14,6 +14,7 @@ import { createMap } from "../map.js";
 import { track } from "../analytics.js";
 import { renderTripStatus } from "../tripCopy.js";
 import { haptic } from "../haptics.js";
+import { reportHandled } from "../errors.js";
 
 // Badge labels stay English — a status chip is scanned, not read, and mixing
 // scripts in a 2-word badge is harder to parse, not friendlier. The warm
@@ -81,6 +82,16 @@ export function renderRideTracking(root) {
             plate: trip.driverProfile?.vehiclePlate,
           })}
         </div>
+        <!-- CALL IS THE PRIMARY ACTION, not one of three equal buttons.
+             Karachi addresses are spoken, not written — "neeli building ke
+             saamne", "gate ke paas". A rider in traffic will not read a chat
+             thread, and the pickup that fails is the one where nobody could
+             just ask. Message and Share stay, one rank down. -->
+        ${trip?.driver?.phone ? `
+          <a id="callBtn" class="btn btn-primary btn-block mb-2"
+             href="tel:${esc(trip.driver.phone)}">
+            ${icon("phone", 18)} Call ${esc((trip.driver.name || "your rider").split(" ")[0])}
+          </a>` : ""}
         <div class="flex gap-2 mb-3">
           <button id="chatBtn" class="btn btn-secondary" style="flex:1;">${icon("chat", 18)} Message</button>
           <button id="shareBtn" class="btn btn-secondary" style="flex:1;">${icon("send", 18)} Share ride</button>
@@ -105,26 +116,87 @@ export function renderRideTracking(root) {
       ${cancellable ? `<button id="cancelBtn" class="btn btn-danger btn-block">Cancel trip</button>` : ""}
     `);
 
+    node.querySelector("#callBtn")?.addEventListener("click", () => {
+      haptic.medium();
+      track("customer_called_driver", { tripId });
+    });
     node.querySelector("#chatBtn")?.addEventListener("click", () => {
       state.chatContext = { contextType: "TRIP", contextId: tripId, otherPartyLabel: trip?.driver?.name || "Your driver" };
       navigate("/chat-thread");
     });
     node.querySelector("#supportBtn")?.addEventListener("click", () => navigate("/support"));
     node.querySelector("#shareBtn")?.addEventListener("click", shareRide);
-    node.querySelector("#cancelBtn")?.addEventListener("click", async (e) => {
-      const btn = e.currentTarget;
-      btn.disabled = true;
-      try {
-        await api.cancelTrip(tripId);
-        track("ride_cancelled", { tripId, status: currentStatus });
-        state.activeTripId = null;
-        toast("Trip cancelled");
-        navigate("/home");
-      } catch (err) {
-        toast(err.message || "Couldn't cancel", true);
-        btn.disabled = false;
-      }
-    });
+    node.querySelector("#cancelBtn")?.addEventListener("click", () => askWhyThenCancel());
+  }
+
+  /* WHY, not just whether.
+     A bare cancel count tells you the rate moved and nothing about what to do.
+     The two cases that most need separating look identical without this: a
+     rider demanding more than the quoted fare, and a customer who mis-pinned
+     their pickup. The first ends a rider relationship; the second is a bug in
+     our GPS gate. Fixed options rather than a text box, because free text
+     produces "cancel", "1" and nothing you can group by. */
+  const CANCEL_REASONS = [
+    ["DRIVER_ASKED_MORE", "Rider asked for more than the fare"],
+    ["LONG_WAIT", "Waiting too long"],
+    ["DRIVER_TOO_FAR", "Rider is too far away"],
+    ["WRONG_PICKUP", "Pickup location is wrong"],
+    ["CHANGED_MIND", "I changed my mind"],
+    ["BOOKED_BY_MISTAKE", "Booked by mistake"],
+  ];
+
+  function askWhyThenCancel() {
+    const sheet = document.createElement("div");
+    sheet.className = "nx-reason-sheet";
+    sheet.innerHTML = `
+      <div class="nx-reason-card" role="dialog" aria-modal="true" aria-label="Why are you cancelling?">
+        <div class="nx-sheet-grab"></div>
+        <h3 class="nx-reason-title">Why are you cancelling?</h3>
+        <p class="nx-reason-sub">It helps us fix what went wrong. No cancellation fee.</p>
+        ${CANCEL_REASONS.map(
+          ([code, label]) => `<button class="nx-reason-opt" data-reason="${code}">${label}</button>`,
+        ).join("")}
+        <button class="nx-reason-opt" data-reason="OTHER">Something else</button>
+        <button class="nx-reason-back" data-reason="">Keep my trip</button>
+      </div>`;
+    document.body.appendChild(sheet);
+
+    const close = () => sheet.remove();
+    // Tapping the backdrop keeps the trip — the safer of the two outcomes.
+    sheet.addEventListener("click", (e) => { if (e.target === sheet) close(); });
+
+    sheet.querySelectorAll("[data-reason]").forEach((b) =>
+      b.addEventListener("click", async () => {
+        const reason = b.dataset.reason;
+        if (!reason) return close();
+
+        // One free-text follow-up, only where the detail changes what ops does.
+        let note;
+        if (reason === "DRIVER_ASKED_MORE" || reason === "OTHER") {
+          note = window.prompt(
+            reason === "DRIVER_ASKED_MORE"
+              ? "How much did they ask for? This goes to the ops team."
+              : "What happened?",
+          ) || undefined;
+        }
+
+        sheet.querySelectorAll("button").forEach((x) => { x.disabled = true; });
+        b.innerHTML = `<span class="spinner"></span>`;
+        try {
+          await api.cancelTrip(tripId, reason, note);
+          haptic.warning();
+          track("ride_cancelled", { tripId, status: currentStatus, reason });
+          state.activeTripId = null;
+          close();
+          toast("Trip cancelled");
+          navigate("/home");
+        } catch (err) {
+          reportHandled(err, "cancelTrip", { reason });
+          close();
+          toast(err.message || "Couldn't cancel", true);
+        }
+      }),
+    );
   }
 
   async function shareRide() {
