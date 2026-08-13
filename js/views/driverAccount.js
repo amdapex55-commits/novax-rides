@@ -288,12 +288,16 @@ export function renderDriverNotifications(root) {
         root.querySelector("#notifList").innerHTML = `<div class="empty-state"><div class="icon">${icon("bell", 32)}</div><p>No notifications yet</p></div>`;
         return;
       }
+      /* esc() ON EVERY FIELD — title and body were interpolated raw. See the
+         same note on the customer copy in riderExtras.js: notification bodies
+         carry text that people typed, and this runs with the driver's token
+         in localStorage. */
       root.querySelector("#notifList").innerHTML = items.map((n, i) => `
-        <div class="list-row stagger-item" style="animation-delay:${i * 40}ms;" data-id="${n.id}">
+        <div class="list-row stagger-item" style="animation-delay:${i * 40}ms;" data-id="${esc(n.id)}">
           <div class="list-row-icon">${icon("bell", 18)}</div>
           <div class="flex-col" style="flex:1;">
-            <p class="font-bold text-sm">${n.title}${n.read ? "" : ` <span class="badge badge-accent">New</span>`}</p>
-            <p class="text-secondary text-xs mt-1">${n.body}</p>
+            <p class="font-bold text-sm">${esc(n.title)}${n.read ? "" : ` <span class="badge badge-accent">New</span>`}</p>
+            <p class="text-secondary text-xs mt-1" dir="auto">${esc(n.body)}</p>
             <p class="text-xs text-muted mt-1">${fmtDate(n.createdAt)}</p>
           </div>
         </div>`).join("");

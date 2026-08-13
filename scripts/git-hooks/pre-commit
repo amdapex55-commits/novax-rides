@@ -1,0 +1,72 @@
+#!/bin/sh
+# Nova Go — block secrets from being committed.
+#
+# WHY: js/map-token.js is gitignored, but ignore rules only protect the file
+# they name. A token pasted into config.js, an HTML file, a README example or
+# a new file nobody thought to ignore is committed like any other line — and a
+# Mapbox public token in a public repo is billable by anyone who finds it.
+# Git history is forever; rotating the token is the only real remedy, and you
+# only know to rotate it if something told you.
+#
+# Install:  npm run hooks:install
+#
+# This checks the STAGED patch, not the working tree, so it sees exactly what
+# is about to be written to history.
+
+fail=0
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+# Added lines only (leading "+"), so an existing line being moved is not
+# re-reported forever.
+added=$(git diff --cached -U0 --diff-filter=ACM | grep '^+' | grep -v '^+++')
+
+check() {
+  pattern="$1"
+  label="$2"
+  # -e is required, not optional: the private-key pattern begins with "-",
+  # which grep otherwise parses as a flag and then aborts with a usage error
+  # — silently skipping that check while the commit still looked "blocked"
+  # because an earlier pattern happened to match.
+  hits=$(printf '%s\n' "$added" | grep -nE -e "$pattern" | head -5)
+  if [ -n "$hits" ]; then
+    echo ""
+    echo "  BLOCKED: $label"
+    printf '%s\n' "$hits" | sed 's/^/    /'
+    fail=1
+  fi
+}
+
+# pk.* is a Mapbox public token; sk.* is a SECRET one and is far worse.
+check 'pk\.eyJ[A-Za-z0-9._-]{20,}' "Mapbox public token (pk.*)"
+check 'sk\.eyJ[A-Za-z0-9._-]{20,}' "Mapbox SECRET token (sk.*)"
+check 'AIza[0-9A-Za-z_-]{35}'      "Google API key"
+check 'xox[baprs]-[0-9A-Za-z-]{10,}' "Slack token"
+check '-----BEGIN [A-Z ]*PRIVATE KEY-----' "Private key"
+# Long random assignments to obviously-secret names.
+check '(SECRET|PASSWORD|PRIVATE_KEY|ACCESS_TOKEN|API_KEY)[[:space:]]*[:=][[:space:]]*["'"'"'][A-Za-z0-9._-]{24,}' "Hardcoded secret"
+
+# The specific file that must never be tracked, even if .gitignore changes.
+if printf '%s\n' "$staged" | grep -qx 'js/map-token.js'; then
+  echo ""
+  echo "  BLOCKED: js/map-token.js is staged. It holds the real Mapbox token"
+  echo "           and is supplied at deploy time by the GitHub Action."
+  fail=1
+fi
+
+# The editor/OS cruft that has been committed here before.
+if printf '%s\n' "$staged" | grep -qE '(^|/)\.![0-9]+!|(^|/)\.DS_Store$'; then
+  echo ""
+  echo "  BLOCKED: an editor/OS temp file is staged."
+  printf '%s\n' "$staged" | grep -E '(^|/)\.![0-9]+!|(^|/)\.DS_Store$' | sed 's/^/    /'
+  fail=1
+fi
+
+if [ "$fail" -ne 0 ]; then
+  echo ""
+  echo "  Commit refused. Remove the secret, then commit again."
+  echo "  If this is a false positive:  git commit --no-verify"
+  echo ""
+  exit 1
+fi
+exit 0

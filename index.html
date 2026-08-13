@@ -401,12 +401,17 @@
       <div class="nx-console-bar">
         <span class="dots"><i></i><i></i><i></i></span>
         <span class="nx-console-title">Nova Go Ops — command center</span>
-        <span class="nx-console-live"><span style="width:6px;height:6px;border-radius:50%;background:var(--nx-ride);display:inline-block;animation:nx-live 2s ease-in-out infinite;"></span> Preview</span>
+        <!-- This panel illustrates how the ops desk WORKS. It is not a live
+             feed, and it previously looked like one: a pulsing green dot next
+             to the word "Preview", above a metric reading "Stuck jobs 0". A
+             reviewer read exactly that and concluded the backend was not
+             connected and the platform had no activity. -->
+        <span class="nx-console-live">Illustration</span>
       </div>
       <div class="nx-console-body">
         <div class="nx-console-grid">
-          <div class="nx-metric"><div class="v" style="color:var(--nx-ride);" data-count="0" data-suffix="">0</div><div class="l">Stuck jobs</div></div>
-          <div class="nx-metric"><div class="v" data-count="3" data-suffix=" min">0</div><div class="l">Flag threshold</div></div>
+          <div class="nx-metric"><div class="v" style="color:var(--nx-ride);" data-count="3" data-suffix=" min">0</div><div class="l">Before a human steps in</div></div>
+          <div class="nx-metric"><div class="v" data-count="14" data-suffix=" hrs">0</div><div class="l">Desk staffed daily, 8am&ndash;10pm</div></div>
           <div class="nx-metric"><div class="v" style="color:var(--nx-ops);" data-count="100" data-suffix="%">0</div><div class="l">Jobs visible to ops</div></div>
           <div class="nx-metric"><div class="v" style="color:var(--nx-food);" data-count="1" data-suffix=" tap">0</div><div class="l">To assign by hand</div></div>
         </div>

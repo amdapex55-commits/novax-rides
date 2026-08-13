@@ -35,6 +35,14 @@
      two localStorage keys here costs under a millisecond and removes it.
      The real modules (js/theme.js, js/i18n.js) own everything after boot;
      this only has to agree with them on the storage keys and attributes. */
+
+  /* CLICKJACKING. Nothing in Nova Go should render inside someone else's
+     frame — the thing an attacker would overlay is a booking confirmation or
+     a cancel button, both of which cost a real person money in a cash market.
+     The proper control is a frame-ancestors response header, which a static
+     host cannot send (see scripts/deploy-public.js); this is the fallback
+     that works without one. */
+  if (window.top !== window.self) { try { window.top.location = window.self.location; } catch (e) { document.documentElement.style.display = "none"; } }
   (function () {
     try {
       var app = window.NOVAGO_APP;

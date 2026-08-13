@@ -19,7 +19,7 @@
 // deleted on activate, so a stale shell can't survive a release.
 // Bump on any change to SHELL — an old cache serving the previous asset list
 // is how a user ends up on a half-updated app.
-const VERSION = "novago-v18";
+const VERSION = "novago-v19";
 const SHELL_CACHE = `${VERSION}-shell`;
 
 // Only same-origin, non-critical-path assets. Deliberately small: a service
@@ -28,6 +28,12 @@ const SHELL_CACHE = `${VERSION}-shell`;
 const SHELL = [
   "./customer.html",
   "./driver.html",
+  // Merchant and ops were missing from the shell, so both opened to the
+  // browser's offline page rather than ours. Ops matters most: a dispatcher
+  // whose office wifi drops mid-shift should still get the app frame and a
+  // "you are offline" state, not a dinosaur.
+  "./merchant.html",
+  "./ops.html",
   "./offline.html",
   "./css/tokens.css",
   "./css/base.css",

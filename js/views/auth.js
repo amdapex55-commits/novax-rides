@@ -528,9 +528,55 @@ export function renderOtp(root) {
     }
   }, 1000);
 
+  /* RESEND HAS A COOLDOWN, AND THE BUTTON SHOWS IT.
+
+     The backend rate-limits the OTP endpoints, and that is the control that
+     actually matters — but it is the LAST line, not the only one. Without a
+     client cooldown an impatient customer taps "Resend" five times in three
+     seconds, gets a 429 they did not deliberately cause, and reads it as the
+     app being broken. Every one of those taps is also a real SMS we are
+     billed for, sent to somebody who already has the code.
+
+     Latched with a flag as well as `disabled`, because disabled alone loses
+     to a double-tap landing inside the same frame. */
+  const RESEND_COOLDOWN_S = 30;
+  let resending = false;
+  let cooldownTimer = null;
+
+  function startResendCooldown() {
+    let left = RESEND_COOLDOWN_S;
+    const label = resendBtn.textContent;
+    resendBtn.disabled = true;
+    resendBtn.textContent = `Resend in ${left}s`;
+    clearInterval(cooldownTimer);
+    cooldownTimer = setInterval(() => {
+      left -= 1;
+      if (left <= 0) {
+        clearInterval(cooldownTimer);
+        cooldownTimer = null;
+        resendBtn.disabled = false;
+        resendBtn.textContent = label;
+        return;
+      }
+      resendBtn.textContent = `Resend in ${left}s`;
+    }, 1000);
+  }
+
   resendBtn.addEventListener("click", async () => {
-    if (resendBtn.disabled) return;
-    try { await api.requestOtp(phone); toast("Code resent"); } catch (e) { toast(e.message, true); }
+    if (resendBtn.disabled || resending) return;
+    resending = true;
+    // Cooldown starts on the TAP, not on the response. Starting it after the
+    // await leaves a window on a slow connection — exactly when someone taps
+    // again — during which the button is still live.
+    startResendCooldown();
+    try {
+      await api.requestOtp(phone);
+      toast("Code resent");
+    } catch (e) {
+      toast(e.message, true);
+    } finally {
+      resending = false;
+    }
   });
 
   const verifyBtn = root.querySelector("#verifyBtn");
@@ -587,6 +633,9 @@ export function renderOtp(root) {
 
   return () => {
     clearInterval(tick);
+    // The resend cooldown ticks on its own timer and would otherwise keep
+    // firing against a button that has been removed from the DOM.
+    clearInterval(cooldownTimer);
     // Stop listening for the SMS if they leave the screen.
     otpAbort?.abort();
   };

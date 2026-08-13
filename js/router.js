@@ -66,6 +66,7 @@ export const ROUTES = {
   "/wallet": { view: () => import("./views/riderAccount.js"), fn: "renderWallet", auth: "guest", nav: true, tab: "wallet" },
   "/history": { view: () => import("./views/riderAccount.js"), fn: "renderTripHistory", auth: "guest", nav: true, tab: "history" },
   "/profile": { view: () => import("./views/riderAccount.js"), fn: "renderProfile", auth: "guest", nav: true, tab: "profile" },
+  "/alerts": { view: () => import("./views/riderExtras.js"), fn: "renderAlerts", auth: "RIDER", nav: false },
   "/settings": { view: () => import("./views/riderAccount.js"), fn: "renderSettings", auth: "RIDER", nav: false },
   "/loyalty": { view: () => import("./views/riderExtras.js"), fn: "renderLoyalty", auth: "guest", nav: false },
   "/refer": { view: () => import("./views/riderExtras.js"), fn: "renderRefer", auth: "guest", nav: false },
@@ -154,6 +155,51 @@ function roleHome(role) {
  * Rather than dumping them somewhere broken or silently logging them out,
  * say plainly which app they need.
  */
+/* Short URL -> the real first screen of that flow. Kept next to the router
+   rather than in appMode so it is obvious these are redirects, not routes:
+   nothing renders here, and the address bar ends up on the canonical path. */
+const ALIASES = {
+  "/parcel": "/parcel/service",
+  "/errand": "/errand/details",
+  "/errands": "/errand/details",
+  "/food": "/food/browse",
+  "/safety": "/legal/safety",
+  "/privacy": "/legal/privacy",
+  "/terms": "/legal/terms",
+  "/notifications": "/alerts",
+  "/account": "/profile",
+  "/ride-booking": "/ride",
+};
+
+function renderNotFound(container, path) {
+  container.innerHTML = `
+    <div class="page flex-col items-center text-center" style="min-height:100dvh; justify-content:center;">
+      <div style="width:72px;height:72px;border-radius:22px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+        <span style="font-size:30px;">🧭</span>
+      </div>
+      <h1 class="text-xl mb-2">Page not found</h1>
+      <p class="text-secondary mb-2">
+        There's nothing at <code style="direction:ltr;unicode-bidi:isolate;">${escapeForHtml(path)}</code>.
+      </p>
+      <p class="text-muted text-xs mb-6">
+        If you followed a link from somewhere, it may be out of date.
+      </p>
+      <button id="notFoundHome" class="btn btn-primary btn-block">Go to the home screen</button>
+    </div>
+  `;
+  container.querySelector("#notFoundHome").addEventListener("click", () => navigate(APP_CONFIG.home));
+}
+
+/* The router renders before ui.js is necessarily loaded on this path, so it
+   carries its own escape rather than importing one. The only untrusted thing
+   it ever prints is the URL the user arrived on — which is exactly the string
+   an attacker controls, so it is not optional. */
+function escapeForHtml(value) {
+  return String(value).replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+}
+
 function renderWrongApp(container, userRole) {
   const APP_FOR_ROLE = {
     RIDER: "Nova Go",
@@ -197,6 +243,14 @@ async function renderRoute(path) {
   // The view reads the token off location.hash itself.
   let route = ROUTES[path];
   if (!route && path.startsWith("/shared/")) route = ROUTES["/shared"];
+  /* SHORT FORMS PEOPLE ACTUALLY TYPE AND SHARE.
+     The real routes are the specific first step of each flow
+     (/parcel/service, /errand/details, /food/browse), which is right for the
+     app's own navigation but wrong for a human writing a link in WhatsApp or
+     an auditor probing the site — both reach for the bare noun. These used to
+     fall through to the silent home redirect below, so a shortened URL was
+     indistinguishable from a broken feature. */
+  if (!route && ALIASES[path]) { navigate(ALIASES[path]); return; }
   const container = document.getElementById("view-container");
   const nav = document.getElementById("bottom-nav");
 
@@ -223,7 +277,19 @@ async function renderRoute(path) {
     return;
   }
 
-  if (!route) { navigate(APP_CONFIG.home); return; }
+  /* A ROUTE THAT DOES NOT EXIST HAS TO SAY SO.
+     This used to be `navigate(APP_CONFIG.home)` — every unknown URL silently
+     became the home screen. That is worse than a 404 in a specific way: it is
+     indistinguishable from a feature that exists and is broken. An external
+     review concluded /parcel, /errand, /food and /safety were all "redirecting
+     to bike home", i.e. broken, when none of those paths existed and the real
+     ones were one segment longer. Swallowing the difference cost a day. */
+  if (!route) {
+    if (currentCleanup) { try { currentCleanup(); } catch { /* noop */ } currentCleanup = null; }
+    nav.classList.add("hidden");
+    renderNotFound(container, path);
+    return;
+  }
 
   // PARKED-SERVICE GUARD. Food, parcels and errands are built and tested but
   // switched off for the bike pilot (see js/launch.config.js). Their routes

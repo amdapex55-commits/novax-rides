@@ -7,7 +7,7 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, skeletonRows } from "../ui.js";
+import { toast, skeletonRows, esc, fmtDate } from "../ui.js";
 import { navigate } from "../router.js";
 
 function signInPrompt(title, body) {
@@ -188,4 +188,75 @@ export function renderBusiness(root) {
       btn.innerHTML = "Request Business Account";
     }
   });
+}
+
+/* ------------------------------------------------------- notifications ---
+
+   The customer app had no notifications screen at all. `getNotifications()`
+   has existed in api.js since the beginning and only the driver build ever
+   called it — so every notification row the backend wrote for a customer
+   (trip updates, support replies, ops messages) was stored and never shown
+   to anybody.
+
+   It is not push — there is no push infrastructure yet — so it is described
+   as a log of what happened, not as alerts that will reach you.           */
+
+export function renderAlerts(root) {
+  root.innerHTML = `
+    <div class="page nx-stagger">
+      <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
+      <h1 class="text-xl mb-1">Notifications</h1>
+      <p class="text-secondary text-sm mb-4">Trip updates and messages from Nova Go.</p>
+      <div id="alertList">${skeletonRows(3)}</div>
+    </div>
+  `;
+  root.querySelector("#backBtn").addEventListener("click", () => history.back());
+
+  const list = root.querySelector("#alertList");
+  api.getNotifications()
+    .then((items) => {
+      if (!root.isConnected) return;
+      if (!Array.isArray(items) || items.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">${icon("bell", 32)}</div>
+            <p class="font-bold" style="color:var(--text-primary);">Nothing yet</p>
+            <p class="text-sm mt-1">Updates about your trips will appear here.</p>
+          </div>`;
+        return;
+      }
+      /* esc() ON EVERY FIELD. Notification rows are written by the server,
+         but their content is not all first-party: a support reply, an ops
+         message and a trip note all originate as text somebody typed.
+         Anything reaching innerHTML from outside this file is treated as
+         hostile — the alternative is stored XSS running with this user's own
+         token sitting in localStorage. */
+      list.innerHTML = items
+        .map(
+          (n, i) => `
+        <div class="list-row stagger-item" style="animation-delay:${i * 40}ms;" data-id="${esc(n.id)}">
+          <div class="list-row-icon">${icon("bell", 18)}</div>
+          <div class="flex-col" style="flex:1;min-width:0;">
+            <p class="font-bold text-sm" dir="auto">${esc(n.title)}${n.read ? "" : ` <span class="badge badge-accent">New</span>`}</p>
+            <p class="text-secondary text-xs mt-1" dir="auto">${esc(n.body)}</p>
+            <p class="text-xs text-muted mt-1">${fmtDate(n.createdAt)}</p>
+          </div>
+        </div>`,
+        )
+        .join("");
+
+      list.querySelectorAll("[data-id]").forEach((row) =>
+        row.addEventListener("click", () => {
+          row.querySelector(".badge")?.remove();
+          api.markNotificationRead(row.dataset.id).catch(() => {
+            /* Not worth interrupting anyone over; the row simply comes back
+               unread next time. */
+          });
+        }),
+      );
+    })
+    .catch(() => {
+      if (!root.isConnected) return;
+      list.innerHTML = `<div class="empty-state"><p>Couldn't load notifications</p></div>`;
+    });
 }

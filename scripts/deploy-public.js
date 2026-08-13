@@ -17,6 +17,7 @@
  */
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const root = path.join(__dirname, "..");
 const out = path.join(root, "public");
@@ -83,6 +84,127 @@ for (const d of DIRS) {
   if (fs.existsSync(src)) copyDir(src, path.join(out, d));
 }
 
+/* ---------------------------------------------------------------- CSP ---
+
+   WHY THIS IS GENERATED RATHER THAN WRITTEN BY HAND
+
+   The app keeps everything it owns in localStorage — access token, refresh
+   token, the user object. That makes XSS the highest-value bug anyone could
+   find here: one injected script reads all three and the attacker is that
+   customer until the refresh token expires. A CSP is the layer that survives
+   an XSS we missed.
+
+   The obvious CSP allows 'unsafe-inline' for scripts, because each entry
+   point has two inline blocks (the app-mode + theme/language bootstrap, and
+   Sentry's loader). But 'unsafe-inline' in script-src disables almost exactly
+   the protection we are here for — an injected <script> is inline.
+
+   Those blocks cannot simply move to external files: the theme bootstrap has
+   to run before first paint to stop a dark-mode user seeing a white flash,
+   which is the whole reason it is inline.
+
+   So the hashes are computed at build time from the bytes being shipped, and
+   named in the policy. It cannot rot, because it is derived rather than
+   pasted.
+
+   Every source below is something the app genuinely fetches:
+     unpkg          Leaflet (js/map.js) and Three.js (landing)
+     cdn.socket.io  the realtime client
+     js.sentry-cdn  error reporting
+     Mapbox/Carto   map tiles
+     Nominatim/Photon  address search
+     OSRM           routing
+     Railway        our own API and websocket
+   Anything not listed cannot be reached — an injected script cannot post a
+   stolen token to an endpoint we never use. */
+
+const CSP_SOURCES = {
+  connect: [
+    "'self'",
+    /* Localhost is allowed on purpose so the EXACT bytes being shipped can be
+       smoke-tested against a local backend. It gives an attacker nothing: a
+       script that posts a stolen token to the victim's own machine has
+       exfiltrated it to nobody. Without this, testing the production build
+       means testing a different CSP than the one that ships. */
+    "http://localhost:3000",
+    "ws://localhost:3000",
+    "https://novax-backend-production-68af.up.railway.app",
+    "wss://novax-backend-production-68af.up.railway.app",
+    "https://api.mapbox.com",
+    "https://*.basemaps.cartocdn.com",
+    "https://nominatim.openstreetmap.org",
+    "https://photon.komoot.io",
+    "https://router.project-osrm.org",
+    "https://*.ingest.sentry.io",
+    "https://*.ingest.de.sentry.io",
+    "https://*.ingest.us.sentry.io",
+  ],
+  script: ["'self'", "https://unpkg.com", "https://cdn.socket.io", "https://js.sentry-cdn.com"],
+  /* style-src keeps 'unsafe-inline'. The app sets style="" attributes in
+     dozens of templates and removing them all is a separate piece of work.
+     An injected stylesheet is a far weaker primitive than an injected script,
+     and script-src is where the real control is. */
+  style: ["'self'", "https://unpkg.com", "'unsafe-inline'"],
+  img: ["'self'", "data:", "blob:", "https://api.mapbox.com", "https://*.basemaps.cartocdn.com", "https://*.tile.openstreetmap.org"],
+  font: ["'self'", "data:"],
+  media: ["'self'", "blob:", "https://novax-backend-production-68af.up.railway.app"],
+};
+
+function inlineScriptHashes(html) {
+  const hashes = [];
+  // Only blocks with no src — those are the ones a hash has to cover.
+  const re = /<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    const body = m[1];
+    if (!body.trim()) continue;
+    hashes.push(`'sha256-${crypto.createHash("sha256").update(body, "utf8").digest("base64")}'`);
+  }
+  return hashes;
+}
+
+function buildCsp(scriptHashes) {
+  return [
+    "default-src 'self'",
+    `script-src ${[...CSP_SOURCES.script, ...scriptHashes].join(" ")}`,
+    `style-src ${CSP_SOURCES.style.join(" ")}`,
+    `img-src ${CSP_SOURCES.img.join(" ")}`,
+    `font-src ${CSP_SOURCES.font.join(" ")}`,
+    `connect-src ${CSP_SOURCES.connect.join(" ")}`,
+    `media-src ${CSP_SOURCES.media.join(" ")}`,
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "object-src 'none'",
+    /* frame-ancestors is deliberately ABSENT: it is ignored in a <meta>
+       element (the browser logs an error and drops it) and GitHub Pages
+       cannot set a response header. Leaving it in produced a console error on
+       every page load that looked like a real CSP failure and masked actual
+       ones. Clickjacking cover comes from the frame-buster in each entry
+       point's inline bootstrap instead. When this moves behind Cloudflare or
+       any real origin, set the header there. */
+    "form-action 'self'",
+    "base-uri 'self'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
+
+let cspApplied = 0;
+for (const f of FILES) {
+  if (!f.endsWith(".html")) continue;
+  const dest = path.join(out, f);
+  if (!fs.existsSync(dest)) continue;
+  let html = fs.readFileSync(dest, "utf8");
+  if (/http-equiv="Content-Security-Policy"/i.test(html)) continue;
+  const csp = buildCsp(inlineScriptHashes(html));
+  const tag = `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
+  const at = html.search(/<head[^>]*>/i);
+  if (at === -1) continue;
+  const insertAt = html.indexOf(">", at) + 1;
+  html = html.slice(0, insertAt) + "\n" + tag + "\n" + html.slice(insertAt);
+  fs.writeFileSync(dest, html);
+  cspApplied++;
+}
+
 // Fail loudly if an excluded file somehow made it in.
 for (const bad of EXCLUDED) {
   if (fs.existsSync(path.join(out, bad))) {
@@ -95,6 +217,7 @@ console.log(`
   Public build ready → public/
 
     ${copied} files + ${DIRS.length} asset directories
+    CSP injected into ${cspApplied} HTML files (inline scripts hashed)
     EXCLUDED: ${EXCLUDED.join(", ")}
 
   Push public/ to GitHub Pages. Ops ships too — it's browser-only\n  and gated on the ADMIN role.

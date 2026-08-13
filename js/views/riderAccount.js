@@ -279,6 +279,12 @@ export function renderProfile(root) {
       </div>
 
       <div class="flex-col gap-1">
+        <!-- The customer app collected notifications and had nowhere to read
+             them; getNotifications() was only ever called by the driver. -->
+        <div class="list-row" style="cursor:pointer;" data-nav="/alerts">
+          <div class="list-row-icon">${icon("bell", 18)}</div>
+          <p style="flex:1;" class="font-bold text-sm">Notifications</p>${icon("chevronRight", 18)}
+        </div>
         <div class="list-row" style="cursor:pointer;" data-nav="/settings">
           <div class="list-row-icon">${icon("settings", 18)}</div>
           <p style="flex:1;" class="font-bold text-sm">Settings</p>${icon("chevronRight", 18)}
