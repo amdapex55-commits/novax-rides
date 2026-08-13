@@ -8,7 +8,7 @@ import { navigate } from "../router.js";
 import { resolveRoute, geocode, getCurrentCoords, createSuggester } from "../geocode.js";
 import { createMap, mapSkeleton } from "../map.js";
 import { getRoute, routeSummary } from "../routing.js";
-import { VEHICLE_TYPES } from "../launch.config.js";
+import { VEHICLE_TYPES, SERVICES } from "../launch.config.js";
 import { listSavedPlaces, touchPlace, PLACE_META } from "../savedPlaces.js";
 import { haptic } from "../haptics.js";
 
@@ -261,6 +261,40 @@ function renderTaxiTab(panel) {
 // ---------------- Food tab (restaurant marketplace teaser) ----------------
 
 function renderFoodTab(panel, isGuest) {
+  /* FOOD IS PARKED, AND THIS PANEL HAS TO SAY SO.
+     The routes below (/food/browse) are guarded and redirect to coming-soon,
+     but the guard only fires once someone taps. Until then this panel was
+     rendering "Order food — browse restaurants near you", an "Open Now"
+     heading and a live restaurant fetch: a customer reads that as a working
+     service, taps, and gets bounced. Advertising something we can't serve and
+     catching it one screen later is worse than not advertising it.
+
+     Still a tab rather than hidden, deliberately: the tap is a real demand
+     signal telling you whether food is worth switching on next, and a waiting
+     list is more useful than a dead end. */
+  if (!SERVICES.food.live) {
+    panel.innerHTML = `
+      <div class="nx-soon-panel">
+        <div class="nx-soon-art">${icon("utensils", 28)}</div>
+        <h3 class="nx-soon-title">Food is coming</h3>
+        <p class="nx-soon-copy">
+          We're signing up kitchens across Karachi now. Rides, parcels and
+          errands are live today &mdash; food switches on once there are enough
+          restaurants for it to actually be useful.
+        </p>
+        <button id="notifyFoodBtn" class="btn btn-secondary">${icon("bell", 16)} Tell me when it's live</button>
+      </div>`;
+
+    panel.querySelector("#notifyFoodBtn").addEventListener("click", (e) => {
+      // No endpoint behind this yet, so it does not pretend to have signed
+      // anyone up — it records the intent for you and says something true.
+      track("food_interest", {});
+      e.currentTarget.disabled = true;
+      e.currentTarget.innerHTML = `${icon("check-circle", 16)} We'll let you know`;
+    });
+    return () => {};
+  }
+
   panel.innerHTML = `
     <div class="glow-card mb-4" id="foodSearchCard" style="cursor:pointer;">
       <div class="flex items-center gap-3">
