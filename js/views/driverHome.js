@@ -184,6 +184,16 @@ export function renderDriverHome(root) {
        A real fix needs a native foreground service (see BACKGROUND-GPS.md).
        Until that ships, the honest thing is to DETECT it and say so, rather
        than let a rider sit there believing they're earning.               */
+    /* GOING ONLINE IS THE MOMENT A SHIFT STARTS.
+       It used to be a switch flipping colour — the same feedback as toggling
+       a setting. For a rider this is the point they start earning, and every
+       app that competes for their time (Bykea, Careem's captain app, even
+       Foodpanda's rider app) marks it. A short haptic and a line that says
+       what is now true costs nothing and makes the app feel like it is on
+       their side rather than merely recording them. */
+    haptic.success();
+    toast("You're live — looking for jobs near you");
+
     lastFixAt = Date.now();
     staleTimer = setInterval(() => {
       if (!online) return;
@@ -487,7 +497,7 @@ export function renderTripProgress(root) {
         <span class="badge badge-accent">Trip in progress</span>
         <span class="ref-id">#${esc(tripId.slice(0, 8).toUpperCase())}</span>
       </div>
-      ${trip?.rider ? trustCard({ name: trip.rider.name || "Rider", subtitle: "Your passenger", rating: trip.rider.rating }) : ""}
+      ${trip?.rider ? trustCard({ name: trip.rider.name || "Rider", subtitle: "Your passenger", rating: trip.rider.rating, compact: true }) : ""}
       <div class="flex-col gap-1 mb-3" style="border-top:1px solid var(--surface-border); padding-top:var(--sp-3);">
         <p class="text-sm"><span class="text-muted text-xs">Pickup</span><br/>${esc(state.pickup?.label || "Pickup point")}</p>
         <p class="text-sm mt-2"><span class="text-muted text-xs">Drop-off</span><br/>${esc(state.dropoff?.label || "Destination")}</p>

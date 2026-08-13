@@ -171,3 +171,82 @@
   src: url(../fonts/sora-var-latin.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+
+/* ===================================================================
+   URDU
+   ===================================================================
+
+   System faces only — no webfont. Both mobile platforms ship an Urdu face
+   (iOS has Noto Nastaliq Urdu, Android has Noto Naskh Arabic), and adding a
+   third downloaded font to an app already flagged as too heavy for the
+   budget Android hardware this market runs on would be self-defeating. See
+   the header of js/i18n.js.
+
+   Nastaliq is a sloping script with far more vertical travel than Latin, so
+   it needs more line-height and a slightly larger size to stay legible at
+   the same optical weight. Setting those here rather than per-component
+   means nothing has to know it is rendering Urdu. */
+.nx-urdu {
+  --font: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Noto Naskh Arabic",
+          "Urdu Typesetting", "Segoe UI", Tahoma, sans-serif;
+  --font-display: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq",
+                  "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif;
+}
+.nx-urdu body { line-height: 2; font-size: 15.5px; }
+.nx-urdu h1, .nx-urdu h2, .nx-urdu h3, .nx-urdu h4 {
+  line-height: 1.9;
+  /* Latin display type is tightened by -0.02em; Nastaliq letterforms join,
+     so negative tracking collapses them into each other. */
+  letter-spacing: normal;
+}
+
+/* Anything numeric stays Latin and left-to-right inside an Urdu sentence:
+   fares, distances, plates, phone numbers, trip refs. Urdu in Pakistan uses
+   Western digits, and mirroring a phone number makes it undiallable. */
+.nx-urdu .nx-num,
+.nx-urdu .plate-chip,
+.nx-urdu .ref-id,
+.nx-urdu .nx-fare-amount,
+.nx-urdu input[type="tel"],
+.nx-urdu input[inputmode="numeric"] {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* Directional icons must point the way the reader is travelling. A chevron
+   still aimed right in an RTL layout points back the way they came, which
+   reads as "go back" — the exact opposite of what the row does. Mirrored
+   with a transform because the icons are inline SVG from js/icons.js and
+   there is no RTL variant of each path. */
+[dir="rtl"] .icon-flip,
+[dir="rtl"] [data-icon="chevronRight"],
+[dir="rtl"] [data-icon="arrow-forward"],
+[dir="rtl"] [data-icon="chevronLeft"],
+[dir="rtl"] [data-icon="arrow-back"] {
+  transform: scaleX(-1);
+}
+
+/* Progress and range fills are drawn left-to-right by hand, so they need the
+   explicit flip that logical properties give the rest of the layout. */
+[dir="rtl"] .nx-progress-fill,
+[dir="rtl"] .nx-loyalty-fill {
+  transform-origin: right center;
+}
+
+/* Nastaliq is a SLOPING script: each word steps down as it is written, so a
+   line needs roughly twice the vertical room Latin does. The .nx-urdu rules
+   above cover body copy and real headings, but the app's loudest type is set
+   on <p> elements with tight display line-heights — at 1.15 the tail of the
+   last word is clipped by the line below it. These are the same sizes, given
+   the room the script actually needs. */
+.nx-urdu .nx-promo-title { line-height: 1.75; font-size: 17px; }
+.nx-urdu .nx-promo-sub   { line-height: 1.85; }
+.nx-urdu .nx-where-title { line-height: 1.7; }
+.nx-urdu .nx-where-sub   { line-height: 1.8; white-space: normal; }
+.nx-urdu .nx-tile-label  { line-height: 1.65; }
+.nx-urdu .nx-driver-name { line-height: 1.6; }
+.nx-urdu .nx-fare-amount { line-height: 1.25; }
+/* The promo card is a fixed height in the rail; Urdu at these line-heights
+   needs a little more before the CTA is pushed against the edge. */
+.nx-urdu .nx-promo { padding-block: 18px 20px; }

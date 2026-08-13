@@ -18,6 +18,31 @@ const LOCAL = {
 };
 
 function resolve() {
+  /* DEV ESCAPE HATCH, LOCALHOST ONLY.
+     window.NOVAGO_API_BASE has to be set before this module evaluates, which
+     means editing HTML — and it does not survive the reload you need in order
+     to test a signed-in screen. This reads the same override from
+     localStorage so a local build can be pointed at the deployed backend from
+     the console and stay there.
+
+     Hard-gated on the hostname actually being localhost. It is not a
+     mechanism a page on novago.pk can be talked into using, which matters:
+     an attacker-settable API base is an attacker-readable access token. */
+  if (typeof location !== "undefined" &&
+      (location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+    try {
+      const override = localStorage.getItem("novago.dev.apiBase");
+      if (override) {
+        return {
+          API_BASE_URL: override,
+          SOCKET_URL: localStorage.getItem("novago.dev.socketUrl") || override.replace(/\/api\/v1\/?$/, ""),
+        };
+      }
+    } catch {
+      /* storage blocked — fall through to the normal resolution */
+    }
+  }
+
   // Explicit override always wins.
   if (typeof window !== "undefined" && window.NOVAGO_API_BASE) {
     return {

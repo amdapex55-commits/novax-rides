@@ -280,7 +280,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   transition: border-color var(--dur-fast), background var(--dur-fast), box-shadow var(--dur-fast), transform var(--dur-fast) var(--ease-bounce);
-  text-align: left;
+  text-align: start;
   width: 100%;
 }
 .option-card.selected {
@@ -737,13 +737,13 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   overflow: hidden;
   border-radius: var(--r-lg);
   border: 1px solid var(--surface-border);
-  border-left: 5px solid var(--surface-3);
+  border-inline-start: 5px solid var(--surface-3);
   background: var(--bg);
   padding: var(--sp-4);
   box-shadow: var(--shadow-sm);
 }
 .pos-order.is-new {
-  border-left-color: var(--error);
+  border-inline-start-color: var(--error);
   background: rgba(225, 29, 72, 0.04);
 }
 /* Pulse the left border only, not the row. */
@@ -753,8 +753,8 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   width: 4px; background: var(--error);
   animation: nx-pos-attention 1.6s ease-in-out infinite;
 }
-.pos-order.is-preparing { border-left-color: var(--warning); }
-.pos-order.is-ready { border-left-color: var(--accent); }
+.pos-order.is-preparing { border-inline-start-color: var(--warning); }
+.pos-order.is-ready { border-inline-start-color: var(--accent); }
 /* Was an animated box-shadow on a whole list row, which repaints the row and
    its text every frame, forever, for every new order on screen. Opacity on a
    border colour is the same signal for free. */

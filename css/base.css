@@ -106,9 +106,26 @@ img { max-width: 100%; display: block; }
   min-height: 0;
 }
 
+/* --page-pad is the app's single horizontal gutter, declared as a variable
+   rather than repeated as a literal because things OTHER than .page need to
+   agree with it — anything full-bleed (the promo rail) has to cancel exactly
+   this much padding, and a hardcoded -16px against a 14px gutter leaves the
+   card hanging 2px off the screen edge. Redefined, not re-declared, in the
+   breakpoints below. */
 .page {
-  padding: var(--sp-5) var(--sp-5) var(--sp-8);
-  padding-top: calc(var(--sp-5) + var(--safe-top));
+  padding: var(--page-pad) var(--page-pad) var(--sp-8);
+  padding-top: calc(var(--page-pad) + var(--safe-top));
+}
+
+/* Full-bleed rails: cancel the page gutter, then restore it as padding so the
+   first card still lines up with the text above it and the last one can
+   scroll clear of the edge. scroll-padding is the part that is easy to miss —
+   without it scroll-snap aligns the first card to the rail's border box and
+   silently eats the leading gutter. */
+.bleed-x {
+  margin-inline: calc(var(--page-pad) * -1);
+  padding-inline: var(--page-pad);
+  scroll-padding-inline: var(--page-pad);
 }
 
 .page-no-pad-top { padding-top: 0; }
@@ -127,6 +144,10 @@ img { max-width: 100%; display: block; }
 .gap-4 { gap: var(--sp-4); }
 .w-full { width: 100%; }
 .text-center { text-align: center; }
+/* Logical, so they mirror in Urdu rather than pinning content to the
+   physical right of a right-to-left layout. */
+.text-start { text-align: start; }
+.text-end { text-align: end; }
 .mt-2 { margin-top: var(--sp-2); }
 .mt-4 { margin-top: var(--sp-4); }
 .mt-6 { margin-top: var(--sp-6); }
@@ -150,7 +171,7 @@ img { max-width: 100%; display: block; }
 
 /* Responsive: below 380px (small phones) tighten spacing a touch */
 @media (max-width: 380px) {
-  .page { padding-left: var(--sp-4); padding-right: var(--sp-4); }
+  :root { --page-pad: var(--sp-4); }
 }
 
 /* Above phone width (desktop testing): give the column a frame so it reads
@@ -247,7 +268,7 @@ button.nx-text-action {
 
 /* Below this the layout is one column and every gutter has to earn its space. */
 @media (max-width: 400px) {
-  .page { padding-left: 14px; padding-right: 14px; }
+  :root { --page-pad: 14px; }
   .nx-field-row { grid-template-columns: 1fr; }
 }
 

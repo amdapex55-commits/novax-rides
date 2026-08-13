@@ -96,6 +96,9 @@
 
   /* Layout */
   --max-w: 480px; /* app is mobile-first; centers as a phone-width column on desktop */
+  /* The one horizontal gutter. Overridden per breakpoint in base.css; read by
+     .page and by anything that needs to bleed past it (.bleed-x). */
+  --page-pad: var(--sp-5);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
@@ -113,4 +116,159 @@
   --z-map-ui: 400;   /* above Leaflet's own panes (which top out around 400) */
   --z-sheet: 900;
   --z-toast: 1000;
+}
+
+/* ===================================================================
+   DARK THEME
+   ===================================================================
+
+   WHY THIS EXISTS
+
+   Two reasons, and the second is the one that matters.
+
+   The first is ordinary: most people run their phone dark, and an app that
+   ignores that reads as unfinished.
+
+   The second is the driver app. Drivers ride at night, and a full-white
+   screen at 11pm in Karachi traffic destroys night vision for several
+   seconds every time they check for a job. That is a safety problem, not a
+   preference — which is why the driver build defaults to dark (see
+   js/theme.js) while the customer build follows the system.
+
+   HOW IT'S WIRED
+
+   Three states, deliberately:
+     - no attribute      -> follow the OS (prefers-color-scheme)
+     - data-theme=light  -> forced light, OS ignored
+     - data-theme=dark   -> forced dark, OS ignored
+
+   The dark values are written twice, once per selector, rather than shared
+   via a nested custom property. Duplication is the cost of having the manual
+   toggle actually beat the OS in both directions; a single @media block
+   cannot do that.
+
+   THE ACCENT FLIPS ROLES
+
+   In light mode the accent is a deep violet carrying white text. Reusing it
+   on a dark background fails twice: #6d28d9 as body text on near-black is
+   about 3.4:1, and the button stops reading as raised. So dark mode uses the
+   Material-3 arrangement — a LIGHT violet fill with DARK ink on top:
+
+     accent  #a78bfa on bg #100d16 -> 8.2:1  (accent as text: passes AA)
+     ink     #1b1030 on accent      -> 8.9:1  (button label: passes AA)
+
+   Both directions pass, which is why --on-accent is a token and not white. */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #100d16;
+    --bg-elevated: #171320;
+    --surface: #1c1826;
+    --surface-2: #262032;
+    --surface-3: #322a41;
+    --surface-border: #2e2739;
+
+    --text-primary: #f5f3f8;
+    --text-secondary: #a79fb5;
+    --text-muted: #7c7389;
+
+    --accent: #a78bfa;
+    --accent-strong: #c4b5fd;
+    --accent-soft: rgba(167, 139, 250, 0.16);
+    --accent-2: #fbbf24;
+    --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+    --accent-gradient-3: linear-gradient(135deg, #7c3aed 0%, #a78bfa 55%, #c4b5fd 100%);
+    --accent-glow: 0 0 18px rgba(167, 139, 250, 0.28);
+    --accent-2-glow: 0 0 18px rgba(251, 191, 36, 0.26);
+    --on-accent: #1b1030;
+
+    --glass-bg: rgba(28, 24, 38, 0.72);
+    --glass-bg-strong: rgba(23, 19, 32, 0.94);
+    --glass-border: rgba(255, 255, 255, 0.09);
+    --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+    /* Semantic colours lighten too — #059669 on near-black is unreadable. */
+    --success: #34d399;
+    --warning: #fbbf24;
+    --error: #fb7185;
+
+    --brand-ride-soft: rgba(167, 139, 250, 0.14);
+    --brand-food-soft: rgba(251, 191, 36, 0.14);
+
+    /* Shadows do almost nothing on a dark ground — depth comes from the
+       lighter surface instead. Kept subtle so cards don't get muddy halos. */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #100d16;
+  --bg-elevated: #171320;
+  --surface: #1c1826;
+  --surface-2: #262032;
+  --surface-3: #322a41;
+  --surface-border: #2e2739;
+
+  --text-primary: #f5f3f8;
+  --text-secondary: #a79fb5;
+  --text-muted: #7c7389;
+
+  --accent: #a78bfa;
+  --accent-strong: #c4b5fd;
+  --accent-soft: rgba(167, 139, 250, 0.16);
+  --accent-2: #fbbf24;
+  --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+  --accent-gradient-3: linear-gradient(135deg, #7c3aed 0%, #a78bfa 55%, #c4b5fd 100%);
+  --accent-glow: 0 0 18px rgba(167, 139, 250, 0.28);
+  --accent-2-glow: 0 0 18px rgba(251, 191, 36, 0.26);
+  --on-accent: #1b1030;
+
+  --glass-bg: rgba(28, 24, 38, 0.72);
+  --glass-bg-strong: rgba(23, 19, 32, 0.94);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #fb7185;
+
+  --brand-ride-soft: rgba(167, 139, 250, 0.14);
+  --brand-food-soft: rgba(251, 191, 36, 0.14);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+/* Light mode's shadows were authored at dark-theme opacities (0.35–0.55 of
+   pure black), which on white produced grey smudges under every card rather
+   than lift. These are the same shapes at weights that actually read on a
+   white ground. */
+:root:not([data-theme="dark"]) {
+  --shadow-sm: 0 1px 3px rgba(22, 18, 31, 0.08), 0 1px 2px rgba(22, 18, 31, 0.04);
+  --shadow-md: 0 4px 16px rgba(22, 18, 31, 0.09), 0 2px 6px rgba(22, 18, 31, 0.05);
+  --shadow-lg: 0 12px 40px rgba(22, 18, 31, 0.13), 0 4px 12px rgba(22, 18, 31, 0.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Leaflet tiles are printed daylight photography; on a dark UI they glow like
+   a lightbox. Knocking brightness back and lifting contrast keeps the map
+   legible without it becoming the brightest object on a night screen. */
+:root[data-theme="dark"] .leaflet-tile,
+:root[data-theme="dark"] .mapboxgl-canvas {
+  filter: brightness(0.72) contrast(1.06) saturate(0.9);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .leaflet-tile,
+  :root:not([data-theme="light"]) .mapboxgl-canvas {
+    filter: brightness(0.72) contrast(1.06) saturate(0.9);
+  }
 }

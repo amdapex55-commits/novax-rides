@@ -4,6 +4,11 @@ import { icon } from "./icons.js";
 import { Token } from "./api.js";
 import { initRouter, navigate } from "./router.js";
 import { APP_CONFIG } from "./appMode.js";
+import { initTheme } from "./theme.js";
+import { initI18n, t } from "./i18n.js";
+import { initNet, isConnectivityError, showNetBanner } from "./net.js";
+import { flush, queueSize } from "./offlineQueue.js";
+import { api } from "./api.js";
 
 // The nav comes from the BUILD, not the logged-in role. Each app ships with
 // exactly one nav bar — the customer app has no concept of an "Earnings" tab
@@ -13,7 +18,7 @@ export function renderBottomNav() {
   const nav = document.getElementById("bottom-nav");
   nav.innerHTML = items
     .map(
-      (i) => `<a href="#${i.path}" class="nav-item" data-tab="${i.tab}">${icon(i.icon, 22)}<span>${i.label}</span></a>`
+      (i) => `<a href="#${i.path}" class="nav-item" data-tab="${i.tab}">${icon(i.icon, 22)}<span>${t(i.label)}</span></a>`
     )
     .join("");
 }
@@ -59,6 +64,12 @@ function dismissSplash() {
 }
 
 function boot() {
+  // Both are already applied by the inline block in the HTML head — this is
+  // what hands ownership to the modules (OS-change listener, language state)
+  // now that they have loaded. Re-applying the same value is a no-op.
+  initTheme();
+  initI18n();
+  initNet();
   renderShell();
   renderBottomNav();
   initRouter();
@@ -68,6 +79,20 @@ function boot() {
 }
 
 document.addEventListener("DOMContentLoaded", boot);
+
+/* Send anything parked while the connection was down. Fires on the way back
+   up and once at startup, because the app is frequently closed offline and
+   reopened somewhere with signal — which never produces an "online" event. */
+async function drainOutbox() {
+  if (queueSize() === 0) return;
+  const { sent, left } = await flush(api, isConnectivityError);
+  if (sent > 0) {
+    showNetBanner("back", `Sent ${sent} saved ${sent === 1 ? "change" : "changes"}`, { autoHideMs: 2600 });
+  }
+  if (left > 0) showNetBanner("queued", `${left} still waiting to send`, { autoHideMs: 3000 });
+}
+window.addEventListener("novago:online", drainOutbox);
+window.addEventListener("load", () => { setTimeout(drainOutbox, 1500); });
 
 // Service worker. Registered AFTER load so it never competes with the first
 // paint, and wrapped in a guard because it needs a secure context — it's

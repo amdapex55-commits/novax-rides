@@ -1,22 +1,60 @@
 // Nova Go Rides — driver earnings, profile, vehicle, notifications, incentives.
 import { api, Token } from "../api.js";
 import { icon } from "../icons.js";
-import { toast, fmtMoney, fmtDate, countUp, skeletonRows } from "../ui.js";
+import { toast, fmtMoney, fmtDate, countUp, skeletonRows, esc } from "../ui.js";
 
 export function renderEarnings(root) {
   root.innerHTML = `
     <div class="page nx-stagger">
-      <h1 class="text-xl mb-6">Earnings</h1>
-      <div class="glow-card mb-6 text-center" style="padding:32px 20px;">
-        <p class="text-secondary text-sm mb-2">Total Balance</p>
-        <h1 id="balanceText" style="font-size:34px;">Rs. 0.00</h1>
+      <h1 class="text-xl mb-4">Earnings</h1>
+
+      <!-- A DRIVER IS RUNNING A BUSINESS OFF THIS SCREEN.
+           It used to open on "Total Balance" — an accounting figure — followed
+           by a list of transactions. That is a bank statement, and it answers
+           a question nobody opens the app to ask. What a rider wants to know
+           at the end of a shift is whether today was a good day, and whether
+           this week is beating last week. So the week leads, the seven bars
+           make the shape of it readable at a glance, and the balance moves
+           down to where it belongs. -->
+      <div class="nx-earn-hero mb-4" id="earnHero">
+        <p style="font-size:11.5px; opacity:0.85; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;">This week</p>
+        <p class="nx-earn-amount" id="weekAmount">Rs. —</p>
+        <div id="weekDelta" style="margin-top:8px;"></div>
+        <div class="nx-bars" id="weekBars"></div>
       </div>
-      <h3 class="text-sm text-secondary mb-3" style="text-transform:uppercase; letter-spacing:0.04em;">Payout History</h3>
+
+      <div class="card mb-4 flex items-center justify-between">
+        <div>
+          <p class="text-secondary text-xs">Wallet balance</p>
+          <p class="font-bold" id="balanceText" style="font-size:20px;">Rs. 0.00</p>
+        </div>
+        <div class="text-end">
+          <p class="text-secondary text-xs">Jobs this week</p>
+          <p class="font-bold" id="jobsWeek" style="font-size:20px;">—</p>
+        </div>
+      </div>
+
+      <h3 class="nx-sec-title mb-3">Payout history</h3>
       <div id="historyList">${skeletonRows(4)}</div>
     </div>
   `;
   const balanceText = root.querySelector("#balanceText");
   const historyList = root.querySelector("#historyList");
+
+  api.getDriverEarnings()
+    .then((e) => {
+      if (!root.isConnected) return;
+      countUp(root.querySelector("#weekAmount"), Number(e.week || 0), { prefix: "Rs. " });
+      root.querySelector("#jobsWeek").textContent = e.jobsThisWeek ?? 0;
+      paintWeekBars(root.querySelector("#weekBars"), e);
+      paintWeekDelta(root.querySelector("#weekDelta"), e);
+    })
+    .catch(() => {
+      if (!root.isConnected) return;
+      root.querySelector("#weekAmount").textContent = fmtMoney(0);
+      root.querySelector("#weekDelta").innerHTML =
+        `<span class="nx-earn-delta">Couldn't load this week</span>`;
+    });
 
   api.getWalletBalance()
     .then((data) => countUp(balanceText, Number(data.balance || 0), { prefix: "Rs. ", decimals: 2 }))
@@ -39,6 +77,59 @@ export function renderEarnings(root) {
         </div>`).join("");
     })
     .catch(() => { historyList.innerHTML = `<div class="empty-state"><p>Couldn't load history</p></div>`; });
+}
+
+const DAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"];
+
+/* Seven bars, scaled to the driver's own best day rather than to a fixed
+   ceiling — the shape of the week is the information, and a Rs 900 day
+   should look full on a quiet week rather than like a stub against some
+   aspirational maximum. */
+function paintWeekBars(el, e) {
+  if (!el) return;
+  const daily = Array.isArray(e.daily) ? e.daily : [];
+  if (daily.length === 0) { el.remove(); return; }
+  const peak = Math.max(...daily.map((d) => d.amount), 1);
+  const todayIndex = Number.isInteger(e.todayIndex) ? e.todayIndex : -1;
+
+  el.innerHTML = daily
+    .map((d, i) => {
+      const pct = Math.round((d.amount / peak) * 100);
+      const isToday = i === todayIndex;
+      // Days that haven't happened yet get a flat track, not a zero bar —
+      // Thursday looking like a bad day on a Tuesday is just wrong.
+      const future = todayIndex >= 0 && i > todayIndex;
+      return `
+        <div class="nx-bar-col" title="${esc(d.date)}: Rs ${Math.round(d.amount)}">
+          <div class="nx-bar-track">
+            <div class="nx-bar${future ? "" : d.amount > 0 ? (isToday ? " is-today" : " has-value") : ""}"
+                 style="height:${future ? 3 : Math.max(3, pct)}%;"></div>
+          </div>
+          <span class="nx-bar-label" style="${isToday ? "color:var(--accent-2);font-weight:800;" : ""}">${DAY_INITIALS[i]}</span>
+        </div>`;
+    })
+    .join("");
+}
+
+/* Week-on-week, in the driver's terms. "Rs 1,240 ahead of last week" is the
+   sentence that decides whether they go out again tomorrow; a percentage is
+   not how anybody thinks about a day's takings. */
+function paintWeekDelta(el, e) {
+  if (!el) return;
+  const week = Number(e.week || 0);
+  const last = Number(e.lastWeek || 0);
+  if (last <= 0 && week <= 0) { el.innerHTML = ""; return; }
+  if (last <= 0) {
+    el.innerHTML = `<span class="nx-earn-delta">First week — keep going</span>`;
+    return;
+  }
+  const diff = Math.round(week - last);
+  const ahead = diff >= 0;
+  el.innerHTML = `
+    <span class="nx-earn-delta">
+      ${ahead ? "▲" : "▼"} Rs ${Math.abs(diff).toLocaleString("en-PK")}
+      ${ahead ? "ahead of" : "behind"} last week
+    </span>`;
 }
 
 export function renderDriverProfile(root) {
@@ -225,20 +316,56 @@ export function renderIncentives(root) {
 
   api.getIncentiveProgress()
     .then((p) => {
-      const pct = Math.min(100, Math.round((p.tripsThisWeek / p.target) * 100));
+      if (!root.isConnected) return;
+      /* A RING, NOT A BAR.
+         The bar this replaces measured a percentage, and a percentage is not
+         what the rider is tracking — they are counting trips to a single
+         milestone with money on the other side of it. A ring reads as
+         distance to a thing, holds the count in the middle where the eye
+         lands, and puts the bonus next to it rather than in a line of body
+         copy underneath. */
+      const target = Math.max(1, Number(p.target) || 1);
+      const done = Math.min(target, Number(p.tripsThisWeek) || 0);
+      const pct = done / target;
+      // r=40 -> circumference 251.3. Stroke-dashoffset counts the gap down
+      // as progress goes up, which is why it is (1 - pct).
+      const CIRC = 2 * Math.PI * 40;
+
       root.querySelector("#incentiveCard").innerHTML = `
         <div class="card mb-3">
-          <div class="flex justify-between items-center mb-2">
-            <p class="font-bold">Complete ${p.target} trips this week</p>
-            <span class="badge ${p.achieved ? "badge-success" : "badge-accent"}">${p.achieved ? "Achieved" : `${p.tripsThisWeek}/${p.target}`}</span>
+          <div class="flex items-center gap-4">
+            <div class="nx-ring-wrap">
+              <svg width="92" height="92" viewBox="0 0 92 92">
+                <circle class="nx-ring-bg" cx="46" cy="46" r="40" fill="none" stroke-width="9"/>
+                <circle class="nx-ring-fill" cx="46" cy="46" r="40" fill="none" stroke-width="9"
+                        stroke-dasharray="${CIRC.toFixed(1)}"
+                        stroke-dashoffset="${(CIRC * (1 - pct)).toFixed(1)}"/>
+              </svg>
+              <div class="nx-ring-text">${done}<span style="font-size:12px;opacity:0.6;">/${target}</span></div>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <p class="font-bold">Weekly bonus</p>
+              <p class="text-secondary text-sm" style="margin-top:2px;">
+                Complete ${target} trips this week
+              </p>
+              <p class="font-bold mt-2" style="font-size:22px; color:var(--accent);">
+                Rs. ${Number(p.bonusAmount || 0).toLocaleString("en-PK")}
+              </p>
+              <span class="badge ${p.achieved ? "badge-success" : "badge-accent"} mt-2">
+                ${p.achieved ? "Achieved" : `${p.remaining} to go`}
+              </span>
+            </div>
           </div>
-          <p class="text-secondary text-sm mb-3">Earn a Rs. ${p.bonusAmount.toLocaleString("en-PK")} bonus</p>
-          <div style="height:8px; border-radius:var(--r-full); background:var(--surface-2); overflow:hidden;">
-            <div style="height:100%; width:${pct}%; background:var(--accent-gradient); border-radius:var(--r-full);"></div>
-          </div>
-          <p class="text-xs text-muted mt-2">${p.achieved ? "Bonus paid out with your next payout cycle." : `${p.remaining} more trip${p.remaining === 1 ? "" : "s"} to go`}</p>
+          <p class="text-xs text-muted mt-3" style="border-top:1px solid var(--surface-border); padding-top:10px;">
+            ${p.achieved
+              ? "Bonus is paid with your next payout cycle."
+              : `${p.remaining} more trip${p.remaining === 1 ? "" : "s"} and the bonus is yours.`}
+          </p>
         </div>
       `;
     })
-    .catch(() => { root.querySelector("#incentiveCard").innerHTML = `<div class="empty-state"><p>Couldn't load incentive progress</p></div>`; });
+    .catch(() => {
+      if (!root.isConnected) return;
+      root.querySelector("#incentiveCard").innerHTML = `<div class="empty-state"><p>Couldn't load incentive progress</p></div>`;
+    });
 }

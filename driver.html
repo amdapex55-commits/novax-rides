@@ -21,11 +21,43 @@
 <link rel="stylesheet" href="css/components.css"/>
 <link rel="stylesheet" href="css/animations.css"/>
 <link rel="stylesheet" href="css/premium.css"/>
+<link rel="stylesheet" href="css/market.css"/>
 <script>
   // Which of the four Nova Go apps this page is. Read by js/appMode.js before
   // anything else boots — it decides the routes, the nav, the signup role and
   // the entire visible surface. See js/appMode.js for the full explanation.
   window.NOVAGO_APP = "driver";
+
+  /* THEME + LANGUAGE, BEFORE FIRST PAINT.
+     Inlined rather than imported because js/app.js is a deferred module: by
+     the time it runs the browser has already painted a white screen, so a
+     dark-mode user sees a flash of white on every single app open. Reading
+     two localStorage keys here costs under a millisecond and removes it.
+     The real modules (js/theme.js, js/i18n.js) own everything after boot;
+     this only has to agree with them on the storage keys and attributes. */
+  (function () {
+    try {
+      var app = window.NOVAGO_APP;
+      var mode = localStorage.getItem("novago.theme");
+      if (mode !== "light" && mode !== "dark" && mode !== "system") {
+        /* Drivers ride at night with the phone on the handlebars — see the
+           header of js/theme.js. */
+        mode = app === "driver" ? "dark" : "system";
+      }
+      if (mode !== "system") document.documentElement.setAttribute("data-theme", mode);
+      var dark = mode === "dark" || (mode === "system" &&
+        window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      var mt = document.querySelector('meta[name="theme-color"]:not([media])');
+      if (mt) mt.setAttribute("content", dark ? "#100d16" : "#ffffff");
+
+      var lang = localStorage.getItem("novago.lang");
+      if (lang !== "en" && lang !== "ur") lang = /^ur\b/i.test(navigator.language || "") ? "ur" : "en";
+      document.documentElement.setAttribute("lang", lang);
+      document.documentElement.setAttribute("dir", lang === "ur" ? "rtl" : "ltr");
+      if (lang === "ur") document.documentElement.classList.add("nx-urdu");
+    } catch (e) { /* storage blocked: light + English is a fine fallback */ }
+  })();
 </script>
 <!-- Sentry (error reporting).
      Loaded from Sentry's CDN and async, so it never blocks first paint. If it

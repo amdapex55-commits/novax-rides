@@ -7,6 +7,7 @@ import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
 import { savePlace, listSavedPlaces } from "../savedPlaces.js";
 import { haptic } from "../haptics.js";
+import { track } from "../analytics.js";
 
 const STATUS_COPY = {
   REQUESTED: "Looking for a driver...",
@@ -142,6 +143,21 @@ export function renderRateTrip(root) {
         ${icon("check-circle", 36)}
       </div>
       <h1 class="text-xl mb-2">Trip Completed</h1>
+
+      <!-- WHAT TO ACTUALLY HAND OVER.
+           This is a cash business and the payment happens ten seconds from
+           now, on a kerb, between two people who do not have change. The
+           customer knows the fare; what they do not know is whether to round
+           up, and asking "keep the change?" out loud is awkward enough that
+           most people either underpay the goodwill or overpay by accident.
+           Naming the round number turns it into a tap.
+
+           Nothing is charged here and nothing is sent to the server — there
+           is no card, and pretending to process a tip we cannot collect
+           would be worse than useless. This is advice about the notes in
+           their hand, which is exactly what the moment needs. -->
+      <div id="cashCard" class="mb-5" style="width:100%;" hidden></div>
+
       <p class="text-secondary mb-6">How was your ride?</p>
       <div class="flex gap-2 mb-8" id="stars">
         ${Array.from({ length: 5 }).map((_, i) => `<button data-star="${i + 1}" style="color:${i < 5 ? "var(--warning)" : "var(--surface-border)"};">${icon("star", 36)}</button>`).join("")}
@@ -190,6 +206,8 @@ export function renderRateTrip(root) {
     }
   }
 
+  paintCashCard(root.querySelector("#cashCard"), state.lastFare);
+
   const stars = Array.from(root.querySelectorAll("#stars button"));
   function paint() {
     stars.forEach((s, i) => { s.style.color = i < score ? "var(--warning)" : "var(--surface-border)"; });
@@ -212,4 +230,60 @@ export function renderRateTrip(root) {
     setTimeout(finish, 900);
   });
   root.querySelector("#skipBtn").addEventListener("click", finish);
+}
+
+
+/* ------------------------------------------------------------------ cash ---
+
+   Round-up amounts are the ones a real wallet can produce: the next 10, and
+   the next 50. Anything finer is not payable in notes, and anything larger
+   stops being a tip and starts being a second fare.
+
+   Shown only when we know the fare. A card that says "pay Rs 0" is worse
+   than no card. */
+function paintCashCard(el, fare) {
+  if (!el) return;
+  const amount = Math.ceil(Number(fare) || 0);
+  if (!amount) return;
+
+  const up10 = Math.ceil(amount / 10) * 10;
+  const up50 = Math.ceil(amount / 50) * 50;
+  // De-duplicate: a Rs 200 fare rounds to 200 both ways, and offering the
+  // same number twice makes the choice look broken.
+  const options = [...new Set([amount, up10, up50])].filter((v) => v >= amount).slice(0, 3);
+
+  el.hidden = false;
+  el.innerHTML = `
+    <div class="nx-fare-hero">
+      <p class="nx-fare-label">Pay your rider in cash</p>
+      <p class="nx-fare-amount">Rs. ${amount}</p>
+      ${options.length > 1 ? `
+        <p class="text-xs text-secondary" style="margin-top:8px;">
+          Rounding up is the usual courtesy here — it is never expected.
+        </p>
+        <div class="nx-roundup" id="roundup">
+          ${options.map((v, i) => `
+            <button class="nx-roundup-btn${i === 0 ? " selected" : ""}" data-amount="${v}">
+              Rs ${v}${v > amount ? `<br><span style="font-weight:600;font-size:10.5px;opacity:0.75;">+${v - amount} tip</span>` : `<br><span style="font-weight:600;font-size:10.5px;opacity:0.75;">exact</span>`}
+            </button>`).join("")}
+        </div>
+        <p class="text-xs text-muted" id="roundupHint" style="margin-top:8px;">
+          Hand over the exact fare.
+        </p>` : ""}
+    </div>`;
+
+  const group = el.querySelector("#roundup");
+  const hint = el.querySelector("#roundupHint");
+  group?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-amount]");
+    if (!btn) return;
+    haptic.light();
+    group.querySelectorAll("[data-amount]").forEach((b) => b.classList.toggle("selected", b === btn));
+    const chosen = Number(btn.dataset.amount);
+    const tip = chosen - amount;
+    hint.textContent = tip > 0
+      ? `Hand over Rs ${chosen} and tell them to keep the change.`
+      : "Hand over the exact fare.";
+    track("cash_roundup_selected", { tip });
+  });
 }

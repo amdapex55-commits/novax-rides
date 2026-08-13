@@ -96,6 +96,15 @@ export const state = {
   get homeTab() { return read("homeTab", "BIKE"); },
   set homeTab(v) { write("homeTab", v); },
 
+  /* What the customer owes at the kerb: fare + tip, as one number.
+     Declared here rather than assigned ad hoc for the reason documented at
+     the top of this file — an undeclared key lives in memory only, and the
+     screen that reads this one is reached after a socket event and a
+     redirect, which is exactly the path a reload interrupts. Set at booking
+     from the quote, then overwritten by the server's figure on completion. */
+  get lastFare() { return read("lastFare"); },
+  set lastFare(v) { write("lastFare", v); },
+
   // Taxi tab tier — cosmetic multiplier on top of the real CAR fare (same
   // vehicleType/backend pricing as Bike's "Nova Premium" car option; the
   // tier just changes the client-side preview + a comfort-level tag sent

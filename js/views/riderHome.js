@@ -8,9 +8,12 @@ import { navigate } from "../router.js";
 import { resolveRoute, geocode, getCurrentCoords, createSuggester } from "../geocode.js";
 import { createMap, mapSkeleton } from "../map.js";
 import { getRoute, routeSummary } from "../routing.js";
-import { VEHICLE_TYPES, SERVICES } from "../launch.config.js";
-import { listSavedPlaces, touchPlace, PLACE_META } from "../savedPlaces.js";
+import { VEHICLE_TYPES, SERVICES, PRICING } from "../launch.config.js";
+import { listSavedPlaces, listRecents, touchPlace, PLACE_META } from "../savedPlaces.js";
+import { activePromos, dismissPromo } from "../promos.js";
+import { t } from "../i18n.js";
 import { haptic } from "../haptics.js";
+import { track } from "../analytics.js";
 
 /* TABS ARE DERIVED, NOT HARDCODED.
    The Taxi tab was a live path to a booking the platform cannot fulfil: it
@@ -24,9 +27,13 @@ import { haptic } from "../haptics.js";
    demand signal; Taxi has no such screen, so it goes entirely. */
 const CAN_BOOK_CAR = VEHICLE_TYPES.includes("CAR");
 
+/* Bike leads because bike is the business. It is also the tab that opens by
+   default, and having the selected tab sit second — with a parked service in
+   the primary position — read as though Food were the main event and rides
+   were the sideline. */
 const TABS = [
-  { key: "FOOD", label: "Food", icon: "utensils" },
   { key: "BIKE", label: "Bike", icon: "bike" },
+  { key: "FOOD", label: "Food", icon: "utensils" },
   ...(CAN_BOOK_CAR ? [{ key: "TAXI", label: "Taxi", icon: "taxi" }] : []),
 ];
 
@@ -35,26 +42,44 @@ export function renderHome(root) {
   const isGuest = !user;
   let active = state.homeTab || "BIKE";
 
+  /* THE HEADER GREETS A PERSON, NOT A SESSION.
+
+     It used to read "Good morning, there" for anyone signed out — which is
+     both cold and not quite English, and it was the first line of the app.
+     A guest now gets a line about what the app does, which is more useful to
+     them than a malformed hello. */
+  const firstName = isGuest ? "" : String(user.name || "").trim().split(" ")[0];
+
   root.innerHTML = `
     <div class="page pb-0">
-      <div class="flex justify-between items-center mb-6">
-        <div>
-          <p class="text-secondary text-sm">Good ${timeOfDay()},</p>
-          <h1 class="text-xl">${isGuest ? "there" : (user.name || "Rider").split(" ")[0]}</h1>
+      <div class="flex justify-between items-center mb-4">
+        <div style="min-width:0;">
+          <p class="text-secondary text-sm">${esc(greeting())}${firstName ? "," : ""}</p>
+          <h1 class="text-xl" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            ${firstName ? esc(firstName) : esc(t("Book a Bike Ride"))}
+          </h1>
         </div>
-        <div class="avatar" style="width:44px;height:44px;">${icon("person", 22)}</div>
+        <div class="flex items-center gap-2">
+          <!-- Supply, live. See paintNearby(). -->
+          <span id="nearbyPill" hidden></span>
+          <button id="avatarBtn" class="avatar" aria-label="${esc(t("Account"))}"
+                  style="width:44px;height:44px;border:0;cursor:pointer;">${icon("person", 22)}</button>
+        </div>
       </div>
 
       ${isGuest ? `
       <div class="card mb-4 flex items-center gap-3" id="signInCard" style="cursor:pointer;">
         <div class="list-row-icon" style="background:rgba(255, 182, 72, 0.14); color:var(--accent-2);">${icon("bolt", 18)}</div>
-        <div style="flex:1;"><p class="font-bold text-sm">Sign in</p><p class="text-secondary text-xs">Takes a minute — only needed to book</p></div>
+        <div style="flex:1;"><p class="font-bold text-sm">${esc(t("Sign in"))}</p><p class="text-secondary text-xs">Takes a minute — only needed to book</p></div>
         ${icon("chevronRight", 18)}
       </div>` : ""}
 
+      <!-- Promotions. Empty and hidden until there is something true to say. -->
+      <div class="nx-promo-rail bleed-x mb-4" id="promoRail" hidden></div>
+
       <div class="top-tabs" id="homeTabs" style="grid-template-columns:repeat(${TABS.length}, 1fr);">
         <div class="top-tabs-indicator" id="tabsIndicator" style="width:${100 / TABS.length}%;"></div>
-        ${TABS.map((t) => `<button class="top-tab" data-tab="${t.key}">${icon(t.icon, 16)}<span>${t.label}</span></button>`).join("")}
+        ${TABS.map((tb) => `<button class="top-tab" data-tab="${tb.key}">${icon(tb.icon, 16)}<span>${esc(t(tb.label))}</span></button>`).join("")}
       </div>
 
       <div id="tabPanel"></div>
@@ -62,6 +87,10 @@ export function renderHome(root) {
   `;
 
   root.querySelector("#signInCard")?.addEventListener("click", () => { state.postAuthRedirect = null; navigate("/signin"); });
+  root.querySelector("#avatarBtn")?.addEventListener("click", () => navigate(isGuest ? "/signin" : "/account"));
+
+  paintPromos(root, { signedIn: !isGuest });
+  const stopNearby = paintNearby(root);
 
   const indicator = root.querySelector("#tabsIndicator");
   const tabBtns = Array.from(root.querySelectorAll(".top-tab"));
@@ -75,7 +104,7 @@ export function renderHome(root) {
     if (!TABS.some((tb) => tb.key === key)) key = "BIKE";
     active = key;
     state.homeTab = key;
-    const idx = TABS.findIndex((t) => t.key === key);
+    const idx = TABS.findIndex((tb) => tb.key === key);
     indicator.style.transform = `translateX(${idx * 100}%)`;
     tabBtns.forEach((b) => b.classList.toggle("active", b.dataset.tab === key));
 
@@ -91,91 +120,222 @@ export function renderHome(root) {
   tabBtns.forEach((b) => b.addEventListener("click", () => setTab(b.dataset.tab)));
   setTab(active, { animate: false });
 
-  return () => { if (cleanupPanel) { try { cleanupPanel(); } catch {} } };
+  return () => {
+    stopNearby();
+    if (cleanupPanel) { try { cleanupPanel(); } catch {} }
+  };
 }
 
-function timeOfDay() {
+/* ---------------------------------------------------------------- promos --- */
+
+function paintPromos(root, { signedIn }) {
+  const rail = root.querySelector("#promoRail");
+  if (!rail) return;
+
+  function paint(referralPoints) {
+    const promos = activePromos({ signedIn, referralPoints });
+    if (!promos.length) { rail.hidden = true; return; }
+    rail.hidden = false;
+    rail.innerHTML = promos
+      .map(
+        (p) => `
+        <!-- dir="auto" on every one of these. A campaign string that has no
+             Urdu translation yet falls back to English (see js/i18n.js), and
+             an English sentence inside an RTL container has its trailing full
+             stop moved to the FRONT of the line by the bidi algorithm — it
+             renders as ".Quoted before you book". dir="auto" lets the browser
+             pick direction per element from its first strong character, so a
+             translated string goes RTL and an untranslated one stays LTR,
+             with no way for the two to get out of step. -->
+        <div class="nx-promo tone-${esc(p.tone || "violet")}" data-promo="${esc(p.id)}" ${p.nav ? 'role="button" tabindex="0"' : ""}>
+          ${p.permanent ? "" : `<button class="nx-promo-close" data-dismiss="${esc(p.id)}" aria-label="Dismiss">${icon("close", 13)}</button>`}
+          <p class="nx-promo-kicker" dir="auto">${esc(t(p.kicker))}</p>
+          <p class="nx-promo-title" dir="auto">${esc(t(p.title, p.vars))}</p>
+          ${p.sub ? `<p class="nx-promo-sub" dir="auto">${esc(t(p.sub))}</p>` : ""}
+          ${p.cta ? `<span class="nx-promo-cta" dir="auto">${esc(t(p.cta))} ${icon("arrow-forward", 13)}</span>` : ""}
+        </div>`,
+      )
+      .join("");
+
+    rail.querySelectorAll("[data-dismiss]").forEach((b) =>
+      b.addEventListener("click", (e) => {
+        e.stopPropagation(); // don't navigate on the way out
+        dismissPromo(b.dataset.dismiss);
+        haptic.light();
+        b.closest(".nx-promo")?.remove();
+        if (!rail.querySelector(".nx-promo")) rail.hidden = true;
+      }),
+    );
+    rail.querySelectorAll("[data-promo]").forEach((card) => {
+      const promo = promos.find((p) => p.id === card.dataset.promo);
+      if (!promo?.nav) return;
+      card.addEventListener("click", () => {
+        track("promo_tapped", { id: promo.id });
+        navigate(promo.nav);
+      });
+    });
+  }
+
+  // Paint immediately without the referral card, then again if the real
+  // number arrives. Waiting on the network to draw the home screen is what
+  // made this app feel slow in the first place.
+  paint(0);
+  if (signedIn) {
+    api.getLoyalty()
+      .then((l) => { if (root.isConnected) paint(l?.referralBonusPoints || 0); })
+      .catch(() => { /* the other promos are already on screen */ });
+  }
+}
+
+/* --------------------------------------------------------------- supply --- */
+
+/* "Will anyone actually come?" is the question a first-time customer in this
+   market is really asking, and no amount of reassuring copy answers it. A
+   real count does. The endpoint is anonymised and capped at 12 server-side
+   (see LocationController.nearby) — we are showing supply, never a person. */
+function paintNearby(root) {
+  const pill = root.querySelector("#nearbyPill");
+  let cancelled = false;
+  if (!pill) return () => {};
+
+  getCurrentCoords()
+    .then((c) => (cancelled ? null : api.getNearbyRiders(c.lat, c.lng)))
+    .then((riders) => {
+      if (cancelled || !riders || !root.isConnected) return;
+      const n = riders.length;
+      // Zero is not shown. It is accurate and it is also the single most
+      // discouraging thing the home screen could say to someone deciding
+      // whether to try this app — and it is frequently a coverage artefact
+      // (out of zone, GPS not yet warm) rather than a genuinely empty fleet.
+      // Silence is the honest middle: we claim nothing.
+      if (n === 0) return;
+      pill.hidden = false;
+      pill.className = `nx-nearby${n <= 2 ? " is-thin" : ""}`;
+      // 12 is the server's cap, so it is a floor, not a total.
+      pill.innerHTML = `<span class="nx-nearby-dot"></span><span>${n >= 12 ? "12+" : n} ${esc(t("riders nearby"))}</span>`;
+    })
+    .catch(() => { /* no location permission or offline — say nothing */ });
+
+  return () => { cancelled = true; };
+}
+
+/* Translated as a whole phrase rather than "Good " + timeOfDay(): Urdu does
+   not build the greeting that way, and concatenating translated fragments is
+   how you get grammatical nonsense in the language you cannot read. */
+function greeting() {
   const h = new Date().getHours();
-  if (h < 12) return "morning";
-  if (h < 17) return "afternoon";
-  return "evening";
+  if (h < 12) return t("Good morning");
+  if (h < 17) return t("Good afternoon");
+  return t("Good evening");
 }
 
 // ---------------- Bike tab (Ride / Parcel / Pick & Deliver) ----------------
 
 function renderBikeTab(panel, isGuest) {
-  panel.innerHTML = `
-    <div class="glow-card mb-4" id="whereToCard" style="cursor:pointer;">
-      <div class="flex items-center gap-3">
-        <div class="list-row-icon" style="background:rgba(124, 58, 237, 0.12); color:var(--accent);">${icon("bike", 22)}</div>
-        <div class="flex-col" style="flex:1;">
-          <p class="font-bold">Book a Bike Ride</p>
-          <p class="text-secondary text-sm">Fastest way through traffic — where to?</p>
-        </div>
-        ${icon("arrow-forward", 20)}
-      </div>
-    </div>
+  /* SERVICES ARE TILES, NOT TEXT ROWS.
 
-    <!-- Saved places: one tap to somewhere you go constantly, instead of
-         retyping a Karachi address every booking. Hidden until something is
-         saved, so a new customer never meets an empty rail. -->
+     Loyalty, Refer and Business used to be three near-identical grey list
+     rows under a "Quick Links" heading — the visual treatment you give a
+     footer. Two of them (referral, business leads) are how this business
+     grows, and neither was getting tapped. In this market a service that
+     matters looks like a tile with a colour and an icon; that is what Bykea,
+     Daraz and JazzCash all trained the customer to look for.
+
+     Parked services keep a tile rather than disappearing, because the tap is
+     the demand signal that decides what launches next. */
+  const soon = (key) => (SERVICES?.[key]?.live === false);
+
+  panel.innerHTML = `
+    <button class="nx-where" id="whereToCard">
+      <span class="nx-where-icon">${icon("search", 20)}</span>
+      <span class="nx-where-text">
+        <span class="nx-where-title">${esc(t("Where to?"))}</span>
+        <span class="nx-where-sub">${esc(t("Fastest way through traffic — where to?"))}</span>
+      </span>
+      ${icon("arrow-forward", 20)}
+    </button>
+
+    <!-- One tap to somewhere you go constantly, instead of retyping a Karachi
+         address every booking. Saved places first, then what you actually
+         used recently. Hidden entirely until there is something in it, so a
+         new customer never meets an empty rail. -->
     <div class="nx-places mb-4" id="savedPlaces" hidden></div>
 
-    <div class="flex gap-3 mb-6">
-      <button id="rideBtn" class="option-card selected" style="flex:1; flex-direction:column; align-items:flex-start; gap:8px;">
-        ${icon("bike", 22)}
-        <span class="font-bold text-sm">Ride</span>
+    <div class="nx-sec"><span class="nx-sec-title">${esc(t("Rides"))}</span></div>
+    <div class="nx-tiles mb-4">
+      <button class="nx-tile t-ride" data-go="/set-locations" data-vehicle="BIKE">
+        <span class="nx-tile-icon">${icon("bike", 21)}</span>
+        <span class="nx-tile-label">${esc(t("Ride"))}</span>
+        <span class="nx-tile-sub">From Rs ${PRICING.BIKE.minimum}</span>
       </button>
-      <button id="parcelBtn" class="option-card" style="flex:1; flex-direction:column; align-items:flex-start; gap:8px;">
-        ${icon("package", 22)}
-        <span class="font-bold text-sm">Send a Parcel</span>
+      <button class="nx-tile t-parcel${soon("parcel") ? " is-soon" : ""}" data-go="/parcel/service">
+        ${soon("parcel") ? `<span class="nx-tile-flag">Soon</span>` : `<span class="nx-tile-flag new">New</span>`}
+        <span class="nx-tile-icon">${icon("package", 21)}</span>
+        <span class="nx-tile-label">${esc(t("Send a Parcel"))}</span>
+        <span class="nx-tile-sub">From Rs ${PRICING.PARCEL.minimum}</span>
       </button>
-      <button id="errandBtn" class="option-card" style="flex:1; flex-direction:column; align-items:flex-start; gap:8px;">
-        ${icon("basket", 22)}
-        <span class="font-bold text-sm">Pick & Deliver</span>
+      <button class="nx-tile t-errand${soon("errand") ? " is-soon" : ""}" data-go="/errand/details">
+        ${soon("errand") ? `<span class="nx-tile-flag">Soon</span>` : `<span class="nx-tile-flag new">New</span>`}
+        <span class="nx-tile-icon">${icon("basket", 21)}</span>
+        <span class="nx-tile-label">${esc(t("Pick & Deliver"))}</span>
+        <span class="nx-tile-sub">From Rs ${PRICING.ERRAND.minimum}</span>
       </button>
     </div>
 
-    <div class="flex justify-between items-center mb-3">
-      <h3 class="text-sm text-secondary" style="text-transform:uppercase; letter-spacing:0.04em;">Quick Links</h3>
-    </div>
-    <div class="flex-col gap-2 mb-6">
-      <div class="list-row stagger-item" data-nav="/loyalty" style="cursor:pointer;">
-        <div class="list-row-icon">${icon("star", 18)}</div>
-        <div style="flex:1;"><p class="font-bold text-sm">Loyalty & Rewards</p></div>
-        ${icon("chevronRight", 18)}
-      </div>
-      <div class="list-row stagger-item" data-nav="/refer" style="cursor:pointer; animation-delay:60ms;">
-        <div class="list-row-icon">${icon("gift", 18)}</div>
-        <div style="flex:1;"><p class="font-bold text-sm">Refer & Earn</p></div>
-        ${icon("chevronRight", 18)}
-      </div>
-      <div class="list-row stagger-item" data-nav="/business" style="cursor:pointer; animation-delay:120ms;">
-        <div class="list-row-icon">${icon("users", 18)}</div>
-        <div style="flex:1;"><p class="font-bold text-sm">Nova Go for Business</p></div>
-        ${icon("chevronRight", 18)}
-      </div>
+    <!-- Real points against a real tier. Nothing here promises a free ride,
+         because nothing in the backend currently grants one — see the note in
+         js/promos.js. -->
+    <div id="loyaltyStrip" class="mb-4" hidden></div>
 
+    <div class="nx-sec"><span class="nx-sec-title">${esc(t("More"))}</span></div>
+    <div class="nx-tiles mb-6">
+      <button class="nx-tile t-reward" data-go="/loyalty">
+        <span class="nx-tile-icon">${icon("star", 21)}</span>
+        <span class="nx-tile-label">${esc(t("Loyalty & Rewards"))}</span>
+      </button>
+      <button class="nx-tile t-refer" data-go="/refer">
+        <span class="nx-tile-icon">${icon("gift", 21)}</span>
+        <span class="nx-tile-label">${esc(t("Refer & Earn"))}</span>
+      </button>
+      <button class="nx-tile t-biz" data-go="/business">
+        <span class="nx-tile-icon">${icon("users", 21)}</span>
+        <span class="nx-tile-label">${esc(t("Nova Go for Business"))}</span>
+      </button>
     </div>
   `;
 
-  (function paintSavedPlaces() {
+  /* ---- saved places + recents ---- */
+  (function paintPlaces() {
     const rail = panel.querySelector("#savedPlaces");
     if (!rail) return;
-    const places = listSavedPlaces();
-    if (places.length === 0) return;
+    const saved = listSavedPlaces();
+    // A recent that is already saved under a name would otherwise appear
+    // twice, once as "Home" and once as its raw address.
+    const savedKeys = new Set(saved.map((p) => `${p.lat.toFixed(3)},${p.lng.toFixed(3)}`));
+    const recents = listRecents()
+      .filter((r) => !savedKeys.has(`${r.lat.toFixed(3)},${r.lng.toFixed(3)}`))
+      .slice(0, 4);
+
+    const entries = [
+      ...saved.map((pl) => ({ ...pl, isRecent: false })),
+      ...recents.map((pl) => ({ ...pl, kind: "recent", isRecent: true })),
+    ];
+    if (entries.length === 0) return;
 
     rail.hidden = false;
-    rail.innerHTML = places
+    rail.innerHTML = entries
       .map((pl, i) => {
-        const meta = PLACE_META[pl.kind] || PLACE_META.other;
-        const title = pl.kind === "other" ? pl.label : meta.label;
+        const meta = pl.isRecent
+          ? { icon: "history", label: t("Recent") }
+          : PLACE_META[pl.kind] || PLACE_META.other;
+        const title = pl.isRecent || pl.kind === "other" ? pl.label : meta.label;
+        const sub = pl.isRecent || pl.kind === "other" ? "" : pl.label;
         return `
           <button class="nx-place" data-place="${i}">
             <span class="nx-place-icon">${icon(meta.icon, 16)}</span>
             <span class="nx-place-text">
-              <span class="nx-place-title">${esc(title)}</span>
-              ${pl.kind === "other" ? "" : `<span class="nx-place-sub">${esc(pl.label)}</span>`}
+              <span class="nx-place-title" dir="auto">${esc(title)}</span>
+              ${sub ? `<span class="nx-place-sub" dir="auto">${esc(sub)}</span>` : ""}
             </span>
           </button>`;
       })
@@ -183,7 +343,7 @@ function renderBikeTab(panel, isGuest) {
 
     rail.querySelectorAll("[data-place]").forEach((btn) =>
       btn.addEventListener("click", () => {
-        const pl = places[Number(btn.dataset.place)];
+        const pl = entries[Number(btn.dataset.place)];
         if (!pl) return;
         haptic.light();
         touchPlace(pl.lat, pl.lng);
@@ -191,20 +351,78 @@ function renderBikeTab(panel, isGuest) {
         // collect, and we already have it.
         state.selectedVehicle = "BIKE";
         state.dropoff = { label: pl.label, lat: pl.lat, lng: pl.lng };
-        track("saved_place_used", { kind: pl.kind });
+        track(pl.isRecent ? "recent_place_used" : "saved_place_used", { kind: pl.kind });
         navigate("/set-locations");
       }),
     );
   })();
 
-  panel.querySelector("#whereToCard").addEventListener("click", () => { state.selectedVehicle = "BIKE"; navigate("/set-locations"); });
-  const rideBtn = panel.querySelector("#rideBtn");
-  const parcelBtn = panel.querySelector("#parcelBtn");
-  const errandBtn = panel.querySelector("#errandBtn");
-  parcelBtn.addEventListener("click", () => navigate("/parcel/service"));
-  errandBtn.addEventListener("click", () => navigate("/errand/details"));
-  rideBtn.addEventListener("click", () => { state.selectedVehicle = "BIKE"; navigate("/set-locations"); });
-  panel.querySelectorAll("[data-nav]").forEach((el) => el.addEventListener("click", () => navigate(el.dataset.nav)));
+  /* ---- loyalty progress ---- */
+  if (!isGuest) {
+    api.getLoyalty()
+      .then((l) => {
+        const strip = panel.querySelector("#loyaltyStrip");
+        if (!strip || !panel.isConnected || !l) return;
+        strip.hidden = false;
+        strip.innerHTML = loyaltyStripHtml(l);
+      })
+      .catch(() => { /* the strip simply stays hidden */ });
+  }
+
+  panel.querySelectorAll("[data-go]").forEach((elm) =>
+    elm.addEventListener("click", () => {
+      haptic.light();
+      if (elm.dataset.vehicle) state.selectedVehicle = elm.dataset.vehicle;
+      navigate(elm.dataset.go);
+    }),
+  );
+}
+
+/**
+ * Distance to the next tier, as a bar.
+ *
+ * Deliberately NOT "3 more rides to a free ride". That is the copy the
+ * category uses and it would be a lie here: LoyaltyService awards points and
+ * sorts users into Bronze/Silver/Gold, but nothing spends points and no tier
+ * currently confers a benefit. Promising a reward the backend cannot deliver
+ * is worse than showing a smaller, true one — the customer finds out at the
+ * moment they try to claim it. What is shown is exactly what exists: points
+ * earned, tier, and how far the next tier is.
+ */
+function loyaltyStripHtml(l) {
+  const points = Number(l.points || 0);
+  const toNext = Number(l.pointsToNextTier || 0);
+  const nextTier = l.nextTier;
+  // The bar spans the CURRENT tier band, so it fills as you cross it rather
+  // than measuring progress from zero forever.
+  const bandStart = nextTier ? points + toNext - tierBand(l.tier) : 0;
+  const pct = nextTier && toNext > 0
+    ? Math.max(4, Math.min(100, ((points - bandStart) / Math.max(1, points + toNext - bandStart)) * 100))
+    : 100;
+
+  return `
+    <div class="nx-loyalty">
+      <div class="flex justify-between items-baseline">
+        <p class="font-bold text-sm">${esc(l.tier || "Bronze")} · <span class="nx-num">${points}</span> points</p>
+        ${nextTier
+          ? `<p class="text-xs text-secondary"><span class="nx-num">${toNext}</span> to ${esc(nextTier)}</p>`
+          : `<p class="text-xs" style="color:var(--success);font-weight:700;">Top tier</p>`}
+      </div>
+      <div class="nx-loyalty-track">
+        <div class="nx-loyalty-fill" style="width:${pct.toFixed(0)}%;"></div>
+      </div>
+      <p class="text-xs text-muted">
+        ${l.pointsPerTrip ? `<span class="nx-num">${l.pointsPerTrip}</span> points every completed trip` : "Earn points on every trip"}
+      </p>
+    </div>
+  `;
+}
+
+/* Mirrors the TIERS table in the backend's loyalty.service.ts. Only used to
+   size the progress bar; if the two drift the bar is slightly wrong, which
+   is a cosmetic problem rather than a correctness one. */
+function tierBand(tier) {
+  return { Bronze: 200, Silver: 300, Gold: 500, Platinum: 1000 }[tier] || 200;
 }
 
 // ---------------- Taxi tab (Standard / AC / Premium tiers) ----------------

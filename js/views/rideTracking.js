@@ -8,6 +8,7 @@ import { api } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
 import { toast, trustCard, dockSheet, esc, confettiBurst } from "../ui.js";
+import { t } from "../i18n.js";
 import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
 import { createMap } from "../map.js";
@@ -58,6 +59,12 @@ export function renderRideTracking(root) {
   let trip = null;
   let currentStatus = "REQUESTED";
 
+  /* Which safety items the customer has ticked, for THIS trip only.
+     Deliberately not persisted: it is a prompt to do something in the next
+     few seconds, not a preference, and a remembered tick would show the
+     next ride's checklist already complete. */
+  const safetyDone = new Set();
+
   // ---------- Sheet rendering ----------
   function drawSheet() {
     const s = STATUS[currentStatus] || STATUS.REQUESTED;
@@ -77,11 +84,54 @@ export function renderRideTracking(root) {
         <div style="border-top:1px solid var(--surface-border); margin-top:var(--sp-3);">
           ${trustCard({
             name: trip.driver.name,
-            subtitle: trip.vehicleType ? String(trip.vehicleType).toLowerCase() : "",
+            subtitle: trip.vehicleType ? `${String(trip.vehicleType).toLowerCase()} · arriving now` : "",
             rating: trip.driver.rating,
             plate: trip.driverProfile?.vehiclePlate,
+            tripCount: trip.driverTripCount,
           })}
         </div>
+        <!-- BEFORE YOU GET ON.
+             Shown only once the rider is actually at the kerb, because that
+             is the ten seconds when checking the plate is both possible and
+             useful — earlier it is noise, later it is too late. Three items,
+             all of which the customer can complete without leaving the
+             screen, and the state is remembered per trip so it does not
+             reset every socket update.
+
+             The third item is the one that matters most and is the easiest
+             to skip: telling somebody where you are. Bykea prompts for this
+             and we were not prompting at all — the share button existed and
+             sat unlabelled between two others. -->
+        ${currentStatus === "ARRIVED" ? `
+          <div class="mb-3">
+            <p class="nx-sec-title mb-2">${esc(t("Before you get on"))}</p>
+            <div class="nx-checklist" id="safetyList">
+              <button class="nx-check-item${safetyDone.has("plate") ? " done" : ""}" data-check="plate">
+                <span class="nx-check-box">${icon("check", 13)}</span>
+                <span style="flex:1;">
+                  <span class="nx-check-text">${esc(t("Check the number plate"))}</span>
+                  ${trip?.driverProfile?.vehiclePlate
+                    ? `<span class="nx-check-sub">It should read <strong>${esc(trip.driverProfile.vehiclePlate)}</strong></span>`
+                    : `<span class="nx-check-sub">Make sure it matches the bike you're getting on</span>`}
+                </span>
+              </button>
+              <button class="nx-check-item${safetyDone.has("name") ? " done" : ""}" data-check="name">
+                <span class="nx-check-box">${icon("check", 13)}</span>
+                <span style="flex:1;">
+                  <span class="nx-check-text">Ask their name</span>
+                  <span class="nx-check-sub">They should say ${esc((trip?.driver?.name || "your rider").split(" ")[0])}</span>
+                </span>
+              </button>
+              <button class="nx-check-item${safetyDone.has("share") ? " done" : ""}" data-check="share">
+                <span class="nx-check-box">${icon("check", 13)}</span>
+                <span style="flex:1;">
+                  <span class="nx-check-text">${esc(t("Share your trip"))}</span>
+                  <span class="nx-check-sub">Send a live link to someone at home</span>
+                </span>
+              </button>
+            </div>
+          </div>` : ""}
+
         <!-- CALL IS THE PRIMARY ACTION, not one of three equal buttons.
              Karachi addresses are spoken, not written — "neeli building ke
              saamne", "gate ke paas". A rider in traffic will not read a chat
@@ -92,15 +142,44 @@ export function renderRideTracking(root) {
              href="tel:${esc(trip.driver.phone)}">
             ${icon("phone", 18)} Call ${esc((trip.driver.name || "your rider").split(" ")[0])}
           </a>` : ""}
-        <div class="flex gap-2 mb-3">
-          <button id="chatBtn" class="btn btn-secondary" style="flex:1;">${icon("chat", 18)} Message</button>
-          <button id="shareBtn" class="btn btn-secondary" style="flex:1;">${icon("send", 18)} Share ride</button>
+        <!-- WHATSAPP IS NOT A NICE-TO-HAVE IN THIS MARKET, IT IS THE CHANNEL.
+             Nobody coordinates a Karachi pickup in an in-app chat thread. They
+             send a voice note or a location pin on WhatsApp, because typing a
+             landmark in Roman Urdu on a moving bike is slower than saying it.
+             The in-app thread stays — it is the only record ops can read when
+             a trip is disputed — but it stops pretending to be the primary
+             channel. The message is pre-filled with the trip's own pickup so
+             the customer does not have to retype where they are standing. -->
+        <div class="flex gap-2 mb-2">
+          ${trip?.driver?.phone ? `
+            <a id="waBtn" class="btn btn-secondary" style="flex:1;"
+               href="${esc(whatsappLink(trip.driver.phone, state.pickup?.label))}"
+               target="_blank" rel="noopener noreferrer">
+              ${icon("chat", 18)} ${esc(t("WhatsApp"))}
+            </a>` : `
+            <button id="chatBtn" class="btn btn-secondary" style="flex:1;">${icon("chat", 18)} ${esc(t("Message"))}</button>`}
+          <button id="shareBtn" class="btn btn-secondary" style="flex:1;">${icon("send", 18)} ${esc(t("Share ride"))}</button>
         </div>
+        ${trip?.driver?.phone ? `
+          <button id="chatBtn" class="btn btn-ghost btn-block mb-3" style="font-size:13px;">
+            ${icon("chat", 15)} Or message in the app
+          </button>` : `<div class="mb-3"></div>`}
       ` : `
-        <div class="flex items-center gap-3 mb-3 mt-3">
-          <span class="spinner text-accent"></span>
-          <p class="text-secondary text-sm">Contacting drivers near you</p>
+        <!-- MATCHING IS THE MOMENT PEOPLE ABANDON.
+             A generic spinner here is the same feedback the app gives for
+             loading a list, so it says nothing about whether anything is
+             happening. The radar says "we are reaching outward", which is
+             literally what the matcher is doing, and it gives the wait a
+             shape. Compositor-only (transform + opacity) so it costs nothing
+             on the budget Android hardware most of this market carries. -->
+        <div class="nx-radar mt-3 mb-2">
+          <span class="nx-radar-ring"></span>
+          <span class="nx-radar-ring"></span>
+          <span class="nx-radar-ring"></span>
+          <span class="nx-radar-core">${icon("bike", 24)}</span>
         </div>
+        <p class="text-center font-bold mb-1">${esc(t("Contacting drivers near you"))}</p>
+        <p class="text-center text-secondary text-xs mb-3">Your fare is locked while we look.</p>
       `}
 
       <div class="flex justify-between text-sm mb-3" style="padding-top:var(--sp-2); border-top:1px solid var(--surface-border);">
@@ -127,6 +206,19 @@ export function renderRideTracking(root) {
     node.querySelector("#supportBtn")?.addEventListener("click", () => navigate("/support"));
     node.querySelector("#shareBtn")?.addEventListener("click", shareRide);
     node.querySelector("#cancelBtn")?.addEventListener("click", () => askWhyThenCancel());
+
+    node.querySelector("#safetyList")?.addEventListener("click", (e) => {
+      const item = e.target.closest("[data-check]");
+      if (!item) return;
+      const key = item.dataset.check;
+      haptic.light();
+      // "Share" does the thing rather than just claiming it was done — a
+      // checkbox that only records an intention is theatre.
+      if (key === "share" && !safetyDone.has("share")) { shareRide(); }
+      safetyDone.add(key);
+      item.classList.add("done");
+      track("safety_check", { item: key, tripId });
+    });
   }
 
   /* WHY, not just whether.
@@ -333,6 +425,8 @@ export function renderRideTracking(root) {
   };
   const onCompleted = () => {
     track("ride_completed", { tripId });
+    // What the customer owes at the kerb is fare + tip, as one number.
+    if (trip?.fare != null) state.lastFare = Number(trip.fare) + Number(trip.tipAmount || 0);
     setStatus("COMPLETED");
     confettiBurst(window.innerWidth / 2, window.innerHeight / 2);
     setTimeout(() => navigate("/rate"), 1200);
@@ -404,7 +498,7 @@ export function renderSharedTrip(root) {
       <p class="text-secondary text-sm mb-4">${esc(s.copy)}</p>
       ${t.driverFirstName ? `
         <div style="border-top:1px solid var(--surface-border);">
-          ${trustCard({ name: t.driverFirstName, subtitle: String(t.vehicleType || "").toLowerCase(), rating: t.driverRating })}
+          ${trustCard({ name: t.driverFirstName, subtitle: String(t.vehicleType || "").toLowerCase(), rating: t.driverRating, compact: true })}
         </div>` : ""}
       <p class="text-xs text-muted text-center mt-3">Shared live from Nova Go · this link updates automatically</p>
     `);
@@ -446,4 +540,27 @@ export function renderSharedTrip(root) {
     if (poll) clearInterval(poll);
     if (mapHandle) mapHandle.destroy();
   };
+}
+
+
+/* ------------------------------------------------------------- whatsapp ---
+
+   wa.me needs digits only, with the country code and no leading +, spaces,
+   dashes or brackets. Numbers reach us in several shapes (E.164 from the
+   backend, 03xx local from a form), so normalise rather than trusting.
+
+   The prefilled text is the one thing that makes this better than the user
+   opening WhatsApp themselves: it already says which ride this is and where
+   the customer is standing, which is exactly the message they would
+   otherwise type badly while looking for a bike. */
+export function whatsappLink(phone, pickupLabel) {
+  let digits = String(phone || "").replace(/\D/g, "");
+  // 03001234567 -> 923001234567. Pakistani mobile numbers are 11 digits
+  // locally and always start 0; the country code replaces that leading zero.
+  if (digits.startsWith("0")) digits = "92" + digits.slice(1);
+  const where = String(pickupLabel || "").trim();
+  const text = where
+    ? `Assalam o Alaikum, main Nova Go ride ke liye ${where} par hoon.`
+    : "Assalam o Alaikum, main Nova Go ride ke liye wait kar raha hoon.";
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }

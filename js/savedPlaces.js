@@ -98,3 +98,69 @@ export const PLACE_META = {
   work: { icon: "store", label: "Work" },
   other: { icon: "location", label: "Saved" },
 };
+
+/* ---------------------------------------------------------------- recents ---
+
+   RECENTS ARE NOT SAVED PLACES.
+
+   Saving is a deliberate act — "this is my office". Recents are a by-product
+   of using the app, and they are what actually removes typing for most
+   customers, because most people will never open a menu to save anything.
+   Every ride-hailing home screen in this market leads with them.
+
+   Kept separate from the saved list on purpose: mixing them means a place
+   someone deliberately named as Home competes for the same row as a shop
+   they went to once, and the deliberate one loses as soon as the accidental
+   one is more recent.
+
+   Same local-only reasoning as above — this is a movement history, which is
+   the most sensitive thing this app touches. It never leaves the device.  */
+
+const RECENT_KEY = "novago_recent_places_v1";
+const RECENT_MAX = 6;
+// Under ~120m apart is the same doorway with GPS noise on top, not a second
+// destination. Without this the list fills with four versions of one shop.
+const SAME_PLACE_DEG = 0.0011;
+
+function readRecents() {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+export function listRecents() {
+  return readRecents().sort((a, b) => (b.usedAt || 0) - (a.usedAt || 0));
+}
+
+/** Called when a trip is actually requested — not when a field is typed in. */
+export function recordRecent(place) {
+  if (!place || place.lat == null || place.lng == null) return;
+  const label = String(place.label || "").trim();
+  if (!label) return;
+
+  const list = readRecents().filter(
+    (p) =>
+      Math.abs(p.lat - place.lat) > SAME_PLACE_DEG ||
+      Math.abs(p.lng - place.lng) > SAME_PLACE_DEG,
+  );
+  list.unshift({ label: label.slice(0, 120), lat: place.lat, lng: place.lng, usedAt: Date.now() });
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, RECENT_MAX)));
+  } catch {
+    /* convenience only */
+  }
+}
+
+/** Offered in settings: this is a movement history and people should be able
+ *  to wipe it without clearing everything else the app stores. */
+export function clearRecents() {
+  try {
+    localStorage.removeItem(RECENT_KEY);
+  } catch {
+    /* nothing to do */
+  }
+}

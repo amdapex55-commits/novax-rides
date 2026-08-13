@@ -97,7 +97,7 @@ export function renderRideBooking(root) {
               placeholder="Current location" value="${esc(state.pickup?.label || "")}"/>
             <div style="height:1px;background:var(--surface-border);"></div>
             <input id="dropoffInput" class="input" style="border:none;padding-left:0;height:44px;background:none;"
-              placeholder="Enter destination" value="${esc(state.dropoff?.label || "")}"
+              placeholder="Shop, mall or landmark" value="${esc(state.dropoff?.label || "")}"
               autocomplete="off" autocorrect="off" spellcheck="false"/>
           </div>
         </div>
@@ -289,7 +289,7 @@ export function renderRideBooking(root) {
 
     // Focus the pickup field — the fix is right there.
     const p = sheet.el?.querySelector?.("#pickupInput") || document.querySelector("#pickupInput");
-    if (p) { p.value = ""; p.placeholder = "Type your pickup address"; p.focus(); }
+    if (p) { p.value = ""; p.placeholder = "Nearest landmark or shop"; p.focus(); }
   }
 
   // ---------- Step 2: vehicle + fare ----------
@@ -388,28 +388,43 @@ export function renderRideBooking(root) {
           </div>
         </div>`}
 
-      ${ALLOW_BID_FARE ? `
-        <!-- FAST MATCH.
-             The problem this replaces is haggling: a rider says "traffic hai,
-             100 extra", and the customer either argues at the roadside or
-             feels cheated. Naming two fixed amounts up front turns an
-             argument into a choice — and because the fare is locked, the
-             customer knows the total before anyone sets off.
-             "No tip" is first and selected by default, so the honest cheap
-             option is the path of least resistance rather than a thing you
-             have to opt back into. -->
-        <div class="nx-fastmatch mb-3" id="fastMatch">
-          <div class="nx-fastmatch-head">
-            <span class="nx-fastmatch-title">${icon("bolt", 13)} Fast Match</span>
-            <span class="nx-fastmatch-sub">Riders see the tip — it goes to them in full</span>
-          </div>
-          <div class="nx-fastmatch-opts" role="group" aria-label="Add a tip to match faster">
-            <button type="button" class="nx-tip active" data-tip="0">No tip</button>
-            <button type="button" class="nx-tip" data-tip="20">+${PRICING.currency} 20</button>
-            <button type="button" class="nx-tip" data-tip="50">+${PRICING.currency} 50</button>
-          </div>
-        </div>
+      <!-- FAST MATCH.
+           The problem this replaces is haggling: a rider says "traffic hai,
+           100 extra", and the customer either argues at the roadside or
+           feels cheated. Naming two fixed amounts up front turns an
+           argument into a choice — and because the fare is locked, the
+           customer knows the total before anyone sets off.
+           "No tip" is first and selected by default, so the honest cheap
+           option is the path of least resistance rather than a thing you
+           have to opt back into.
 
+           NOT GATED ON ALLOW_BID_FARE. It used to be, bundled into the same
+           conditional as the Fixed/Bid tab strip below — and since bidding is
+           off for the pilot, the whole tip feature was built, wired to the
+           backend's tipAmount field, capped server-side at Rs 500, and then
+           never rendered to a single customer. A tip is not a bid: bidding is
+           the customer naming a fare INSTEAD of ours, which the pilot does not
+           allow; a tip is the customer adding to a fare that stays fixed. -->
+      <div class="nx-fastmatch mb-3" id="fastMatch">
+        <div class="nx-fastmatch-head">
+          <span class="nx-fastmatch-title">${icon("bolt", 13)} Fast Match</span>
+          <span class="nx-fastmatch-sub">Riders see the tip — it goes to them in full</span>
+        </div>
+        <div class="nx-fastmatch-opts" role="group" aria-label="Add a tip to match faster">
+          <button type="button" class="nx-tip active" data-tip="0">No tip</button>
+          <button type="button" class="nx-tip" data-tip="20">+${PRICING.currency} 20</button>
+          <button type="button" class="nx-tip" data-tip="50">+${PRICING.currency} 50</button>
+        </div>
+      </div>
+
+      <!-- CHANGE. The single most common friction in a cash ride here, and
+           it happens at the kerb where neither side can fix it: the fare is
+           Rs 195, the customer has a 500 note, and the rider carries float
+           for a day of Rs 150-250 trips. Saying it at booking costs nothing
+           and moves the problem to the one moment it is still solvable. -->
+      <div id="changeHint" class="mb-3"></div>
+
+      ${ALLOW_BID_FARE ? `
         <div class="top-tabs mb-3" id="fareTabs" style="grid-template-columns:1fr 1fr;">
           <div class="top-tabs-indicator" id="fareInd" style="width:50%; transform:translateX(0);"></div>
           <button class="top-tab active" data-mode="FIXED">Fixed fare</button>
@@ -457,6 +472,8 @@ export function renderRideBooking(root) {
         : `${PRICING.currency} ${cfg.base} base + ${PRICING.currency} ${cfg.perKm}/km × ${route.km} km`;
     }
 
+    paintChangeHint(node.querySelector("#changeHint"), quoted + fastMatchTip);
+
     const farePanel = node.querySelector("#farePanel");
     const confirmBtn = node.querySelector("#confirmRideBtn");
     const fareTabs = node.querySelector("#fareTabs");
@@ -479,6 +496,9 @@ export function renderRideBooking(root) {
         // would strip the SVG and silently rename the button.
         const el = node.querySelector("#fareAmount");
         if (el) countUp(el, quoted + fastMatchTip, { prefix: "Rs. ", duration: 340 });
+        // A tip changes what the rider has to make change FROM, so the hint
+        // has to move with it.
+        paintChangeHint(node.querySelector("#changeHint"), quoted + fastMatchTip);
       });
     }
 
@@ -590,6 +610,16 @@ export function renderRideBooking(root) {
           tipAmount: fastMatchTip,
         });
         state.activeTripId = trip.id;
+        /* The server is authoritative on the fare and the tracking screen
+           overwrites this the moment it has the real trip — but the customer
+           has to be told what to pay even if that fetch fails, so seed it
+           with the number they just agreed to. Tip included, because what
+           they hand over at the kerb is one amount, not two. */
+        state.lastFare = Number(trip.fare ?? quoted) + fastMatchTip;
+        // Only now, when a real trip exists for it, does this destination
+        // become a "recent" — typing into the box and abandoning should not
+        // fill someone's home screen with places they never went.
+        recordRecent(dropoff);
         navigate("/tracking");
       } catch (err) {
         reportHandled(err, "createTrip", { vehicleType: selectedVehicle });
@@ -673,4 +703,45 @@ export function renderRideBooking(root) {
     noteCtl?.destroy();
     if (mapHandle) mapHandle.destroy();
   };
+}
+
+/* ---------------------------------------------------------------- change ---
+
+   Pakistani notes come in 10/20/50/100/500/1000/5000. A rider working
+   Rs 150–250 trips carries float in the small ones, so the note that causes
+   the argument is the 500 and up — and by the time it is produced, the ride
+   is over and neither person can do anything about it.
+
+   The rule below is deliberately narrow. It fires only when the smallest
+   note that covers the fare would need more than roughly Rs 250 back, which
+   is about the most float a rider can be assumed to have. Warning on every
+   trip would train people to ignore it, which is worse than not warning. */
+
+const NOTES = [10, 20, 50, 100, 500, 1000, 5000];
+const COMFORTABLE_CHANGE = 250;
+
+export function changeAdviceFor(fare) {
+  const amount = Math.ceil(Number(fare) || 0);
+  if (amount <= 0) return null;
+  // The smallest single note that covers it — what someone actually hands over.
+  const note = NOTES.find((n) => n >= amount);
+  if (!note) return null;
+  const back = note - amount;
+  if (back <= COMFORTABLE_CHANGE) return null;
+  return { note, back, amount };
+}
+
+function paintChangeHint(el, fare) {
+  if (!el) return;
+  const advice = changeAdviceFor(fare);
+  if (!advice) { el.innerHTML = ""; return; }
+  el.innerHTML = `
+    <div class="nx-change-warn">
+      ${icon("info", 14)}
+      <div>
+        <strong>Carry ${PRICING.currency} ${advice.amount} if you can.</strong>
+        Paying with a ${PRICING.currency} ${advice.note} note means your rider
+        needs ${PRICING.currency} ${advice.back} in change, which they may not have.
+      </div>
+    </div>`;
 }

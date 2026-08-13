@@ -19,7 +19,7 @@
 // deleted on activate, so a stale shell can't survive a release.
 // Bump on any change to SHELL — an old cache serving the previous asset list
 // is how a user ends up on a half-updated app.
-const VERSION = "novago-v16";
+const VERSION = "novago-v17";
 const SHELL_CACHE = `${VERSION}-shell`;
 
 // Only same-origin, non-critical-path assets. Deliberately small: a service
@@ -35,6 +35,11 @@ const SHELL = [
   "./css/animations.css",
   "./css/premium.css",
   "./css/fonts.css",
+  // Added with the market redesign. market.css carries the home tiles, promo
+  // rail, trust card and fare hero — without it in the shell an offline open
+  // renders the new markup with none of its styling, which looks far more
+  // broken than the old layout did.
+  "./css/market.css",
   // Latin only. The latin-ext files are twice the size and are needed by
   // almost nobody here, so they stay on-demand rather than in the shell.
   "./fonts/inter-var-latin.woff2",

@@ -4,6 +4,12 @@ import { state } from "../state.js";
 import { icon } from "../icons.js";
 import { toast, fmtMoney, fmtDate, countUp, skeletonRows, esc } from "../ui.js";
 import { navigate } from "../router.js";
+import { reportHandled } from "../errors.js";
+import { t, getLang, setLang } from "../i18n.js";
+import { getThemeMode, setThemeMode } from "../theme.js";
+import { clearRecents } from "../savedPlaces.js";
+import { haptic } from "../haptics.js";
+import { track } from "../analytics.js";
 
 function signInPrompt(title, body) {
   return `
@@ -349,7 +355,28 @@ export function renderSettings(root) {
     <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-6">Settings</h1>
+
+      <!-- APPEARANCE + LANGUAGE.
+           Both are segmented controls rather than rows leading to a sub-screen:
+           there are three options each, they fit, and burying a language
+           switch one level deep is how you make it invisible to exactly the
+           people who need it — someone who cannot read the English label on
+           the row that leads to it. -->
+      <p class="nx-sec-title mb-2">${esc(t("Language"))}</p>
+      <div class="nx-seg mb-4" id="langSeg" role="group" aria-label="${esc(t("Language"))}">
+        <button class="nx-seg-btn" data-lang="en">English</button>
+        <button class="nx-seg-btn" data-lang="ur" lang="ur">اردو</button>
+      </div>
+
+      <p class="nx-sec-title mb-2">${esc(t("Theme"))}</p>
+      <div class="nx-seg mb-6" id="themeSeg" role="group" aria-label="${esc(t("Theme"))}">
+        <button class="nx-seg-btn" data-theme-mode="light">${icon("sun", 15)} ${esc(t("Light"))}</button>
+        <button class="nx-seg-btn" data-theme-mode="dark">${icon("moon", 15)} ${esc(t("Dark"))}</button>
+        <button class="nx-seg-btn" data-theme-mode="system">${esc(t("System"))}</button>
+      </div>
+
       <div class="flex-col gap-1 mb-6">
+        ${settingsRow("history", "Clear recent destinations", { action: "clearRecents", note: "Removes the places you've travelled to from this device" })}
         ${settingsRow("bell", "Notifications", { note: "Trip updates are shown in the app while a ride is active" })}
         ${settingsRow("shield", "Privacy & Security", { nav: "/legal/privacy" })}
         ${settingsRow("phone", "Payment", { note: "Cash only — you pay your rider directly at the end of the trip" })}
@@ -367,6 +394,49 @@ export function renderSettings(root) {
   root.querySelectorAll("[data-nav]").forEach((r) =>
     r.addEventListener("click", () => navigate(r.dataset.nav)),
   );
+
+  /* ---- language ---- */
+  const langSeg = root.querySelector("#langSeg");
+  langSeg.querySelectorAll("[data-lang]").forEach((b) =>
+    b.classList.toggle("active", b.dataset.lang === getLang()),
+  );
+  langSeg.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-lang]");
+    if (!btn || btn.dataset.lang === getLang()) return;
+    haptic.light();
+    track("language_changed", { lang: btn.dataset.lang });
+    // setLang reloads: every view builds its strings at render time, so a
+    // partial repaint would leave half the app in the other language.
+    setLang(btn.dataset.lang);
+  });
+
+  /* ---- theme ---- */
+  const themeSeg = root.querySelector("#themeSeg");
+  function paintTheme() {
+    const mode = getThemeMode();
+    themeSeg.querySelectorAll("[data-theme-mode]").forEach((b) =>
+      b.classList.toggle("active", b.dataset.themeMode === mode),
+    );
+  }
+  paintTheme();
+  themeSeg.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-theme-mode]");
+    if (!btn) return;
+    haptic.light();
+    setThemeMode(btn.dataset.themeMode);
+    track("theme_changed", { mode: btn.dataset.themeMode });
+    paintTheme();
+  });
+
+  /* ---- clear recents ---- */
+  root.querySelector('[data-action="clearRecents"]')?.addEventListener("click", (e) => {
+    clearRecents();
+    haptic.light();
+    const row = e.currentTarget;
+    row.querySelector("p.text-xs").textContent = "Cleared from this device";
+    row.style.opacity = "0.55";
+    row.style.pointerEvents = "none";
+  });
   root.querySelector("#deleteAccountBtn")?.addEventListener("click", async () => {
     // Two-step, typed confirmation. A single confirm() on an irreversible,
     // policy-mandated action is how people delete an account by accident on a
@@ -404,9 +474,10 @@ export function renderSettings(root) {
    notification-preferences system to configure (nothing is pushed yet), and
    there are no payment methods because the pilot is cash-only. Saying so is
    better than a chevron that does nothing. */
-function settingsRow(iconName, label, { nav, note } = {}) {
-  const interactive = Boolean(nav);
-  return `<div class="list-row" ${interactive ? `style="cursor:pointer;" data-nav="${nav}"` : ""}>
+function settingsRow(iconName, label, { nav, note, action } = {}) {
+  const interactive = Boolean(nav || action);
+  const attrs = nav ? `data-nav="${nav}"` : action ? `data-action="${action}"` : "";
+  return `<div class="list-row" ${interactive ? `style="cursor:pointer;" ${attrs}` : ""}>
     <div class="list-row-icon">${icon(iconName, 18)}</div>
     <div style="flex:1;min-width:0;">
       <p class="font-bold text-sm">${label}</p>

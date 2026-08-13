@@ -28,3 +28,4 @@ js/map-token.js
 
 # Build output of scripts/deploy-public.js
 public/
+.claude/

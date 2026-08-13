@@ -36,6 +36,8 @@ const PATHS = {
   send: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',
   sos: 'M12 9v4M12 17h.01M10.3 3.9L1.8 18a1.7 1.7 0 0 0 1.5 2.6h17.4a1.7 1.7 0 0 0 1.5-2.6L13.7 3.9a1.7 1.7 0 0 0-3.4 0z',
   bolt: 'M13 2 3 14h7l-1 8 10-12h-7z',
+  sun: 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4',
+  moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
   layers: 'M12 2l9 5-9 5-9-5 9-5zM3 12l9 5 9-5M3 17l9 5 9-5',
   locate: 'M12 2v3M12 19v3M2 12h3M19 12h3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
   utensils: 'M6 2v7a2 2 0 0 0 4 0V2M8 9v13M16 2c-2 0-3 2-3 5s1 4 3 4M16 2v18',
@@ -58,9 +60,20 @@ const PATHS = {
   restaurant: 'M6 2v7a2 2 0 0 0 4 0V2M8 9v13M16 2c-2 0-3 2-3 5s1 4 3 4M16 2v18',
 };
 
+/* Icons that encode a direction rather than a thing. In an RTL layout these
+   have to mirror: a chevron still pointing right after the rest of the screen
+   has flipped is pointing back the way the reader came, which reads as "go
+   back" on a row that goes forward. The flip itself is one CSS rule in
+   fonts.css keyed off this attribute — emitting the name is all this needs
+   to do, and it costs nothing in LTR. */
+const DIRECTIONAL = new Set([
+  "arrow-back", "arrow-forward", "chevronRight", "chevronLeft", "logout", "send",
+]);
+
 export function icon(name, size = 20, strokeWidth = 2) {
   const d = PATHS[name] || PATHS.help;
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+  const dir = DIRECTIONAL.has(name) ? ` data-icon="${name}"` : "";
+  return `<svg${dir} width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
     ${d.split("M").filter(Boolean).map((seg) => `<path d="M${seg.trim()}"/>`).join("")}
   </svg>`;
 }

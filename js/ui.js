@@ -62,10 +62,39 @@ export function countUp(el, target, { prefix = "", suffix = "", decimals = 0, du
   requestAnimationFrame(frame);
 }
 
+/**
+ * Loading placeholders.
+ *
+ * A skeleton beats a spinner because it says what is coming — "three rows,
+ * each with an icon and two lines" — so the eye has somewhere to be while
+ * the network works. A spinner says only "wait", and the same wait measured
+ * against a spinner feels longer.
+ *
+ * The shapes below deliberately mirror .list-row, so nothing jumps when the
+ * real content replaces them. That is the half people skip, and it is the
+ * half that makes the difference: a skeleton of the wrong shape produces a
+ * layout shift, which feels worse than having shown nothing.
+ */
 export function skeletonRows(n = 3) {
   return Array.from({ length: n })
-    .map(() => `<div class="skeleton" style="height:64px;margin-bottom:12px;"></div>`)
+    .map(
+      () => `
+      <div class="list-row" style="pointer-events:none;">
+        <div class="nx-skel" style="width:38px;height:38px;border-radius:12px;flex:none;"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="nx-skel nx-skel-line w-60"></div>
+          <div class="nx-skel nx-skel-line w-40" style="margin-bottom:0;"></div>
+        </div>
+      </div>`,
+    )
     .join("");
+}
+
+/** Placeholder for the home screen's service grid. */
+export function skeletonTiles(n = 3) {
+  return `<div class="nx-tiles">${Array.from({ length: n })
+    .map(() => `<div class="nx-skel nx-skel-tile"></div>`)
+    .join("")}</div>`;
 }
 
 export function el(html) {
@@ -170,22 +199,109 @@ export function dockSheet(container) {
 
 /** Person card used on every active job: who you're dealing with, proof
  * they're vetted, and how to reach them. Trust beats decoration. */
-export function trustCard({ name, subtitle, rating, plate, verified = true, initial }) {
+/**
+ * Who is picking you up.
+ *
+ * WHY THIS IS THE MOST IMPORTANT COMPONENT IN THE APP
+ *
+ * In Karachi the decision to get on the back of a stranger's motorcycle is
+ * the actual product risk — more than price, more than wait time, and by a
+ * long way the thing that stops women and families using this category at
+ * all. Bykea's answer is a line of copy: "all partners background checked".
+ * Copy is free, so copy is not evidence, and their own review pages are full
+ * of people saying they did not believe it.
+ *
+ * We verify CNIC and licence against the original document, by a person,
+ * before a rider can go online. That is a genuinely stronger position than
+ * the market leader's, and it was being spent on an 11px grey "✓ Verified"
+ * next to the name. This renders it as evidence instead:
+ *
+ *   - the tick sits ON the avatar, so it reads as "this person is verified"
+ *     rather than "this app has a badge somewhere"
+ *   - the plate is drawn as a plate, because that is the object the customer
+ *     is about to look for in traffic
+ *   - completed trips are shown, because experience answers the question a
+ *     star rating cannot: a rider with one 5-star trip outranks one with two
+ *     hundred 4.8s, and everybody knows it
+ *
+ * Every field is optional and each one is omitted rather than faked when it
+ * is missing. A placeholder "0 trips" or a fake photo would do more damage
+ * than the empty space it fills.
+ */
+export function trustCard({
+  name,
+  subtitle,
+  rating,
+  plate,
+  verified = true,
+  initial,
+  tripCount = null,
+  photoUrl = null,
+  compact = false,
+}) {
   const safeName = esc(name || "Your driver");
   const letter = esc(initial || (name ? name.charAt(0).toUpperCase() : "N"));
-  return `
-    <div class="trust-row">
-      <div class="trust-avatar">${letter}</div>
-      <div style="flex:1; min-width:0;">
-        <div class="flex items-center gap-2" style="flex-wrap:wrap;">
-          <p class="font-bold">${safeName}</p>
-          ${verified ? `<span class="verified-badge">✓ Verified</span>` : ""}
+
+  // Compact keeps the old single-row shape for places that only need to say
+  // who the other party is — the driver app's view of a passenger, the
+  // read-only shared-trip page.
+  if (compact) {
+    return `
+      <div class="trust-row">
+        <div class="trust-avatar">${letter}</div>
+        <div style="flex:1; min-width:0;">
+          <div class="flex items-center gap-2" style="flex-wrap:wrap;">
+            <p class="font-bold">${safeName}</p>
+            ${verified ? `<span class="verified-badge">✓ Verified</span>` : ""}
+          </div>
+          <p class="text-secondary text-xs mt-1">
+            ${rating != null ? `★ ${Number(rating).toFixed(1)}` : ""}${rating != null && subtitle ? " · " : ""}${esc(subtitle || "")}
+          </p>
         </div>
-        <p class="text-secondary text-xs mt-1">
-          ${rating != null ? `★ ${Number(rating).toFixed(1)}` : ""}${rating != null && subtitle ? " · " : ""}${esc(subtitle || "")}
-        </p>
+        ${plate ? `<span class="plate-chip">${esc(plate)}</span>` : ""}
       </div>
-      ${plate ? `<span class="plate-chip">${esc(plate)}</span>` : ""}
+    `;
+  }
+
+  const stats = [];
+  if (rating != null) stats.push({ v: `★ ${Number(rating).toFixed(1)}`, k: "Rating" });
+  // Below about 10 trips the number argues against the rider rather than for
+  // them, and a new rider is not less verified — they are just new. Showing
+  // "Verified" as the third stat is true and does not undersell them.
+  if (tripCount != null && tripCount >= 10) {
+    stats.push({ v: tripCount >= 1000 ? `${(tripCount / 1000).toFixed(1)}k` : String(tripCount), k: "Trips" });
+  }
+  if (verified) stats.push({ v: "CNIC", k: "Checked" });
+
+  return `
+    <div class="nx-driver-card">
+      <div class="nx-driver-top">
+        <div class="nx-driver-avatar">
+          ${photoUrl ? `<img src="${esc(photoUrl)}" alt="" loading="lazy"/>` : letter}
+          ${verified ? `<span class="nx-driver-tick" title="Verified by Nova Go">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"
+                 stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          </span>` : ""}
+        </div>
+        <div style="flex:1; min-width:0;">
+          <p class="nx-driver-name">${safeName}</p>
+          <p class="nx-driver-meta">${esc(subtitle || "")}</p>
+          ${verified ? `<span class="nx-verify-seal" style="margin-top:6px;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                 stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            Verified by Nova Go
+          </span>` : ""}
+        </div>
+        ${plate ? `<span class="nx-plate">${esc(plate)}</span>` : ""}
+      </div>
+      ${stats.length ? `
+        <div class="nx-trust-stats">
+          ${stats.map((st) => `
+            <div class="nx-trust-stat">
+              <div class="nx-trust-stat-value">${esc(st.v)}</div>
+              <div class="nx-trust-stat-label">${esc(st.k)}</div>
+            </div>`).join("")}
+        </div>` : ""}
     </div>
   `;
 }

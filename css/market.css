@@ -1,0 +1,922 @@
+/* ===================================================================
+   Nova Go — market components
+   ===================================================================
+
+   WHAT THIS FILE IS FOR
+
+   The original UI was built to Western ride-hailing convention: lots of
+   white, thin type, one accent, information rationed one card at a time.
+   That is the correct instinct for Uber's home market and the wrong one
+   here. A Karachi user arrives having been trained by Daraz, Foodpanda,
+   Bykea and JazzCash, all of which are dense, saturated, and put the
+   valuable thing — price, discount, service — in the largest, boldest
+   object on the screen. Against those, restraint does not read as premium.
+   It reads as empty, and empty reads as "this app has nothing in it".
+
+   So the components here are deliberately louder than the ones in
+   components.css: full-bleed colour, real weight on numbers, tiles instead
+   of text rows. What they do NOT do is abandon the design system — every
+   colour is still a token, so all of this themes and inverts with the rest
+   of the app.
+
+   ORDER: tiles, promo, loyalty, trust, fare, radar, safety, driver, misc. */
+
+/* ---------------------------------------------------------- tiles ---- */
+/* Replaces the "Quick Links" text rows. Those were three near-identical
+   grey lines that a first-time user's eye slid straight past; a service the
+   business wants used has to look like a destination, not a footnote. */
+
+.nx-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.nx-tiles.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+.nx-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 12px;
+  min-height: 104px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--r-md);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+  text-align: start;
+  cursor: pointer;
+  overflow: hidden;
+  /* Only transform and opacity — this grid sits on the home screen of an app
+     whose whole complaint was that it felt slow on a Tecno. */
+  transition: transform var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
+}
+.nx-tile:active { transform: scale(0.965); box-shadow: none; }
+
+/* The wash is what makes a tile feel coloured without putting text on a
+   saturated ground, which is where contrast goes to die in daylight. */
+.nx-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--tile-wash, transparent);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.nx-tile > * { position: relative; }
+
+.nx-tile-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  color: var(--tile-ink, var(--accent));
+  background: var(--tile-chip, var(--accent-soft));
+}
+.nx-tile-label {
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+.nx-tile-sub {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+/* Per-service colour. One hue per service, used everywhere that service
+   appears, so colour becomes a wayfinding cue rather than decoration. */
+.nx-tile.t-ride   { --tile-ink: #6d28d9; --tile-chip: rgba(109,40,217,0.13); --tile-wash: linear-gradient(160deg, rgba(109,40,217,0.09), transparent 70%); }
+.nx-tile.t-parcel { --tile-ink: #0369a1; --tile-chip: rgba(3,105,161,0.13);  --tile-wash: linear-gradient(160deg, rgba(3,105,161,0.09), transparent 70%); }
+.nx-tile.t-errand { --tile-ink: #047857; --tile-chip: rgba(4,120,87,0.13);   --tile-wash: linear-gradient(160deg, rgba(4,120,87,0.09), transparent 70%); }
+.nx-tile.t-food   { --tile-ink: #b45309; --tile-chip: rgba(180,83,9,0.13);   --tile-wash: linear-gradient(160deg, rgba(180,83,9,0.09), transparent 70%); }
+.nx-tile.t-reward { --tile-ink: #a16207; --tile-chip: rgba(161,98,7,0.13);   --tile-wash: linear-gradient(160deg, rgba(161,98,7,0.09), transparent 70%); }
+.nx-tile.t-refer  { --tile-ink: #be185d; --tile-chip: rgba(190,24,93,0.13);  --tile-wash: linear-gradient(160deg, rgba(190,24,93,0.09), transparent 70%); }
+.nx-tile.t-biz    { --tile-ink: #1d4ed8; --tile-chip: rgba(29,78,216,0.13);  --tile-wash: linear-gradient(160deg, rgba(29,78,216,0.09), transparent 70%); }
+
+/* Dark mode: the light-mode inks are 600-weight colours chosen against
+   white and go muddy on near-black, so each lifts to its 300/400 step. */
+:root[data-theme="dark"] .nx-tile.t-ride,
+:root[data-theme="dark"] .nx-tile.t-parcel,
+:root[data-theme="dark"] .nx-tile.t-errand,
+:root[data-theme="dark"] .nx-tile.t-food,
+:root[data-theme="dark"] .nx-tile.t-reward,
+:root[data-theme="dark"] .nx-tile.t-refer,
+:root[data-theme="dark"] .nx-tile.t-biz { --tile-wash: none; }
+:root[data-theme="dark"] .nx-tile.t-ride   { --tile-ink: #c4b5fd; --tile-chip: rgba(167,139,250,0.18); }
+:root[data-theme="dark"] .nx-tile.t-parcel { --tile-ink: #7dd3fc; --tile-chip: rgba(125,211,252,0.16); }
+:root[data-theme="dark"] .nx-tile.t-errand { --tile-ink: #6ee7b7; --tile-chip: rgba(110,231,183,0.16); }
+:root[data-theme="dark"] .nx-tile.t-food   { --tile-ink: #fcd34d; --tile-chip: rgba(252,211,77,0.16); }
+:root[data-theme="dark"] .nx-tile.t-reward { --tile-ink: #fde047; --tile-chip: rgba(253,224,71,0.16); }
+:root[data-theme="dark"] .nx-tile.t-refer  { --tile-ink: #f9a8d4; --tile-chip: rgba(249,168,212,0.16); }
+:root[data-theme="dark"] .nx-tile.t-biz    { --tile-ink: #93c5fd; --tile-chip: rgba(147,197,253,0.16); }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .nx-tile { --tile-wash: none; }
+  :root:not([data-theme="light"]) .nx-tile.t-ride   { --tile-ink: #c4b5fd; --tile-chip: rgba(167,139,250,0.18); }
+  :root:not([data-theme="light"]) .nx-tile.t-parcel { --tile-ink: #7dd3fc; --tile-chip: rgba(125,211,252,0.16); }
+  :root:not([data-theme="light"]) .nx-tile.t-errand { --tile-ink: #6ee7b7; --tile-chip: rgba(110,231,183,0.16); }
+  :root:not([data-theme="light"]) .nx-tile.t-food   { --tile-ink: #fcd34d; --tile-chip: rgba(252,211,77,0.16); }
+  :root:not([data-theme="light"]) .nx-tile.t-reward { --tile-ink: #fde047; --tile-chip: rgba(253,224,71,0.16); }
+  :root:not([data-theme="light"]) .nx-tile.t-refer  { --tile-ink: #f9a8d4; --tile-chip: rgba(249,168,212,0.16); }
+  :root:not([data-theme="light"]) .nx-tile.t-biz    { --tile-ink: #93c5fd; --tile-chip: rgba(147,197,253,0.16); }
+}
+
+/* A tile for something not yet live. Legible, obviously inert, and still
+   tappable — the tap is the demand signal that decides what launches next. */
+.nx-tile.is-soon { opacity: 0.72; }
+.nx-tile-flag {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 6px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+}
+.nx-tile-flag.hot { background: var(--error); color: #fff; }
+.nx-tile-flag.new { background: var(--success); color: #fff; }
+
+/* ---------------------------------------------------------- promo ---- */
+/* The review's first question was "where do you announce First ride free?"
+   The answer was nowhere — there was no surface for it. This is that
+   surface, and it is deliberately the brightest object above the fold. */
+
+.nx-promo-rail {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* Bleed to the screen edge so a partially-visible second card signals
+     "there is more" without a dot indicator. The gutter maths lives in
+     .bleed-x (base.css) so it tracks --page-pad across breakpoints. */
+  padding-block-end: 4px;
+}
+.nx-promo-rail::-webkit-scrollbar { display: none; }
+
+.nx-promo {
+  position: relative;
+  flex: 0 0 86%;
+  scroll-snap-align: start;
+  min-height: 104px;
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  background: var(--accent-gradient-3);
+  color: #fff;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: start;
+  box-shadow: var(--shadow-md);
+}
+.nx-promo.tone-gold  { background: linear-gradient(135deg, #b45309 0%, #f59e0b 60%, #fcd34d 100%); }
+.nx-promo.tone-green { background: linear-gradient(135deg, #065f46 0%, #059669 60%, #34d399 100%); }
+.nx-promo.tone-ink   { background: linear-gradient(135deg, #1e1b2e 0%, #3b2f5c 60%, #6d28d9 100%); }
+
+/* Faint concentric rings — the same motif as the splash mark, which is what
+   ties the app back to the landing page's visual language. */
+.nx-promo::after {
+  content: "";
+  position: absolute;
+  inset-block-start: -40%;
+  inset-inline-end: -18%;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.07) 45%, transparent 62%);
+  pointer-events: none;
+}
+.nx-promo-kicker {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.nx-promo-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-block-start: 4px;
+}
+.nx-promo-sub {
+  font-size: 12.5px;
+  opacity: 0.9;
+  margin-block-start: 4px;
+  max-width: 78%;
+}
+.nx-promo-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-block-start: 10px;
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
+  font-size: 12px;
+  font-weight: 700;
+}
+.nx-promo-close {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.18);
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+}
+
+/* -------------------------------------------------------- loyalty ---- */
+/* "3 more rides to a free ride" is the whole mechanic. It only works if the
+   distance to the reward is visible at a glance, which a number in a
+   settings screen is not. */
+
+.nx-loyalty {
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--surface-border);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+}
+.nx-loyalty-track {
+  position: relative;
+  height: 10px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  overflow: hidden;
+  margin-block: 10px 8px;
+}
+.nx-loyalty-fill {
+  height: 100%;
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
+  /* Width is set inline from real data; the transition is what makes it feel
+     like progress rather than a static bar. */
+  transition: width 700ms var(--ease-spring);
+}
+.nx-loyalty-pips { display: flex; justify-content: space-between; gap: 4px; }
+.nx-loyalty-pip {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+}
+.nx-loyalty-pip.done { background: var(--accent); }
+
+/* ---------------------------------------------------------- trust ---- */
+/* CNIC + licence verification is the single strongest thing this business
+   has to say to a first-time customer, and it was being said in 11px grey
+   body copy. This makes it an object. */
+
+.nx-verify-seal {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: var(--r-full);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 32%, transparent);
+  white-space: nowrap;
+}
+.nx-verify-seal svg { flex: none; }
+
+.nx-driver-card {
+  padding: 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--surface-border);
+  background: var(--bg-elevated);
+}
+.nx-driver-top { display: flex; align-items: center; gap: 12px; }
+.nx-driver-avatar {
+  position: relative;
+  flex: none;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--on-accent);
+  background: var(--accent-gradient);
+  object-fit: cover;
+}
+.nx-driver-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+/* The tick sits on the avatar, not next to the name: it reads as "this
+   person is verified" rather than "this app has a badge". */
+.nx-driver-tick {
+  position: absolute;
+  inset-block-end: -2px;
+  inset-inline-end: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--success);
+  color: #fff;
+  border: 2px solid var(--bg-elevated);
+}
+.nx-driver-name { font-weight: 800; font-size: 16px; line-height: 1.2; }
+.nx-driver-meta { font-size: 12px; color: var(--text-secondary); margin-block-start: 3px; }
+
+/* Number plate. Rendered as an actual plate because that is the object the
+   customer is about to look for in traffic — matching the on-screen shape to
+   the real-world one is the entire point of showing it. */
+.nx-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #0f172a;
+  border: 2px solid #0f172a;
+  font-family: "Inter", ui-monospace, monospace;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.09em;
+  /* Plates carry Latin characters and digits in Pakistan; never mirror. */
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+:root[data-theme="dark"] .nx-plate { background: #e2e8f0; border-color: #94a3b8; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .nx-plate { background: #e2e8f0; border-color: #94a3b8; }
+}
+
+.nx-trust-stats {
+  display: flex;
+  gap: 8px;
+  margin-block-start: 12px;
+  padding-block-start: 12px;
+  border-block-start: 1px solid var(--surface-border);
+}
+.nx-trust-stat {
+  flex: 1;
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+}
+.nx-trust-stat-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--text-primary);
+  direction: ltr;
+}
+.nx-trust-stat-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-block-start: 2px;
+}
+
+/* ----------------------------------------------------------- fare ---- */
+/* A fare that appears as plain text reads as an assertion. A fare that
+   counts up and then breaks itself down reads as a calculation — which is
+   what it is, and which is what stops the roadside argument. */
+
+.nx-fare-hero {
+  position: relative;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(150deg, var(--accent-soft), transparent 65%), var(--bg-elevated);
+  border: 1px solid var(--surface-border);
+  overflow: hidden;
+}
+.nx-fare-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.nx-fare-amount {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 38px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  direction: ltr;
+  unicode-bidi: isolate;
+  /* Tabular figures stop the number jittering while it counts up. */
+  font-variant-numeric: tabular-nums;
+}
+.nx-fare-fixed {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: 8px;
+  padding: 4px 9px;
+  border-radius: var(--r-full);
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  vertical-align: middle;
+}
+
+.nx-fare-rows { margin-block-start: 12px; }
+.nx-fare-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-block: 5px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.nx-fare-row .v { color: var(--text-primary); font-weight: 600; direction: ltr; }
+.nx-fare-row.total {
+  margin-block-start: 6px;
+  padding-block-start: 9px;
+  border-block-start: 1px dashed var(--surface-border);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+/* Petrol guarantee. This exists in launch.config.js and had no UI at all,
+   which is a shame — a fare that does not move when petrol moves is the
+   single most concrete promise the pilot makes. */
+.nx-petrol {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block-start: 10px;
+  padding: 9px 11px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--accent-2) 11%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-2) 26%, transparent);
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+.nx-petrol svg { flex: none; color: var(--accent-2); }
+
+/* Change warning. Nobody carries change in Karachi; being told at booking
+   is a different experience from finding out at the kerb. */
+.nx-change-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-block-start: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--warning) 11%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.nx-change-warn svg { flex: none; color: var(--warning); margin-block-start: 1px; }
+
+/* Round-up tip. Culturally expected, awkward to negotiate in person, and
+   trivial to offer here — the amounts are the ones a real note produces. */
+.nx-roundup { display: flex; gap: 8px; margin-block-start: 10px; }
+.nx-roundup-btn {
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: var(--r-sm);
+  border: 1.5px solid var(--surface-border);
+  background: var(--bg-elevated);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  direction: ltr;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.nx-roundup-btn:active { transform: scale(0.95); }
+.nx-roundup-btn.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------- radar ---- */
+/* "Contacting drivers near you" next to a generic spinner is the same
+   feedback the app gives for loading a list. Matching is the moment the
+   customer is most likely to abandon, so it gets its own object. */
+
+.nx-radar {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin-inline: auto;
+  display: grid;
+  place-items: center;
+}
+.nx-radar-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  opacity: 0;
+  animation: nx-radar-pulse 2.4s var(--ease-out) infinite;
+}
+.nx-radar-ring:nth-child(2) { animation-delay: 0.8s; }
+.nx-radar-ring:nth-child(3) { animation-delay: 1.6s; }
+.nx-radar-core {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--on-accent);
+  background: var(--accent-gradient);
+  box-shadow: var(--accent-glow);
+}
+@keyframes nx-radar-pulse {
+  0%   { transform: scale(0.34); opacity: 0.75; }
+  70%  { opacity: 0.12; }
+  100% { transform: scale(1);    opacity: 0; }
+}
+
+/* Live count of riders actually online near the pickup. In a market where
+   the real fear is "nobody will accept", a number is worth more than any
+   reassuring sentence. */
+.nx-nearby {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--success) 11%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 28%, transparent);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.nx-nearby-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: nx-live-blink 2s ease-in-out infinite;
+}
+.nx-nearby.is-thin {
+  background: color-mix(in srgb, var(--warning) 11%, transparent);
+  border-color: color-mix(in srgb, var(--warning) 28%, transparent);
+}
+.nx-nearby.is-thin .nx-nearby-dot { background: var(--warning); }
+@keyframes nx-live-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* --------------------------------------------------------- safety ---- */
+
+.nx-checklist { display: flex; flex-direction: column; gap: 8px; }
+.nx-check-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--surface-border);
+  background: var(--bg-elevated);
+  cursor: pointer;
+  text-align: start;
+  width: 100%;
+}
+.nx-check-box {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--surface-3);
+  display: grid;
+  place-items: center;
+  color: transparent;
+  transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
+}
+.nx-check-item.done .nx-check-box {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+.nx-check-item.done .nx-check-text { color: var(--text-secondary); }
+.nx-check-text { font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+.nx-check-sub { font-size: 11.5px; color: var(--text-secondary); margin-block-start: 2px; }
+
+/* --------------------------------------------------------- driver ---- */
+/* A driver is running a small business off this screen. Money should look
+   like the subject of the page, and progress toward a bonus should be a
+   shape, not a sentence. */
+
+.nx-earn-hero {
+  padding: 18px;
+  border-radius: var(--r-lg);
+  background: var(--accent-gradient-3);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+.nx-earn-hero::after {
+  content: "";
+  position: absolute;
+  inset-block-start: -50%;
+  inset-inline-end: -20%;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 60%);
+}
+.nx-earn-amount {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1.05;
+  direction: ltr;
+  font-variant-numeric: tabular-nums;
+}
+.nx-earn-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--r-full);
+  background: rgba(255,255,255,0.2);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+/* Seven bars, one per day. Deliberately not a charting library: this is
+   ~40 lines of CSS against ~90KB of JavaScript on a phone that cannot
+   afford it. */
+.nx-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 88px;
+  margin-block-start: 14px;
+}
+.nx-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; }
+.nx-bar-track { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.nx-bar {
+  width: 100%;
+  border-radius: 5px 5px 2px 2px;
+  background: var(--surface-2);
+  min-height: 3px;
+  transition: height 600ms var(--ease-spring);
+}
+.nx-bar.has-value { background: var(--accent); }
+.nx-bar.is-today  { background: var(--accent-2); }
+.nx-bar-label { font-size: 10px; color: var(--text-muted); direction: ltr; }
+
+/* Progress ring for an incentive. SVG rather than a bar because the target
+   is a single milestone, and a ring reads as "distance to a thing" where a
+   bar reads as "percentage of a quantity". */
+.nx-ring-wrap { position: relative; width: 92px; height: 92px; flex: none; }
+.nx-ring-wrap svg { transform: rotate(-90deg); }
+.nx-ring-bg   { stroke: var(--surface-2); }
+.nx-ring-fill { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 800ms var(--ease-spring); }
+.nx-ring-text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  direction: ltr;
+}
+
+/* Demand heat. Drivers chase demand; naming the area is more actionable on a
+   handlebar-mounted phone than shading a polygon they have to interpret. */
+.nx-heat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--surface-border);
+}
+.nx-heat-flame { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; }
+.nx-heat-row.hot    .nx-heat-flame { background: color-mix(in srgb, var(--error) 14%, transparent);   color: var(--error); }
+.nx-heat-row.warm   .nx-heat-flame { background: color-mix(in srgb, var(--warning) 14%, transparent); color: var(--warning); }
+.nx-heat-row.normal .nx-heat-flame { background: var(--surface-2); color: var(--text-secondary); }
+
+/* ---------------------------------------------------------- misc ----- */
+
+/* Skeletons that match the shape of what is coming. A spinner says "wait";
+   a skeleton says "a list of three things is arriving", which measurably
+   reduces how long the same wait feels. */
+.nx-skel {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+.nx-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--bg) 55%, transparent), transparent);
+  animation: nx-shimmer 1.4s infinite;
+}
+@keyframes nx-shimmer { 100% { transform: translateX(100%); } }
+.nx-skel-line { height: 12px; margin-block-end: 8px; }
+.nx-skel-line.w-40 { width: 40%; }
+.nx-skel-line.w-60 { width: 60%; }
+.nx-skel-line.w-80 { width: 80%; }
+.nx-skel-tile { height: 104px; border-radius: var(--r-md); }
+
+/* Offline / queued banner. A booking made in a dead spot in North Karachi
+   should not evaporate; this is the UI half of the queue in js/offlineQueue.js. */
+.nx-net-banner {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-start: 0;
+  z-index: var(--z-toast);
+  padding: 7px 14px;
+  padding-block-start: calc(7px + var(--safe-top));
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--text-muted);
+  transform: translateY(-100%);
+  transition: transform var(--dur-med) var(--ease-spring);
+}
+.nx-net-banner.show { transform: translateY(0); }
+.nx-net-banner.queued { background: var(--warning); }
+.nx-net-banner.back   { background: var(--success); }
+
+/* Section heading with an action on the end. */
+.nx-sec {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-block-end: 10px;
+}
+.nx-sec-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.nx-sec-action { font-size: 12px; font-weight: 700; color: var(--accent); background: none; border: 0; cursor: pointer; }
+
+/* Urdu has no capital forms, so uppercase + wide tracking does nothing but
+   break the joins between letters. */
+.nx-urdu .nx-sec-title,
+.nx-urdu .nx-fare-label,
+.nx-urdu .nx-promo-kicker,
+.nx-urdu .nx-trust-stat-label,
+.nx-urdu .nx-tile-flag { text-transform: none; letter-spacing: normal; }
+
+/* Respect the system setting. Everything above degrades to its end state
+   rather than disappearing — the radar still shows a solid ring, the bars
+   still show their height, they just arrive instead of animating. */
+@media (prefers-reduced-motion: reduce) {
+  .nx-radar-ring { animation: none; opacity: 0.25; transform: scale(1); }
+  .nx-nearby-dot { animation: none; }
+  .nx-skel::after { animation: none; }
+  .nx-loyalty-fill, .nx-bar, .nx-ring-fill { transition: none; }
+  .nx-net-banner { transition: none; }
+}
+
+/* ------------------------------------------------------- where to? ---- */
+/* The primary action on the home screen, and it should look like the most
+   important thing there. The old card was a bordered box with a small icon
+   and two lines of grey copy, weighted the same as the three service rows
+   under it — so the screen had no single obvious next step. Every app this
+   market uses (Bykea, Careem, inDrive) leads with a big, unmistakable
+   destination field. This is that. */
+
+.nx-where {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 16px;
+  margin-block-end: 14px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--surface-border);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  text-align: start;
+  color: var(--text-primary);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.nx-where:active { transform: scale(0.985); box-shadow: var(--shadow-sm); }
+.nx-where-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  color: var(--on-accent);
+  background: var(--accent-gradient);
+  box-shadow: var(--accent-glow);
+}
+.nx-where-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nx-where-title { font-family: var(--font-display); font-weight: 800; font-size: 17px; line-height: 1.15; }
+.nx-where-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  /* One line only — this is a prompt, not a paragraph, and wrapping it to
+     three lines on a 375px screen pushes the service tiles under the fold. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tiles in a row are read as a set, so their parts have to line up across the
+   set. Without this the label of a tile whose text wraps to two lines sits at
+   a different height from its neighbours, and the row looks broken rather
+   than varied. The sub-line is pushed to the bottom edge so the price rail
+   across the row is straight whatever the label above it does. */
+.nx-tile-label { margin-block-start: auto; }
+.nx-tile-sub   { margin-block-start: 0; }
+
+/* ------------------------------------------------------- segmented ---- */
+/* Two or three mutually exclusive options, all visible. Used for theme and
+   language, where hiding the choices behind a sub-screen would defeat the
+   point: someone who needs the Urdu switch is exactly the person who cannot
+   read the English row that would lead to it. */
+
+.nx-seg {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+}
+.nx-seg-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  /* 44px is the accessible minimum for a touch target and this is a settings
+     control people use once — there is no reason to make it tight. */
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out),
+              background var(--dur-fast) var(--ease-out);
+}
+.nx-seg-btn.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+.nx-seg-btn svg { flex: none; }
+
+/* dir="auto" fixes the DIRECTION of a string but takes its ALIGNMENT with it:
+   an untranslated English line inside an Urdu card is detected as LTR and so
+   aligns left, while everything around it aligns right. On the promo card
+   that put the kicker underneath the close button.
+
+   Direction and alignment are separable, and here they should be: each string
+   reads in its own direction, every string aligns to the card's. */
+[dir="rtl"] .nx-promo > p,
+[dir="rtl"] .nx-promo > span { text-align: right; }
+[dir="ltr"] .nx-promo > p,
+[dir="ltr"] .nx-promo > span { text-align: left; }
+
+/* Never let a kicker run under the close button, in either direction. */
+.nx-promo-kicker { padding-inline-end: 30px; }
