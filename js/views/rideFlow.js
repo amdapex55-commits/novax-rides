@@ -264,6 +264,17 @@ export function renderRideBooking(root) {
                  this screen, and a number that lands rather than appearing
                  draws the eye to it without a single word of instruction. -->
             <p class="nx-cockpit-fare" id="fareAmount">${fmtMoney(0)}</p>
+
+            <!-- HOW THE NUMBER WAS REACHED.
+                 This is the direct answer to inDrive. Their user haggles for
+                 two minutes and ends up trusting the price because they
+                 argued it down. Ours is fixed — which is faster, but a fixed
+                 number with no working shown is just a number someone has to
+                 take on faith. Showing base + rate + distance turns "why is
+                 it Rs 195?" from a question they'd have to ask the rider into
+                 arithmetic they can check themselves. -->
+            <p class="nx-fare-breakdown" id="fareBreakdown"></p>
+
             <!-- Fair Petrol Guarantee. Sits directly under the number it
                  explains, because it's only persuasive next to the fare. -->
             ${
@@ -371,6 +382,19 @@ export function renderRideBooking(root) {
     // approximation of the number charged.
     const fareEl = node.querySelector("#fareAmount");
     if (fareEl) countUp(fareEl, quoted, { prefix: "Rs. ", duration: 700 });
+
+    const cfg = PRICING[selectedVehicle] || PRICING.BIKE;
+    const breakdownEl = node.querySelector("#fareBreakdown");
+    if (breakdownEl && cfg) {
+      const distancePart = Math.round(route.km * cfg.perKm);
+      // When the trip is short enough that the minimum fare applies, the sum
+      // deliberately doesn't add up — so say that, rather than showing a
+      // breakdown a customer can prove wrong.
+      const hitsMinimum = cfg.base + distancePart < cfg.minimum;
+      breakdownEl.textContent = hitsMinimum
+        ? `Minimum fare ${PRICING.currency} ${cfg.minimum} — short trips are charged the minimum`
+        : `${PRICING.currency} ${cfg.base} base + ${PRICING.currency} ${cfg.perKm}/km × ${route.km} km`;
+    }
 
     const farePanel = node.querySelector("#farePanel");
     const confirmBtn = node.querySelector("#confirmRideBtn");
@@ -489,6 +513,10 @@ export function renderRideBooking(root) {
           // straight line. The server sanity-checks both before trusting.
           roadDistanceKm: route.km,
           roadDurationMinutes: route.minutes,
+          // Sent so the completed trip can show a receipt that says where the
+          // customer actually went, rather than two coordinates.
+          pickupLabel: pickup?.label || undefined,
+          dropoffLabel: dropoff?.label || undefined,
           pickupAccuracyMeters: pickupAccuracy ?? undefined,
           pickupNote: note.text || undefined,
           pickupNoteAudioUrl: note.audioUrl || undefined,

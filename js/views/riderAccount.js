@@ -174,21 +174,48 @@ export function renderTripHistory(root) {
         list.innerHTML = `<div class="empty-state"><div class="icon">${icon("history", 32)}</div><p>No trips yet — your first ride will show up here</p></div>`;
         return;
       }
+      /* A receipt, not a log line.
+         This listed status, date, vehicle and fare — which tells someone
+         nothing about which trip it was. In a cash market the question people
+         actually bring to support is "what was that Rs 340 on Tuesday", and
+         answering it needs the route and what the fare was made of. A tip is
+         broken out separately because it went to the rider in full and the
+         customer should be able to see that. */
       list.innerHTML = trips
         .slice(0, 30)
-        .map(
-          (t, i) => `
-        <div class="card mb-3 stagger-item" style="animation-delay:${i * 40}ms;">
+        .map((t, i) => {
+          const fare = Number(t.fare || 0);
+          const tip = Number(t.tipAmount || 0);
+          const total = fare + tip;
+          const cancelled = t.status === "CANCELLED";
+          return `
+        <div class="card mb-3 stagger-item" style="animation-delay:${Math.min(i, 10) * 40}ms;">
           <div class="flex justify-between items-center mb-2">
             <span class="badge ${TRIP_STATUS_BADGE[t.status] || "badge-accent"}">${esc(t.status)}</span>
-            <span class="text-xs text-muted">${fmtDate(t.createdAt)}</span>
+            <span class="text-xs text-muted">${fmtDate(t.completedAt || t.createdAt)}</span>
           </div>
-          <div class="flex justify-between items-center">
-            <p class="text-sm text-secondary">${esc(t.vehicleType)}</p>
-            <p class="font-bold">${t.fare ? fmtMoney(t.fare) : "—"}</p>
+
+          <div class="nx-receipt-route mb-2">
+            <span class="nx-receipt-dot start"></span>
+            <span class="nx-receipt-place">${esc(t.pickupLabel || "Pickup")}</span>
+            <span class="nx-receipt-dot end"></span>
+            <span class="nx-receipt-place">${esc(t.dropoffLabel || "Drop-off")}</span>
           </div>
-        </div>`
-        )
+
+          ${cancelled
+            ? `<p class="text-xs text-muted">${
+                t.cancelReason
+                  ? `Cancelled — ${esc(String(t.cancelReason).toLowerCase().replace(/_/g, " "))}`
+                  : "Cancelled"
+              }. You weren't charged.</p>`
+            : `<div class="nx-receipt-lines">
+                 ${t.distanceKm ? `<div><span>Distance</span><span>${Number(t.distanceKm).toFixed(1)} km</span></div>` : ""}
+                 <div><span>Fare (cash)</span><span>${fmtMoney(fare)}</span></div>
+                 ${tip > 0 ? `<div><span>Fast Match tip</span><span>${fmtMoney(tip)}</span></div>` : ""}
+                 <div class="total"><span>Total paid</span><span>${fmtMoney(total)}</span></div>
+               </div>`}
+        </div>`;
+        })
         .join("");
     })
     .catch(() => { list.innerHTML = `<div class="empty-state"><p>Couldn't load trip history</p></div>`; });
@@ -215,12 +242,34 @@ export function renderProfile(root) {
         </div>
       </div>
 
+      <!-- Editable in the app rather than by calling support. Phone is shown
+           but deliberately not editable: it's a login identifier here, so a
+           signed-in session rewriting it turns a borrowed phone into a
+           permanent account transfer. That change goes through a person. -->
       <div class="card mb-3">
-        <label class="field-label">Full Name</label>
-        <div class="flex gap-2">
-          <input id="nameInput" class="input" value="${esc(cached.name)}" placeholder="Your name"/>
-          <button id="saveNameBtn" class="btn btn-secondary">Save</button>
+        <div class="nx-field-row">
+          <div>
+            <label class="field-label" for="nameInput">First name</label>
+            <input id="nameInput" class="input mb-3" value="${esc(cached.name)}" placeholder="Ahmed"/>
+          </div>
+          <div>
+            <label class="field-label" for="lastNameInput">Last name</label>
+            <input id="lastNameInput" class="input mb-3" value="${esc(cached.lastName)}" placeholder="Khan"/>
+          </div>
         </div>
+
+        <label class="field-label" for="emailInput">Email</label>
+        <input id="emailInput" class="input mb-3" type="email" value="${esc(cached.email)}"
+               placeholder="you@example.com"/>
+
+        <label class="field-label">Phone</label>
+        <div class="nx-locked-field mb-3">
+          <span>${esc(cached.phone) || "—"}</span>
+          <span class="nx-locked-note">Contact support to change</span>
+        </div>
+
+        <p class="nx-auth-hint" id="profileHint">&nbsp;</p>
+        <button id="saveNameBtn" class="btn btn-primary btn-block">Save changes</button>
       </div>
 
       <div class="flex-col gap-1">
@@ -256,16 +305,40 @@ export function renderProfile(root) {
     root.querySelector("#nameInput").value = u.name || "";
   }).catch(() => {});
 
-  root.querySelector("#saveNameBtn").addEventListener("click", async () => {
+  root.querySelector("#saveNameBtn").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const hint = root.querySelector("#profileHint");
     const name = root.querySelector("#nameInput").value.trim();
-    if (!name) return;
+    const lastName = root.querySelector("#lastNameInput").value.trim();
+    const email = root.querySelector("#emailInput").value.trim();
+
+    const fail = (msg) => { hint.textContent = msg; hint.className = "nx-auth-hint error"; };
+    if (!name) return fail("Enter your first name.");
+    // Checked here for an instant answer; the server checks again, and also
+    // checks nobody else already has this address.
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return fail("Enter a valid email address.");
+    }
+
+    btn.disabled = true;
+    const label = btn.textContent;
+    btn.innerHTML = `<span class="spinner"></span>`;
     try {
-      await api.updateMe(name);
-      const u = Token.user || {};
-      Token.user = { ...u, name };
+      const updated = await api.updateMe({ name, lastName, email: email || undefined });
+      Token.user = { ...(Token.user || {}), ...updated };
       root.querySelector("#nameText").textContent = name;
+      hint.textContent = "\u00a0";
+      hint.className = "nx-auth-hint";
       toast("Profile updated");
-    } catch (err) { toast(err.message || "Couldn't update profile", true); }
+    } catch (err) {
+      // "That email is already used" is expected and shown; anything else is
+      // a bug and gets reported.
+      reportHandled(err, "updateProfile");
+      fail(err.message || "Couldn't update your profile.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = label;
+    }
   });
 
   root.querySelectorAll("[data-nav]").forEach((r) => r.addEventListener("click", () => navigate(r.dataset.nav)));

@@ -44,13 +44,17 @@
       tracesSampleRate: 0.1,
       sendDefaultPii: false,
 
-      // Strip location and identity out of captured URLs. /location/nearby
-      // carries lat/lng in its query string, so an unscrubbed breadcrumb is a
-      // customer's position sitting in a third-party dashboard.
+      // Strip location and identity out of captured URLs.
+      //
+      // Coordinates were covered; free-text place names were not. A failed
+      // geocode sends ?q=<whatever the customer typed>, and "House 12,
+      // Street 4, Gulshan" identifies someone far more precisely than a
+      // lat/lng ever does. Geocoding is also the request most likely to
+      // fail, so it was the one most likely to be captured.
       beforeBreadcrumb: function (crumb) {
         if (crumb.data && typeof crumb.data.url === "string") {
           crumb.data.url = crumb.data.url.replace(
-            /([?&])(lat|lng|phone|code|token)=[^&]*/gi,
+            /([?&])(lat|lng|phone|code|token|q|query|search|address|pickup|dropoff|from|to)=[^&]*/gi,
             "$1$2=[redacted]"
           );
         }
@@ -63,7 +67,7 @@
       beforeSend: function (event) {
         if (event.request && typeof event.request.url === "string") {
           event.request.url = event.request.url.replace(
-            /([?&])(lat|lng|phone|code|token)=[^&]*/gi,
+            /([?&])(lat|lng|phone|code|token|q|query|search|address|pickup|dropoff|from|to)=[^&]*/gi,
             "$1$2=[redacted]"
           );
         }

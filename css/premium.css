@@ -1904,3 +1904,60 @@
   font-size: 13.5px; line-height: 1.6; color: var(--text-secondary);
   max-width: 34ch; margin-bottom: 18px;
 }
+
+/* The fare's working, shown under the number it explains. Light-on-dark
+   inside the cockpit — present for anyone who looks, never competing with
+   the figure itself. */
+.nx-fare-breakdown {
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.35;
+}
+
+/* ===========================================================================
+   Trip receipt (history)
+   =========================================================================== */
+.nx-receipt-route {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  align-items: center;
+  font-size: 13px;
+}
+.nx-receipt-dot { width: 8px; height: 8px; border-radius: 50%; }
+.nx-receipt-dot.start { background: var(--accent); }
+.nx-receipt-dot.end { background: var(--accent-2); }
+.nx-receipt-place {
+  min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+.nx-receipt-lines {
+  display: grid; gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--surface-border);
+  font-size: 12px;
+}
+.nx-receipt-lines > div { display: flex; justify-content: space-between; }
+.nx-receipt-lines span:first-child { color: var(--text-muted); }
+.nx-receipt-lines .total {
+  margin-top: 2px; padding-top: 5px;
+  border-top: 1px dashed var(--surface-border);
+  font-weight: 800; font-size: 13px;
+}
+.nx-receipt-lines .total span:first-child { color: var(--text-primary); }
+
+/* A field shown for confirmation but not editable here (phone). Looks like a
+   field so it reads as part of the form, but is visibly inert. */
+.nx-locked-field {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 46px; padding: 10px 14px;
+  border: 1px dashed var(--surface-border);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+.nx-locked-note { font-size: 12px; color: var(--text-muted); flex: none; }

@@ -154,7 +154,13 @@ export const api = {
 
   // --- Users ---
   getMe: () => request("/users/me").then((u) => { Token.user = u; return u; }),
-  updateMe: (name) => request("/users/me", { method: "PATCH", body: { name } }),
+  // Accepts a patch object. Kept backwards-compatible with the old
+  // updateMe("Ahmed") call shape so a screen I haven't touched can't break.
+  updateMe: (patch) =>
+    request("/users/me", {
+      method: "PATCH",
+      body: typeof patch === "string" ? { name: patch } : patch,
+    }),
   getVehicle: () => request("/users/me/vehicle"),
   updateVehicle: (dto) => request("/users/me/vehicle", { method: "PATCH", body: dto }),
   approveKyc: (userId) => request(`/users/${userId}/approve-kyc`, { method: "POST" }),
