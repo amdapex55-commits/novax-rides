@@ -85,6 +85,7 @@ const UR = {
   "Work": "کام کی جگہ",
   "Sign in": "سائن ان",
   "Sign up": "اکاؤنٹ بنائیں",
+  "Takes a minute — only needed to book": "ایک منٹ لگے گا — صرف بکنگ کے لیے ضروری ہے",
   "riders nearby": "قریب سوار",
   "Looking for riders": "سوار تلاش کیے جا رہے ہیں",
 

@@ -70,7 +70,7 @@ export function renderHome(root) {
       ${isGuest ? `
       <div class="card mb-4 flex items-center gap-3" id="signInCard" style="cursor:pointer;">
         <div class="list-row-icon" style="background:rgba(255, 182, 72, 0.14); color:var(--accent-2);">${icon("bolt", 18)}</div>
-        <div style="flex:1;"><p class="font-bold text-sm">${esc(t("Sign in"))}</p><p class="text-secondary text-xs">Takes a minute — only needed to book</p></div>
+        <div style="flex:1;"><p class="font-bold text-sm">${esc(t("Sign in"))}</p><p class="text-secondary text-xs" dir="auto">${esc(t("Takes a minute — only needed to book"))}</p></div>
         ${icon("chevronRight", 18)}
       </div>` : ""}
 
@@ -269,13 +269,13 @@ function renderBikeTab(panel, isGuest) {
         <span class="nx-tile-sub">From Rs ${PRICING.BIKE.minimum}</span>
       </button>
       <button class="nx-tile t-parcel${soon("parcel") ? " is-soon" : ""}" data-go="/parcel/service">
-        ${soon("parcel") ? `<span class="nx-tile-flag">Soon</span>` : `<span class="nx-tile-flag new">New</span>`}
+        ${soon("parcel") ? `<span class="nx-tile-flag">${esc(t("Soon"))}</span>` : `<span class="nx-tile-flag new">${esc(t("New"))}</span>`}
         <span class="nx-tile-icon">${icon("package", 21)}</span>
         <span class="nx-tile-label">${esc(t("Send a Parcel"))}</span>
         <span class="nx-tile-sub">From Rs ${PRICING.PARCEL.minimum}</span>
       </button>
       <button class="nx-tile t-errand${soon("errand") ? " is-soon" : ""}" data-go="/errand/details">
-        ${soon("errand") ? `<span class="nx-tile-flag">Soon</span>` : `<span class="nx-tile-flag new">New</span>`}
+        ${soon("errand") ? `<span class="nx-tile-flag">${esc(t("Soon"))}</span>` : `<span class="nx-tile-flag new">${esc(t("New"))}</span>`}
         <span class="nx-tile-icon">${icon("basket", 21)}</span>
         <span class="nx-tile-label">${esc(t("Pick & Deliver"))}</span>
         <span class="nx-tile-sub">From Rs ${PRICING.ERRAND.minimum}</span>
