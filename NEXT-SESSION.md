@@ -205,3 +205,28 @@ higher-risk one and needs no push.
   app CSS is ~46 KB gzipped (not 76 KB), eager JS ~38 KB gzipped, fonts 73 KB
   and non-blocking. This is not the emergency the review implies, and no font
   was added for Urdu precisely to keep it that way.
+
+---
+
+## Found while testing, not fixed (out of scope, but real)
+
+**Deleting an account does not revoke its existing tokens.**
+
+Verified against production on 2026-08-13. After `DELETE /users/me`:
+
+- the row is correctly anonymised — phone scrubbed, name becomes "Deleted user"
+- `POST /auth/login` correctly refuses with 401
+- **but the access token issued before deletion still authenticates**, and
+  `GET /users/me` keeps returning 200 for up to its full 30-day lifetime
+
+So a deleted account remains usable on whatever device it was already signed
+in on, until the token expires on its own. Practically this is a phone the
+user still holds, so it is low severity — but it is the kind of thing a Play
+Store data-deletion review asks about directly, and "we deleted your data" is
+weaker than it sounds if the session outlives it.
+
+**Fix:** on deletion, either bump a per-user token epoch that `JwtStrategy`
+checks, or add the user to a short-lived Redis denylist keyed until the
+longest possible token expiry. Not attempted here because it touches the auth
+path and wanted its own testing pass rather than being folded into a UI
+change.
