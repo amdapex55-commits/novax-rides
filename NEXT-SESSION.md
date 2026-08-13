@@ -134,3 +134,74 @@ stricter.
   makes deploys zero-downtime.
 - Railway credit was down to **$4.57 / 19 days** on 2026-08-11. Top it up before
   putting real riders on this.
+
+---
+
+## Market-review rebuild — what was deliberately NOT built
+
+Four things the review asked for are missing on purpose. Each is a business
+decision or a missing backend, not an oversight, and each would have meant
+telling a customer something untrue.
+
+### 1. No "3 more rides to a free ride"
+
+The review is right that this is the addictive framing. It cannot be written
+yet, because **loyalty points currently buy nothing**. `LoyaltyService` awards
+10 points a trip and sorts users into Bronze/Silver/Gold/Platinum, but no
+endpoint spends points and no tier confers any benefit. The home screen shows
+real points against the real next tier instead.
+
+**To fix:** decide what a tier is worth (a free ride at 500 points? priority
+matching?), build the redemption, then change the copy in
+`js/views/riderHome.js → loyaltyStripHtml()`.
+
+### 2. Referral is one-sided, so the banner is modest
+
+Bykea runs "Give Rs 100, Get Rs 100". Ours says "Earn 100 points per friend",
+because `LoyaltyService.applyReferral` credits **the referrer only** — the new
+customer gets nothing — and those points are the same points that currently
+buy nothing.
+
+This is the weakest offer on the home screen and it is worth fixing before
+spending anything on acquisition. **To fix:** credit both sides in
+`applyReferral`, give points a cash value, then update the `referral` entry in
+`js/promos.js`.
+
+### 3. No demand heat map for drivers
+
+"High demand in Clifton" needs trip-request density by area over the last N
+minutes. **No endpoint produces this.** The styling is ready
+(`.nx-heat-row` in `css/market.css`) and deliberately unused — inventing plausible
+hot zones would send riders across Karachi on made-up data, burning their own
+petrol.
+
+**To fix:** an endpoint that buckets recent `Trip.requestedAt` by area and
+returns counts, then render it into the driver home.
+
+### 4. No post-ride "did you reach safely?" check
+
+Requires push notifications ten minutes after drop-off. **There is no push
+infrastructure** — no FCM/APNs credentials, no device-token storage, no send
+path. The in-app safety checklist covers the moment of boarding, which is the
+higher-risk one and needs no push.
+
+**To fix:** this lands with the Play Store build (FCM), not before.
+
+---
+
+## Also worth knowing
+
+- **Service worker is v17.** Anyone on v16 needs one reload to pick up the
+  redesign. The theme and language bootstraps are inline in each HTML `<head>`,
+  so they are not subject to module caching.
+- **`js/config.js` gained a localhost-only dev override.** Set
+  `localStorage["novago.dev.apiBase"]` to point a local build at the deployed
+  backend. Hard-gated on hostname so it can never apply in production.
+- **Fast Match tips are now visible for the first time.** They were built,
+  wired to `tipAmount`, capped at Rs 500 server-side, and hidden behind the
+  bidding flag. Expect tip revenue to appear in the data from this deploy on;
+  it is not a new feature so much as a feature that was switched off.
+- **Real bundle numbers**, since the review quoted uncompressed sizes:
+  app CSS is ~46 KB gzipped (not 76 KB), eager JS ~38 KB gzipped, fonts 73 KB
+  and non-blocking. This is not the emergency the review implies, and no font
+  was added for Urdu precisely to keep it that way.
