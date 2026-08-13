@@ -522,11 +522,11 @@
 }
 .nx-store-banner-hint {
   display: flex; flex-direction: column; align-items: center; gap: 5px;
-  color: rgba(120, 84, 20, 0.7); font-size: 11.5px; font-weight: 600;
+  color: rgba(120, 84, 20, 0.7); font-size: 12px; font-weight: 600;
 }
 .nx-store-openpill {
   position: absolute; top: 10px; left: 10px;
-  font-size: 9.5px; font-weight: 800; letter-spacing: 0.05em;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.05em;
   background: rgba(255,255,255,0.95); color: #5b21b6;
   padding: 4px 9px; border-radius: 99px;
 }
@@ -547,16 +547,16 @@
 .nx-store-row h4 { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
 .nx-store-row h4.muted { color: var(--text-muted); font-weight: 600; }
 .nx-store-rating {
-  font-size: 11px; font-weight: 800; flex: none;
+  font-size: 12px; font-weight: 800; flex: none;
   background: var(--brand-ride-soft); color: #5b21b6;
   padding: 3px 8px; border-radius: 99px;
 }
 .nx-store-tags { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
 .nx-store-meta {
   display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-  font-size: 11.5px; color: var(--text-muted); margin-top: 9px;
+  font-size: 12px; color: var(--text-muted); margin-top: 9px;
 }
-.nx-store-min { font-size: 11.5px; color: var(--text-muted); margin-top: 5px; }
+.nx-store-min { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
 .nx-preview-caption {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   font-size: 12px; color: var(--text-muted); margin-top: 9px;
@@ -611,7 +611,7 @@
 }
 .nx-pay-opt.on { background: var(--bg); border-color: var(--accent); box-shadow: 0 4px 16px rgba(109,40,217,0.14); }
 .nx-pay-name { font-size: 14.5px; font-weight: 700; }
-.nx-pay-hint { font-size: 11.5px; color: var(--text-muted); }
+.nx-pay-hint { font-size: 12px; color: var(--text-muted); }
 
 /* ---- Range ---- */
 
@@ -728,7 +728,7 @@
 }
 .nx-welcome-trust span {
   display: flex; align-items: center; gap: 6px;
-  font-size: 11.5px; font-weight: 600; color: var(--text-muted);
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
 }
 
 /* Very short screens (iPhone SE, split-screen Android): drop to a single
@@ -795,7 +795,10 @@
   box-shadow: 0 4px 12px rgba(109,40,217,0.3);
 }
 .nx-bike-avatar {
-  width: 38px; height: 38px; border-radius: 50%;
+  /* 44px, not 38. This sits in the top corner of the home screen and is
+     tapped one-handed with a thumb stretching across the phone — the least
+     accurate tap anyone makes all day. */
+  width: 44px; height: 44px; border-radius: 50%;
   background: #fff; color: var(--text-secondary);
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 3px 12px rgba(14,29,22,0.16);
@@ -882,7 +885,7 @@
 
 .nx-bike-fare {
   display: flex; align-items: center; gap: 7px;
-  font-size: 11.5px; color: var(--text-muted);
+  font-size: 12px; color: var(--text-muted);
   padding: 9px 12px; border-radius: 10px; background: var(--surface);
   margin-bottom: 14px;
 }
@@ -902,7 +905,7 @@
 .nx-soon-label { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
 .nx-soon-badge {
   /* Was 8.5px — unreadable outdoors, which is where this app is used. */
-  font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
   color: #8a5a04; background: var(--brand-food-soft);
   padding: 3px 8px; border-radius: 99px;
 }
@@ -1010,7 +1013,7 @@
   border-bottom: 1px solid rgba(255,255,255,0.10);
 }
 .nx-cockpit-fare-label {
-  font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
   text-transform: uppercase; color: rgba(255,255,255,0.55);
 }
 .nx-cockpit-fare {
@@ -1021,7 +1024,7 @@
 /* "Fare locked" — the single most reassuring thing in a cash market. */
 .nx-lock {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
   color: #a78bfa; background: rgba(167,139,250,0.14);
   border: 1px solid rgba(167,139,250,0.28);
   padding: 5px 10px; border-radius: 99px;
@@ -1034,7 +1037,7 @@
 }
 .nx-cockpit-cell { min-width: 0; }
 .nx-cockpit-cell .k {
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
   text-transform: uppercase; color: rgba(255,255,255,0.45);
 }
 .nx-cockpit-cell .v {
@@ -1086,7 +1089,7 @@
 }
 .nx-verified-badge {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 10.5px; font-weight: 800; letter-spacing: 0.05em;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.05em;
   color: #5b21b6; background: var(--brand-ride-soft);
   padding: 3px 8px; border-radius: 99px;
 }
@@ -1100,7 +1103,7 @@
   flex: none;
 }
 .nx-plate-hint {
-  font-size: 11.5px; color: var(--text-muted); margin-top: 7px; text-align: center;
+  font-size: 12px; color: var(--text-muted); margin-top: 7px; text-align: center;
 }
 
 /* "Coming next" line on the welcome screen — present, small, honest. */
@@ -1296,7 +1299,7 @@
   margin-bottom: 12px;
 }
 .nx-note-driver .k {
-  font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.06em;
   text-transform: uppercase; color: var(--accent);
 }
 .nx-note-driver .v { font-size: 14.5px; font-weight: 600; margin-top: 3px; line-height: 1.45; }
@@ -1337,7 +1340,7 @@
 .nx-petrol-guarantee {
   display: flex; align-items: center; gap: 5px;
   margin-top: 6px;
-  font-size: 11.5px; font-weight: 600;
+  font-size: 12px; font-weight: 600;
   color: rgba(255, 255, 255, 0.62);
   line-height: 1.3;
 }
@@ -1355,7 +1358,7 @@
   display: flex; align-items: center; gap: 5px;
   font-size: 13px; font-weight: 800; letter-spacing: -0.01em;
 }
-.nx-fastmatch-sub { font-size: 11.5px; color: var(--text-muted); }
+.nx-fastmatch-sub { font-size: 12px; color: var(--text-muted); }
 .nx-fastmatch-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .nx-tip {
   height: 42px; border-radius: var(--r-sm);
@@ -1419,7 +1422,7 @@
   background: var(--surface-2); border-radius: var(--r-md); padding: 12px;
   display: flex; flex-direction: column; gap: 3px;
 }
-.nx-offer-facts .k { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.nx-offer-facts .k { font-size: 12px; color: var(--text-muted); font-weight: 600; }
 .nx-offer-facts .v { font-size: 15px; font-weight: 800; text-transform: capitalize; }
 
 .nx-offer-actions { display: flex; flex-direction: column; gap: 10px; }
@@ -1528,7 +1531,7 @@
 .nx-doc:active { transform: scale(0.99); }
 .nx-doc-icon { color: var(--text-muted); }
 .nx-doc-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
-.nx-doc-state { font-size: 11.5px; color: var(--text-muted); }
+.nx-doc-state { font-size: 12px; color: var(--text-muted); }
 
 .nx-doc.busy { border-color: var(--accent); }
 .nx-doc.done {
@@ -1613,7 +1616,7 @@
   cursor: pointer;
 }
 .nx-disclosure-foot {
-  margin-top: 6px; font-size: 11.5px; line-height: 1.5;
+  margin-top: 6px; font-size: 12px; line-height: 1.5;
   color: var(--text-muted); text-align: center;
 }
 .nx-disclosure-foot a { color: var(--accent); }
@@ -1681,7 +1684,7 @@
 .nx-doc-cell-label,
 .nx-doc-cell-state {
   position: relative; z-index: 1;
-  font-size: 11px; font-weight: 700;
+  font-size: 12px; font-weight: 700;
   color: #fff;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
 }
@@ -1744,3 +1747,27 @@
   color: var(--success);
 }
 .nx-action-clear p { color: var(--text-primary); }
+
+
+/* "Set pickup manually" / "Use another pickup".
+   This is the recovery action on the one screen where a vague GPS pin sends a
+   rider to the wrong door — the single most damaging failure in the product.
+   It was a 23px inline link. It is now a real button. */
+#pickupFix {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  margin: 4px 0;
+  border: 1px solid var(--warning);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  color: var(--warning);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* Badges are labels, but a "COMING SOON" nobody can read is a label that
+   isn't doing its job. */
+/* Wins over .badge-warning and friends, which each set their own size. */
+.badge, .badge-warning, .badge-accent, .badge-error, .badge-success { font-size: 12px; }

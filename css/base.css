@@ -47,8 +47,15 @@ img { max-width: 100%; display: block; }
 #app-root {
   max-width: var(--max-w);
   margin: 0 auto;
-  min-height: 100dvh;
+  /* ORDER MATTERS AND WAS WRONG. These were declared dvh-then-vh, so every
+     browser that understands both used the LAST one — 100vh — which is the
+     broken value. On iOS Safari 100vh assumes the address bar is hidden, so
+     the app was permanently taller than the visible viewport: a page that
+     always scrolled a little, with its bottom edge tucked under the browser
+     chrome. That is what made it feel like a website rather than an app.
+     Fallback first, real value second. */
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
   background: var(--bg);
   display: flex;
@@ -131,7 +138,12 @@ img { max-width: 100%; display: block; }
 .text-muted { color: var(--text-muted); }
 .text-accent { color: var(--accent); }
 .text-sm { font-size: 13px; }
-.text-xs { font-size: 11px; }
+/* 12px is the floor, not a preference. This app is read one-handed, outdoors,
+   on a phone in Karachi daylight, often by someone in a hurry — 11px is
+   legible on a desk and genuinely isn't on a kerb. .text-xs is used on fare
+   breakdowns, timestamps and status lines, so the extra pixel is worth more
+   than the density it costs. */
+.text-xs { font-size: 12px; }
 .text-lg { font-size: 20px; }
 .text-xl { font-size: 26px; }
 .font-bold { font-weight: 700; }
@@ -193,4 +205,55 @@ button,
 .top-tab {
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* ===========================================================================
+   MOBILE MINIMUMS
+
+   Not styling — hit-rate. Apple and Google both put the minimum touch target
+   at 44px, and everything below that in this app was something a person taps
+   while standing on a street: the profile button, the password reveal, the
+   "set pickup manually" link on the one screen where an inaccurate pin sends
+   a rider to the wrong door.
+
+   Applied as a floor rather than by rewriting each component, so a control
+   added later inherits it instead of quietly shipping at 32px.
+   =========================================================================== */
+
+/* Any icon-only control. Padding rather than fixed height, so it still works
+   when the icon inside changes size. */
+.btn-icon,
+.map-fab,
+.nx-pw-toggle,
+button[class*="Btn"]:not(.btn):not(.btn-block) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Inline text actions inside a sentence ("Set pickup manually", "Change").
+   Can't be 44px tall without wrecking the line, so they get horizontal and
+   vertical padding to widen the target while the text stays inline. */
+.nx-inline-action,
+a.nx-link-strong,
+button.nx-text-action {
+  display: inline-block;
+  padding: 10px 4px;
+  margin: -10px 0;
+}
+
+/* Real buttons never fall under the thumb minimum. */
+.btn { min-height: 44px; }
+.btn-sm { min-height: 40px; }   /* dense ops tables only, never a customer path */
+
+/* Below this the layout is one column and every gutter has to earn its space. */
+@media (max-width: 400px) {
+  .page { padding-left: 14px; padding-right: 14px; }
+  .nx-field-row { grid-template-columns: 1fr; }
+}
+
+/* iPhone with a home indicator: the bottom nav must sit above it, not under.
+   --safe-bottom is env(safe-area-inset-bottom) and resolves to 0 everywhere
+   else, so this costs nothing on Android. */
+.bottom-nav {
+  padding-bottom: calc(var(--sp-2) + var(--safe-bottom));
 }

@@ -182,9 +182,11 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: var(--sp-2) var(--sp-3);
+  min-height: 52px;   /* 44px minimum target, plus room for icon + label */
+  justify-content: center;
   border-radius: var(--r-md);
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   transition: color var(--dur-fast), transform var(--dur-fast) var(--ease-bounce);
 }
@@ -218,7 +220,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   display: inline-flex; align-items: center; gap: 4px;
   padding: 4px 10px;
   border-radius: var(--r-full);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -307,7 +309,10 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   padding: var(--sp-6) var(--sp-5) calc(var(--sp-6) + var(--safe-bottom));
   z-index: 95;
   transition: transform var(--dur-med) var(--ease-spring);
+  /* dvh, or a sheet opened while the address bar is showing extends past the
+     bottom of the screen and its last action is unreachable. */
   max-height: 85vh;
+  max-height: 85dvh;
   overflow-y: auto;
 }
 .sheet.open { transform: translate(-50%, 0); }
@@ -510,8 +515,11 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 /* Full-bleed map screen: map fills the viewport, a sheet floats over it. */
 .map-screen {
   position: relative;
-  height: 100dvh;
+  /* Same inversion as #app-root. Worse here: this is the booking screen, so
+     an over-tall viewport pushes the fare sheet below the fold on the one
+     screen where the number is the decision. */
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 .nx-map-skeleton { border-radius: var(--r-lg); width: 100%; }
@@ -614,7 +622,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 }
 .verified-badge {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 11px; font-weight: 700;
+  font-size: 12px; font-weight: 700;
   color: var(--accent);
   background: var(--brand-ride-soft);
   padding: 3px 8px; border-radius: var(--r-full);
@@ -629,7 +637,7 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 }
 .ref-id {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 11px; color: var(--text-muted); letter-spacing: 0.04em;
+  font-size: 12px; color: var(--text-muted); letter-spacing: 0.04em;
 }
 
 /* ============================================================
