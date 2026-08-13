@@ -14,6 +14,31 @@ function write(key, value) {
 }
 
 export const state = {
+  /* THESE FOUR WERE BEING SET WITHOUT EXISTING HERE.
+     `state` is a plain object of explicit getter/setter pairs — assigning an
+     undeclared key adds a normal property that works in memory and is NEVER
+     written to sessionStorage. So they survived navigation and silently
+     vanished on reload, which is the worst shape a bug can have: fine when
+     you test it, gone when a customer's browser reloads mid-flow.
+
+     comingSoonService is the clearest: the router sets it, the coming-soon
+     screen reads it, and after a reload that screen had no idea which service
+     the person had tapped. */
+  get comingSoonService() { return read("comingSoonService"); },
+  set comingSoonService(v) { write("comingSoonService", v); },
+
+  get pendingRole() { return read("pendingRole"); },
+  set pendingRole(v) { write("pendingRole", v); },
+
+  get editingPickup() { return read("editingPickup"); },
+  set editingPickup(v) { write("editingPickup", v); },
+
+  // The resolved route (coords, distance, duration) between pickup and
+  // dropoff — reused by the fare screen so a reload doesn't re-hit the
+  // routing host and re-quote a different number.
+  get route() { return read("route"); },
+  set route(v) { write("route", v); },
+
   get pendingPhone() { return read("pendingPhone"); },
   set pendingPhone(v) { write("pendingPhone", v); },
 

@@ -16,6 +16,7 @@ import { createMap } from "../map.js";
 import { getCurrentCoords } from "../geocode.js";
 import { track } from "../analytics.js";
 import { haptic } from "../haptics.js";
+import { reportHandled } from "../errors.js";
 
 export function renderDriverHome(root) {
   const user = Token.user;
@@ -430,6 +431,9 @@ export function renderIncomingOffer(root) {
       state.incomingTripOffer = null;
       navigate("/driver/progress");
     } catch (err) {
+      // "Offer expired" is expected (another driver won the race). Anything
+      // else here is a bug that costs a driver a job they'd already accepted.
+      reportHandled(err, "acceptTrip");
       toast(err.message || "Offer expired", true);
       navigate("/driver/home");
     }

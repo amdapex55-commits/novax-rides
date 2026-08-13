@@ -101,20 +101,45 @@ async function request(path, opts = {}, isRetry = false) {
 
 export const api = {
   // --- Auth ---
-  // Password auth. OTP below still works and is kept deliberately — when an
-  // SMS sender is provisioned, both flows run side by side.
-  // Google Play requires in-app deletion. Anonymises server-side; anonymous
-  // financial records survive (see users.service.ts).
   // Cash out a COD balance. Server re-checks the amount against the real
   // balance — a client-supplied number is a request, not a fact.
   requestWithdrawal: (amount, method, destination) =>
     request("/wallet/withdraw", { method: "POST", body: { amount, method, destination } }),
 
+  // Google Play requires in-app deletion. Anonymises server-side; anonymous
+  // financial records survive (see users.service.ts).
   deleteAccount: () => request("/users/me", { method: "DELETE" }),
 
-  register: (dto) => request("/auth/register", { method: "POST", body: dto }),
+  /* Password auth. OTP below still works and is kept deliberately — when an
+     SMS sender is provisioned, both flows run side by side.
+
+     TOKEN STORAGE LIVES HERE, not in the view. verifyOtp has always worked
+     this way and register/login did not, which is what broke signup: the
+     screen called a Token.set() that has never existed on this object (it
+     exposes `access`/`refresh`/`user` setters and clear(), nothing else), so
+     every successful signup threw immediately after the server had already
+     created the account.
+
+     getMe() is awaited before resolving because the router's auth guard reads
+     Token.user for the role. Returning without it sends a freshly signed-up
+     person to a guard that sees no user and bounces them straight back to
+     the sign-in screen they just completed. */
+  register: (dto) =>
+    request("/auth/register", { method: "POST", body: dto }).then(async (data) => {
+      Token.access = data.accessToken;
+      Token.refresh = data.refreshToken;
+      if (dto?.phone) Token.phone = dto.phone;
+      await api.getMe().catch(() => {});
+      return data;
+    }),
+
   login: (identifier, password) =>
-    request("/auth/login", { method: "POST", body: { identifier, password } }),
+    request("/auth/login", { method: "POST", body: { identifier, password } }).then(async (data) => {
+      Token.access = data.accessToken;
+      Token.refresh = data.refreshToken;
+      await api.getMe().catch(() => {});
+      return data;
+    }),
 
   requestOtp: (phone, referralCode, role) =>
     request("/auth/otp/request", { method: "POST", body: { phone, ...(referralCode ? { referralCode } : {}), ...(role ? { role } : {}) } }),

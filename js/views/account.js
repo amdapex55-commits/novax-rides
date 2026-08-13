@@ -20,13 +20,14 @@
 //   Created pending, and cannot go online until ops approves them against the
 //   original document. That gate is not a formality: they carry a passenger.
 
-import { api, Token } from "../api.js";
+import { api } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
 import { toast, esc } from "../ui.js";
 import { navigate } from "../router.js";
 import { APP_CONFIG } from "../appMode.js";
 import { track } from "../analytics.js";
+import { reportHandled } from "../errors.js";
 
 const MAX_DOC_BYTES = 5 * 1024 * 1024;
 
@@ -101,11 +102,15 @@ export function renderSignIn(root) {
     const label = btn.innerHTML;
     btn.innerHTML = `<span class="spinner"></span>`;
     try {
-      const tokens = await api.login(identifier, password);
-      Token.set(tokens);
+      // api.login stores the tokens and hydrates Token.user.
+      await api.login(identifier, password);
       track("signed_in", { role: signupRole() });
       afterAuth();
     } catch (err) {
+      // A wrong password is expected and won't be reported; a TypeError from
+      // our own code will be. That distinction is the whole point — the
+      // friendly message below is what hid the last one.
+      reportHandled(err, "signin");
       hint.textContent = err.message || "Couldn't sign you in. Check your details.";
       hint.className = "nx-auth-hint error";
       btn.disabled = false;
@@ -247,14 +252,15 @@ export function renderSignUp(root) {
     const label = btn.innerHTML;
     btn.innerHTML = `<span class="spinner"></span>`;
     try {
-      const tokens = await api.register(dto);
-      Token.set(tokens);
+      // api.register stores the tokens and hydrates Token.user.
+      await api.register(dto);
       track("signed_up", { role });
       toast(isDriver
         ? "Application received — we'll review your licence shortly"
         : "Welcome to Nova Go");
       afterAuth();
     } catch (err) {
+      reportHandled(err, "signup", { role });
       fail(err.message || "Couldn't create your account.");
       btn.disabled = false;
       btn.innerHTML = label;

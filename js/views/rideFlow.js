@@ -18,6 +18,7 @@ import {
   PRICING, VEHICLE_TYPES, ALLOW_BID_FARE, GPS, ZONE, inZone, isOpenNow, HOURS,
 } from "../launch.config.js";
 import { haptic } from "../haptics.js";
+import { reportHandled } from "../errors.js";
 
 const ALL_VEHICLES = [
   { type: "BIKE", name: "Nova Moto", desc: "Fastest through traffic", icon: "bike", tag: "Bike" },
@@ -502,6 +503,7 @@ export function renderRideBooking(root) {
         state.activeTripId = trip.id;
         navigate("/tracking");
       } catch (err) {
+        reportHandled(err, "createTrip", { vehicleType: selectedVehicle });
         toast(err.message || "Couldn't request a ride", true);
         submitting = false;
         confirmBtn.disabled = false;
