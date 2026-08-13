@@ -102,12 +102,52 @@ export function esc(value) {
  *
  * Returns { el, step(html), onMount(fn) }; each step() animates in.
  */
+/**
+ * The bottom sheet that docks over the booking map.
+ *
+ * THE HANDLE USED TO BE A LIE. It rendered a grab bar — the universal "drag
+ * me" affordance — with no drag logic behind it, while the sheet capped at
+ * 82% and scrolled internally. On a phone that put the Confirm button below
+ * the fold of a nested scroll container nobody could see, on the one screen
+ * where the whole point is to press it. People pulled the handle, nothing
+ * moved, and the booking looked broken.
+ *
+ * Now the handle does what it looks like it does: drag it, or tap it, and the
+ * sheet expands to full height or collapses back to its natural size.
+ */
 export function dockSheet(container) {
   const el = document.createElement("div");
   el.className = "dock-sheet";
-  el.innerHTML = `<div class="sheet-handle"></div><div class="sheet-body"></div>`;
+  el.innerHTML = `
+    <button class="sheet-handle" type="button"
+            aria-label="Expand or collapse" aria-expanded="false"></button>
+    <div class="sheet-body"></div>`;
   container.appendChild(el);
+
   const body = el.querySelector(".sheet-body");
+  const handle = el.querySelector(".sheet-handle");
+  let expanded = false;
+
+  function setExpanded(next) {
+    expanded = next;
+    el.classList.toggle("is-expanded", expanded);
+    handle.setAttribute("aria-expanded", String(expanded));
+  }
+
+  handle.addEventListener("click", () => setExpanded(!expanded));
+
+  /* Drag. Deliberately vertical-only and threshold-based: a small movement is
+     a tap, and a horizontal one is the map being panned, not the sheet being
+     dragged. */
+  let startY = null;
+  handle.addEventListener("touchstart", (e) => { startY = e.touches[0].clientY; }, { passive: true });
+  handle.addEventListener("touchmove", (e) => {
+    if (startY === null) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy < -28 && !expanded) { setExpanded(true); startY = null; }
+    else if (dy > 28 && expanded) { setExpanded(false); startY = null; }
+  }, { passive: true });
+  handle.addEventListener("touchend", () => { startY = null; }, { passive: true });
 
   return {
     el,
@@ -115,8 +155,13 @@ export function dockSheet(container) {
      * can wire its buttons. */
     step(html) {
       body.innerHTML = `<div class="sheet-step">${html}</div>`;
+      // A new step is new content of a new length — start it scrolled to the
+      // top rather than wherever the previous step happened to be left.
+      el.scrollTop = 0;
       return body.firstElementChild;
     },
+    expand() { setExpanded(true); },
+    collapse() { setExpanded(false); },
     height() {
       return el.getBoundingClientRect().height;
     },

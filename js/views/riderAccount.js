@@ -350,10 +350,10 @@ export function renderSettings(root) {
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-6">Settings</h1>
       <div class="flex-col gap-1 mb-6">
-        ${settingsRow("bell", "Notifications")}
-        ${settingsRow("shield", "Privacy & Security")}
-        ${settingsRow("phone", "Payment Methods")}
-        ${settingsRow("document", "Terms & Policies")}
+        ${settingsRow("bell", "Notifications", { note: "Trip updates are shown in the app while a ride is active" })}
+        ${settingsRow("shield", "Privacy & Security", { nav: "/legal/privacy" })}
+        ${settingsRow("phone", "Payment", { note: "Cash only — you pay your rider directly at the end of the trip" })}
+        ${settingsRow("document", "Terms & Policies", { nav: "/legal/terms" })}
       </div>
       <button id="logoutBtn" class="btn btn-danger btn-block">${icon("logout", 18)} Log Out</button>
       <!-- Google Play requires in-app account deletion for any app with
@@ -364,6 +364,9 @@ export function renderSettings(root) {
     </div>
   `;
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
+  root.querySelectorAll("[data-nav]").forEach((r) =>
+    r.addEventListener("click", () => navigate(r.dataset.nav)),
+  );
   root.querySelector("#deleteAccountBtn")?.addEventListener("click", async () => {
     // Two-step, typed confirmation. A single confirm() on an irreversible,
     // policy-mandated action is how people delete an account by accident on a
@@ -392,9 +395,23 @@ export function renderSettings(root) {
   });
 }
 
-function settingsRow(iconName, label) {
-  return `<div class="list-row" style="cursor:pointer;">
+/* These four rows rendered with cursor:pointer and a chevron — every signal
+   that says "this goes somewhere" — and had no handler at all. Four dead
+   taps on the settings screen.
+   
+   Two of them now go where they claim. The other two describe what the app
+   actually does instead of pretending a screen exists: there is no
+   notification-preferences system to configure (nothing is pushed yet), and
+   there are no payment methods because the pilot is cash-only. Saying so is
+   better than a chevron that does nothing. */
+function settingsRow(iconName, label, { nav, note } = {}) {
+  const interactive = Boolean(nav);
+  return `<div class="list-row" ${interactive ? `style="cursor:pointer;" data-nav="${nav}"` : ""}>
     <div class="list-row-icon">${icon(iconName, 18)}</div>
-    <p style="flex:1;" class="font-bold text-sm">${label}</p>${icon("chevronRight", 18)}
+    <div style="flex:1;min-width:0;">
+      <p class="font-bold text-sm">${label}</p>
+      ${note ? `<p class="text-xs text-muted">${note}</p>` : ""}
+    </div>
+    ${interactive ? icon("chevronRight", 18) : ""}
   </div>`;
 }

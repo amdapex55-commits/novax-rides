@@ -97,9 +97,18 @@ export function renderRideBooking(root) {
               placeholder="Current location" value="${esc(state.pickup?.label || "")}"/>
             <div style="height:1px;background:var(--surface-border);"></div>
             <input id="dropoffInput" class="input" style="border:none;padding-left:0;height:44px;background:none;"
-              placeholder="Enter destination" value="${esc(state.dropoff?.label || "")}"/>
+              placeholder="Enter destination" value="${esc(state.dropoff?.label || "")}"
+              autocomplete="off" autocorrect="off" spellcheck="false"/>
           </div>
         </div>
+
+        <!-- Typeahead. createSuggester was imported into this file and never
+             called, so the booking screen made people type a full Karachi
+             address blind and only told them whether it resolved when they
+             pressed Continue. Everywhere else in the app has had suggestions
+             the whole time. -->
+        <div class="nx-suggest" id="pickupSuggest" hidden></div>
+        <div class="nx-suggest" id="dropoffSuggest" hidden></div>
       </div>
 
       <button id="routeNextBtn" class="btn btn-primary btn-block">Continue ${icon("arrow-forward", 18)}</button>
@@ -107,6 +116,58 @@ export function renderRideBooking(root) {
 
     const dropInput = node.querySelector("#dropoffInput");
     dropInput.focus();
+
+    /* Typeahead on both fields. Picking a suggestion stores the coordinates
+       directly, which also skips the geocode on Continue — so a chosen
+       address is both faster and can't resolve to somewhere else. */
+    const liveSuggesters = [];
+
+    function wireSuggest(input, listEl, assign) {
+      const suggester = createSuggester((results, { pending }) => {
+        if (!results.length && !pending) { listEl.hidden = true; return; }
+        listEl.hidden = false;
+        listEl.innerHTML =
+          results
+            .map(
+              (r) => `
+              <button type="button" class="nx-suggest-row" data-lat="${r.lat}" data-lng="${r.lng}">
+                ${icon("location", 15)}<span>${esc(r.displayName)}</span>
+              </button>`,
+            )
+            .join("") + (pending ? `<div class="nx-suggest-row muted"><span>Searching…</span></div>` : "");
+
+        listEl.querySelectorAll("[data-lat]").forEach((row) => {
+          // mousedown fires before blur — without this the list hides before
+          // the click lands and the tap does nothing.
+          row.addEventListener("mousedown", (e) => e.preventDefault());
+          row.addEventListener("click", () => {
+            const label = row.textContent.trim();
+            input.value = label;
+            listEl.hidden = true;
+            assign({ lat: Number(row.dataset.lat), lng: Number(row.dataset.lng), label });
+            haptic.light();
+          });
+        });
+      }, { near: state.pickup || undefined });
+
+      liveSuggesters.push(suggester);
+      input.addEventListener("input", () => {
+        assign(null); // typing invalidates whatever was picked before
+        suggester.query(input.value);
+      });
+      input.addEventListener("blur", () => setTimeout(() => { listEl.hidden = true; }, 180));
+    }
+
+    wireSuggest(
+      node.querySelector("#pickupInput"),
+      node.querySelector("#pickupSuggest"),
+      (v) => { pickup = v ? { ...v } : pickup; if (v) { pickupAccuracy = null; state.pickup = { ...v, verified: true }; } },
+    );
+    wireSuggest(
+      dropInput,
+      node.querySelector("#dropoffSuggest"),
+      (v) => { dropoff = v ? { ...v } : null; if (v) state.dropoff = { ...v }; },
+    );
 
     node.querySelector("#routeNextBtn").addEventListener("click", async (e) => {
       const pickupLabel = node.querySelector("#pickupInput").value.trim();

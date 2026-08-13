@@ -591,10 +591,30 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   overflow-y: auto;
   transition: transform var(--dur-med) var(--ease-spring);
 }
+/* The handle is a real control, so it gets a real touch target: 40x4 is the
+   visible bar, but the button around it is 44px tall like everything else. */
 .dock-sheet .sheet-handle {
-  width: 40px; height: 4px; border-radius: var(--r-full);
+  display: block;
+  width: 100%; height: 28px; padding: 0;
+  border: none; background: transparent;
+  margin-bottom: var(--sp-2);
+  cursor: grab;
+  position: relative;
+  touch-action: none; /* we handle the drag ourselves */
+}
+.dock-sheet .sheet-handle::before {
+  content: "";
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  width: 44px; height: 5px; border-radius: var(--r-full);
   background: var(--surface-3);
-  margin: 0 auto var(--sp-4);
+  transition: background 160ms var(--ease-out), width 160ms var(--ease-out);
+}
+.dock-sheet .sheet-handle:active::before { background: var(--text-muted); width: 52px; }
+
+/* Expanded: the sheet takes the screen so a long step (fare breakdown, tips,
+   pickup note, safety card, confirm) is reachable without a hidden scroll. */
+.dock-sheet.is-expanded {
+  max-height: calc(100% - 24px);
 }
 /* Content swap inside a docked sheet gets its own small enter animation, so
    advancing a step reads as progress rather than a flicker. */

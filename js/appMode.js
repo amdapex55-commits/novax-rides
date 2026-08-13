@@ -157,7 +157,7 @@ const CONFIGS = {
       "/splash", "/welcome", "/signin", "/signup", "/phone", "/otp",
       "/ops/command", "/ops/dashboard", "/ops/approvals", "/ops/users",
       "/ops/live", "/ops/cancellations", "/ops/balances", "/ops/tickets",
-      "/ops/settle",
+      "/ops/settle", "/ops/growth",
       "/support", "/help",
       "/legal/terms", "/legal/privacy",
     ],
@@ -168,7 +168,7 @@ const CONFIGS = {
       { tab: "live", icon: "car", label: "Live", path: "/ops/live" },
       { tab: "approvals", icon: "check-circle", label: "Approve", path: "/ops/approvals" },
       { tab: "settle", icon: "wallet", label: "Settle", path: "/ops/settle" },
-      { tab: "tickets", icon: "chat", label: "Support", path: "/ops/tickets" },
+      { tab: "growth", icon: "gift", label: "Growth", path: "/ops/growth" },
     ],
   },
 };

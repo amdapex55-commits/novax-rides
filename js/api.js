@@ -305,6 +305,11 @@ export const api = {
   getTickets: (status) => request(`/admin/tickets${status ? `?status=${status}` : ""}`),
   resolveTicket: (id) => request(`/admin/tickets/${id}/resolve`, { method: "POST" }),
   getDriverBalances: () => request("/admin/drivers/balances"),
+  // Business leads, referrals and loyalty — all three were captured and none
+  // were readable from ops.
+  getGrowth: () => request("/admin/growth"),
+  setLeadStatus: (id, status) =>
+    request(`/admin/leads/${id}`, { method: "PATCH", body: { status } }),
   adminTopUp: (userId, amount) => request(`/wallet/admin/topup/${userId}`, { method: "POST", body: { amount } }),
 
   // --- Errands (Pick & Deliver to Me) ---

@@ -12,7 +12,7 @@ import { navigate } from "../router.js";
 import { track } from "../analytics.js";
 import { APP, APP_CONFIG, isCustomerApp } from "../appMode.js";
 import { COMMERCIALS } from "../support.config.js";
-import { ZONE, PRICING } from "../launch.config.js";
+import { ZONE, PRICING, SERVICES } from "../launch.config.js";
 
 export function renderSplash(root) {
   root.innerHTML = `
@@ -110,11 +110,20 @@ function renderCustomerWelcome(root) {
       </button>
       <button id="guestBtn" class="btn btn-ghost btn-block">Look around first</button>
 
-      <!-- Coming next: small, below the action, honest. This is the ONLY
-           mention of the other services on the first screen. -->
-      <p class="nx-welcome-next">
-        Food, parcels &amp; errands coming to ${esc(ZONE.name)} soon
-      </p>
+      <!-- What else we do. Derived from SERVICES rather than hardcoded — this
+           line said "food, parcels & errands coming soon" for hours after
+           parcels and errands went live, which is the first screen telling a
+           new customer we do less than we do. -->
+      ${(() => {
+        const live = [SERVICES.parcel, SERVICES.errand].filter((s) => s.live).map((s) => s.label.toLowerCase());
+        const soon = [SERVICES.food].filter((s) => !s.live).map((s) => s.label.toLowerCase());
+        const parts = [];
+        if (live.length) parts.push(`${live.join(" &amp; ")} too`);
+        if (soon.length) parts.push(`${soon.join(" &amp; ")} coming soon`);
+        return parts.length
+          ? `<p class="nx-welcome-next">Bike rides, ${parts.join(" &middot; ")}</p>`
+          : "";
+      })()}
 
       <p class="text-xs text-muted text-center mt-3">
         By continuing you agree to our

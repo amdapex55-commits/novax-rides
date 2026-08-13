@@ -1961,3 +1961,32 @@
   font-size: 14px;
 }
 .nx-locked-note { font-size: 12px; color: var(--text-muted); flex: none; }
+
+/* ===========================================================================
+   Booking sheet: the primary action is pinned, not scrolled to.
+
+   The Confirm button lives at the end of a long step — vehicle card, fare
+   cockpit, Fast Match tips, pickup note, safety card — inside a sheet that
+   caps at 82% and scrolls internally. On a phone that put the one button the
+   entire screen exists for below the fold of a scroll container with no
+   visible scrollbar. People reported "there is no confirm button", and they
+   were right: you couldn't see it and nothing suggested it was there.
+
+   Sticky, not fixed: it stays inside the sheet's flow, so it sits above the
+   safe-area inset and never covers the last line of content.
+   =========================================================================== */
+.dock-sheet #confirmRideBtn,
+.dock-sheet #routeNextBtn,
+.dock-sheet #taxiContinueBtn {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: var(--sp-4);
+  /* A solid band behind it so content scrolling underneath doesn't show
+     through the button's own rounded corners. */
+  box-shadow: 0 -14px 18px -6px var(--bg);
+}
+
+/* Give the scroll a little room past the sticky button so the final element
+   isn't flush against it. */
+.dock-sheet .sheet-step { padding-bottom: var(--sp-2); }

@@ -116,7 +116,20 @@
     background:radial-gradient(120% 90% at 50% 40%,#7c3aed 0%,#5b21b6 45%,#2e1065 100%);
     transition:opacity .42s ease,visibility .42s ease}
   #nxSplash.is-done{opacity:0;visibility:hidden;pointer-events:none}
-  #nxSplash .nxs-stage{position:relative;display:grid;place-items:center;width:min(78vw,320px)}
+  /* LAYOUT WAS THE SPACING BUG.
+     The stage had no height of its own — it was sized by the 86px bolt — while
+     .nxs-words sat absolutely at top:calc(50% + 74px), i.e. below the stage
+     entirely. So the BOLT got centred in the viewport and the wordmark and
+     tagline hung underneath it, overflowing: a big gap above the mark, the
+     text pushed low, and nothing actually centred as a group.
+
+     Now the stage is a normal-flow column and the whole lockup centres
+     together. The rings and rays stay absolute inside their own fixed-size
+     wrapper so they orbit the MARK rather than the mark-plus-text. */
+  #nxSplash .nxs-stage{display:flex;flex-direction:column;align-items:center;
+    width:min(78vw,320px)}
+  #nxSplash .nxs-markwrap{position:relative;display:grid;place-items:center;
+    width:150px;height:150px}
 
   /* Rays: light arriving from a point, not a spinner. Conic gradient masked
      to a ring so it costs one element instead of twelve. */
@@ -144,7 +157,7 @@
   @keyframes nxs-draw{to{stroke-dashoffset:0}}
   @keyframes nxs-fill{to{fill-opacity:1}}
 
-  #nxSplash .nxs-words{position:absolute;top:calc(50% + 74px);text-align:center;width:100%}
+  #nxSplash .nxs-words{text-align:center;width:100%;margin-top:4px}
   #nxSplash .nxs-mark{display:block;font-family:Sora,Inter,system-ui,sans-serif;
     font-size:17px;font-weight:800;letter-spacing:.22em;color:#fff;opacity:0;
     animation:nxs-in .26s ease-out .3s forwards}
@@ -165,13 +178,15 @@
 </style>
 <div id="nxSplash" role="status" aria-label="Nova Go is starting">
   <div class="nxs-stage">
-    <span class="nxs-rays"></span>
+    <span class="nxs-markwrap">
+      <span class="nxs-rays"></span>
     <span class="nxs-ring"></span><span class="nxs-ring"></span><span class="nxs-ring"></span>
     <svg viewBox="0 0 64 64" aria-hidden="true">
       <path class="nxs-bolt" d="M36 8 18 36h12l-2 20 18-28H34l2-20z"
             fill="#fff" stroke="#fff" stroke-width="2.5"
             stroke-linejoin="round" stroke-linecap="round"/>
     </svg>
+    </span>
     <span class="nxs-words">
       <span class="nxs-mark">NOVA GO</span>
       <span class="nxs-tag">BAS NOVA KRO.</span>
