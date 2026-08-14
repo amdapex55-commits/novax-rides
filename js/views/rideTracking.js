@@ -65,6 +65,11 @@ export function renderRideTracking(root) {
      next ride's checklist already complete. */
   const safetyDone = new Set();
 
+  /* Null until the backend says ops has picked this up. Not persisted: it
+     describes what is happening right now, and a remembered banner on the
+     next ride would be a lie. */
+  let opsState = null;
+
   // ---------- Sheet rendering ----------
   function drawSheet() {
     const s = STATUS[currentStatus] || STATUS.REQUESTED;
@@ -180,6 +185,18 @@ export function renderRideTracking(root) {
         </div>
         <p class="text-center font-bold mb-1">${esc(t("Contacting drivers near you"))}</p>
         <p class="text-center text-secondary text-xs mb-3">Your fare is locked while we look.</p>
+        ${opsState ? `
+          <div class="nx-ops-watch ${esc(opsState.level)}">
+            <span class="nx-ops-watch-dot"></span>
+            <div style="flex:1;min-width:0;">
+              <p class="nx-ops-watch-title">${esc(opsState.message)}</p>
+              <p class="nx-ops-watch-sub">
+                ${opsState.level === "escalated"
+                  ? "Someone at the desk is calling riders directly. Your fare hasn't changed."
+                  : "If nobody accepts shortly, a person takes over and places it by hand."}
+              </p>
+            </div>
+          </div>` : ""}
       `}
 
       <div class="flex justify-between text-sm mb-3" style="padding-top:var(--sp-2); border-top:1px solid var(--surface-border);">
@@ -438,6 +455,33 @@ export function renderRideTracking(root) {
     setTimeout(() => navigate("/home"), 1500);
   };
 
+  /* THE OPS PROMISE, MADE VISIBLE.
+
+     "A person is watching every ride" is the strongest thing Nova Go says,
+     and until now the customer had no way to observe it — a ride nobody had
+     matched looked exactly like a ride nobody was looking at. The backend
+     escalates at 90 seconds and again at 3 minutes (see escalateIfStuck in
+     trips.service.ts); these are the two events that reach the person
+     waiting.
+
+     This is deliberately not a spinner with nicer words. It names what is
+     happening and who is doing it, because the thing that makes someone stop
+     waiting is not the wait — it is the suspicion that nothing is happening. */
+  const onOpsWatching = (payload) => {
+    if (payload?.tripId && payload.tripId !== tripId) return;
+    opsState = { level: "watching", message: payload?.message || "Nova Go Ops is watching this ride." };
+    track("ops_watching_shown", { tripId });
+    drawSheet();
+  };
+  const onOpsEscalated = (payload) => {
+    if (payload?.tripId && payload.tripId !== tripId) return;
+    opsState = { level: "escalated", message: payload?.message || "Nova Go Ops is placing this ride by hand." };
+    haptic.light();
+    track("ops_escalated_shown", { tripId });
+    drawSheet();
+  };
+  socketManager.on("trip:opsWatching", onOpsWatching);
+  socketManager.on("trip:opsEscalated", onOpsEscalated);
   socketManager.on("trip:matched", onMatched);
   socketManager.on("trip:driverArrived", onArrived);
   socketManager.on("trip:started", onStarted);
@@ -460,6 +504,8 @@ export function renderRideTracking(root) {
     destroyed = true;
     socket?.emit("trip:unsubscribe", { tripId });
     clearInterval(pollTimer);
+    socketManager.off("trip:opsWatching", onOpsWatching);
+    socketManager.off("trip:opsEscalated", onOpsEscalated);
     socketManager.off("trip:matched", onMatched);
     socketManager.off("trip:driverArrived", onArrived);
     socketManager.off("trip:started", onStarted);
