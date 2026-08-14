@@ -132,10 +132,17 @@ APNs key, no device-token storage, no send path. This is a real build (item
 27. **[TODO] Demo accounts via `seed-demo-accounts.js`** — pre-approved
     customer and driver, credentials into App Store Connect and Play Console.
     **Not** a hardcoded OTP. See correction B.
-28. **[TODO] A deterministic test fleet.** A reviewer in California must not
-    see "no riders available". Needs a staging driver that is always online in
-    the launch zone, or a review-mode auto-accept. Without this the reviewer
-    concludes the app is broken.
+28. **[DONE, needs switching on] A deterministic test fleet.** Built
+    2026-08-14. `isTestAccount` on users and `isTest` on trips, with matching
+    segregated in BOTH directions inside `LocationService.filterEligible` —
+    a reviewer's ride can never reach a real rider, and a paying customer can
+    never be matched to the test fleet. `ReviewFleetService` keeps test drivers
+    online and walks their trips through accept → arrive → start → complete.
+    Test trips are excluded from the ledger, settlement and loyalty totals, and
+    ops sees `isTest` on the stuck-jobs list. Four independent gates; off by
+    default. Five tests assert the produced query directly.
+    **[YOU] To use it:** run `seed-demo-accounts.js` (it now sets the flag),
+    then set `REVIEW_FLEET_ENABLED=true` in Railway before submitting.
 29. **[TODO] Written reviewer instructions**, step by step, including SOS,
     share-ride and account deletion.
 30. **[TODO] Strip the shipped binaries** — no ops, no admin, no debug menus,
