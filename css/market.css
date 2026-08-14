@@ -1108,3 +1108,36 @@
   color: var(--error);
   border: 1px solid color-mix(in srgb, var(--error) 32%, transparent);
 }
+
+/* ------------------------------------------------ in-ride help sheet -- */
+/* A bottom sheet rather than a route: the trip is still running, the map is
+   still tracking, and navigating away from a live ride to ask a question is
+   exactly the wrong thing to make someone do. */
+.nx-help-sheet {
+  position: fixed; inset: 0; z-index: var(--z-toast);
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: flex-end;
+  animation: nx-help-fade 160ms var(--ease-out);
+}
+.nx-help-panel {
+  width: 100%; max-width: var(--max-w); margin-inline: auto;
+  background: var(--bg-elevated);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: 10px var(--page-pad) calc(18px + var(--safe-bottom));
+  box-shadow: var(--shadow-lg);
+  animation: nx-help-rise 220ms var(--ease-spring);
+  max-height: 88dvh; overflow-y: auto;
+}
+.nx-help-item {
+  display: flex; align-items: center; gap: 11px;
+  width: 100%; padding: 12px 13px; min-height: 56px;
+  border-radius: var(--r-sm); border: 1px solid var(--surface-border);
+  background: var(--bg); cursor: pointer; text-align: start;
+  color: var(--text-primary);
+}
+.nx-help-item:active { transform: scale(0.985); }
+@keyframes nx-help-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes nx-help-rise { from { transform: translateY(14px); } to { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .nx-help-sheet, .nx-help-panel { animation: none; }
+}

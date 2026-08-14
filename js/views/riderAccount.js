@@ -134,6 +134,7 @@ export function renderWallet(root) {
             </div>`;
           })
           .join("");
+
       })
       .catch(() => { historyList.innerHTML = `<div class="empty-state"><p>Couldn't load history</p></div>`; });
   }
@@ -220,9 +221,46 @@ export function renderTripHistory(root) {
                  ${tip > 0 ? `<div><span>Fast Match tip</span><span>${fmtMoney(tip)}</span></div>` : ""}
                  <div class="total"><span>Total paid</span><span>${fmtMoney(total)}</span></div>
                </div>`}
+
+          <!-- RIDE AGAIN.
+               The cheapest retention there is: most trips in this market are
+               the same two or three journeys repeated — home, work, the same
+               market. Re-typing a Karachi address every time is the tap
+               people abandon on, and the destination is already right here on
+               the receipt.
+               Only offered when we actually have coordinates. A button that
+               reopens the booking screen empty is worse than no button,
+               because it promises one tap and delivers six. -->
+          ${t.dropoffLat != null && t.dropoffLng != null ? `
+            <button class="btn btn-secondary btn-block mt-3" data-again="${i}">
+              ${icon("refresh", 16)} Ride again to ${esc(t.dropoffLabel || "here")}
+            </button>` : ""}
         </div>`;
         })
         .join("");
+      /* The trip list is the only place that has both ends of a past journey,
+         so this is where repeating one belongs. Sets the same state the
+         booking screen reads when a saved place is tapped — no new path. */
+      list.querySelectorAll("[data-again]").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          const t = trips[Number(btn.dataset.again)];
+          if (!t) return;
+          haptic.light();
+          state.selectedVehicle = "BIKE";
+          state.dropoff = {
+            label: t.dropoffLabel || "Previous destination",
+            lat: t.dropoffLat,
+            lng: t.dropoffLng,
+          };
+          /* Pickup is deliberately NOT restored. Where someone went is stable;
+             where they left from usually is not, and pre-filling a stale
+             pickup is how a rider is sent to yesterday's address. The booking
+             screen asks for it fresh. */
+          state.pickup = null;
+          track("ride_again", { from: "history" });
+          navigate("/set-locations");
+        }),
+      );
     })
     .catch(() => { list.innerHTML = `<div class="empty-state"><p>Couldn't load trip history</p></div>`; });
 }

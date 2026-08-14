@@ -220,7 +220,15 @@ export function renderRideTracking(root) {
       state.chatContext = { contextType: "TRIP", contextId: tripId, otherPartyLabel: trip?.driver?.name || "Your driver" };
       navigate("/chat-thread");
     });
-    node.querySelector("#supportBtn")?.addEventListener("click", () => navigate("/support"));
+    /* CONTEXTUAL HELP, NOT A FAQ.
+       This used to open /support — a general help centre — while someone was
+       mid-ride with a specific problem. Somebody whose rider is going the
+       wrong way does not want a list of articles; they want the one action
+       that fixes it, and every second spent finding it is a second they are
+       still going the wrong way.
+       The options below are the things that actually go wrong on a live trip,
+       and each routes to something that does something. */
+    node.querySelector("#supportBtn")?.addEventListener("click", () => openRideHelp());
     node.querySelector("#shareBtn")?.addEventListener("click", shareRide);
     node.querySelector("#cancelBtn")?.addEventListener("click", () => askWhyThenCancel());
 
@@ -323,6 +331,89 @@ export function renderRideTracking(root) {
     } catch (err) {
       if (err?.name !== "AbortError") toast(err.message || "Couldn't create a share link", true);
     }
+  }
+
+  /* ---------- In-ride help ---------- */
+
+  function openRideHelp() {
+    haptic.light();
+    track("ride_help_opened", { tripId, status: currentStatus });
+    const driverPhone = trip?.driver?.phone || null;
+
+    const OPTIONS = [
+      driverPhone && {
+        key: "cant_find",
+        icon: "phone",
+        title: "I can't find my rider",
+        sub: "Call them — it is almost always faster than messaging",
+        run: () => { window.location.href = `tel:${driverPhone}`; },
+      },
+      {
+        key: "wrong_route",
+        icon: "map-pin",
+        title: "We're going the wrong way",
+        sub: "Share the live trip so someone can watch it with you",
+        run: () => shareRide(),
+      },
+      {
+        key: "fare",
+        icon: "wallet",
+        title: "A question about the fare",
+        sub: "The fare is fixed and was locked when you booked",
+        run: () => navigate("/explainer/fixed-fare"),
+      },
+      {
+        key: "safety",
+        icon: "sos",
+        title: "I feel unsafe",
+        sub: "Emergency call and alert the ops desk",
+        // Routed to the SAME handler as the SOS button rather than a copy —
+        // two code paths for an emergency is one too many.
+        run: () => root.querySelector("#sosBtn")?.click(),
+      },
+      {
+        key: "other",
+        icon: "chat",
+        title: "Something else",
+        sub: "Message the support desk",
+        run: () => navigate("/support"),
+      },
+    ].filter(Boolean);
+
+    const sheet = document.createElement("div");
+    sheet.className = "nx-help-sheet";
+    sheet.innerHTML = `
+      <div class="nx-help-panel" role="dialog" aria-modal="true" aria-label="Help with this ride">
+        <div class="sheet-handle"></div>
+        <p class="font-bold mb-1">What's wrong?</p>
+        <p class="text-secondary text-xs mb-3">Your trip keeps running while you do this.</p>
+        <div class="flex-col gap-2">
+          ${OPTIONS.map((o) => `
+            <button class="nx-help-item" data-help="${o.key}">
+              <span class="list-row-icon">${icon(o.icon, 17)}</span>
+              <span style="flex:1;min-width:0;">
+                <span class="nx-check-text" style="display:block;">${esc(o.title)}</span>
+                <span class="nx-check-sub" style="display:block;">${esc(o.sub)}</span>
+              </span>
+              ${icon("chevronRight", 16)}
+            </button>`).join("")}
+        </div>
+        <button class="btn btn-ghost btn-block mt-3" data-help-close>Close</button>
+      </div>`;
+    document.body.appendChild(sheet);
+
+    const close = () => sheet.remove();
+    sheet.addEventListener("click", (e) => {
+      // Backdrop tap closes. A modal you cannot dismiss during a live ride is
+      // a trap, not a safety feature.
+      if (e.target === sheet || e.target.hasAttribute("data-help-close")) { close(); return; }
+      const btn = e.target.closest("[data-help]");
+      if (!btn) return;
+      const opt = OPTIONS.find((o) => o.key === btn.dataset.help);
+      close();
+      track("ride_help_chosen", { option: btn.dataset.help, tripId });
+      opt?.run();
+    });
   }
 
   // ---------- SOS ----------

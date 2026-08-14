@@ -5,6 +5,8 @@
 // numbers, is the cheapest trust you can buy — and it removes the single
 // most common support call.
 import { icon } from "../icons.js";
+import { PRICING } from "../launch.config.js";
+import { navigate } from "../router.js";
 import {
   COMMERCIALS, SUPPORT, SUPPORT_STATUS, whatsappLink, phoneLink, emailLink,
 } from "../support.config.js";
@@ -208,4 +210,81 @@ export function renderSupportContact(root) {
     el.addEventListener("click", () => { location.hash = el.dataset.nav; }));
   root.querySelectorAll("#ticketBtn, #ticketPrimary").forEach((b) =>
     b.addEventListener("click", () => { location.hash = "/chat"; }));
+}
+
+/* ---------------------------------------------------------- fixed fare ---
+
+   The home screen's first promo card promises "the fare you see is the fare
+   you pay" and offers to explain how. That link pointed at a route that did
+   not exist — the single most prominent CTA on the home screen led nowhere.
+
+   Worth a real screen rather than a redirect to the FAQ: fixed pricing is the
+   main thing separating Nova Go from a rickshaw negotiation, and it is the
+   claim a first-time customer is most sceptical of. The numbers below are
+   read from PRICING so this page can never quote a rate the app does not
+   charge — the failure that would do the most damage here is explaining the
+   fare wrongly.                                                           */
+
+export function renderFixedFareExplainer(root) {
+  const bike = PRICING.BIKE;
+  root.innerHTML = `
+    <div class="page nx-stagger">
+      <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
+      <h1 class="text-xl mb-2">The fare you see is the fare you pay</h1>
+      <p class="text-secondary text-sm mb-5">
+        No meter, no surge, no haggling at the kerb. Here is exactly how the
+        number is worked out.
+      </p>
+
+      <div class="nx-fare-hero mb-4">
+        <p class="nx-fare-label">How a fare is built</p>
+        <div class="nx-fare-rows">
+          <div class="nx-fare-row"><span>Base, on every trip</span><span class="v">${PRICING.currency} ${bike.base}</span></div>
+          <div class="nx-fare-row"><span>Per kilometre of road</span><span class="v">${PRICING.currency} ${bike.perKm}</span></div>
+          <div class="nx-fare-row"><span>Per minute</span><span class="v">${PRICING.currency} 0</span></div>
+          <div class="nx-fare-row total"><span>Minimum fare</span><span class="v">${PRICING.currency} ${bike.minimum}</span></div>
+        </div>
+      </div>
+
+      <div class="nx-action-row info mb-3">
+        <div>
+          <p class="font-bold text-sm">Why there is no charge for time</p>
+          <p class="text-xs text-secondary" style="margin-top:3px;">
+            Karachi traffic is not something you chose, and nobody can quote it
+            in advance. Charging for it would mean either quoting a range —
+            which reads as evasive — or quoting a number and charging a
+            different one. So distance is the whole fare.
+          </p>
+        </div>
+      </div>
+
+      <div class="nx-action-row info mb-3">
+        <div>
+          <p class="font-bold text-sm">Locked when you book</p>
+          <p class="text-xs text-secondary" style="margin-top:3px;">
+            The fare is recorded the moment you confirm and is what you are
+            charged at the end, even if the route takes longer than expected.
+            If your rider asks for more than the app showed, that is not our
+            fare — tell the ops desk.
+          </p>
+        </div>
+      </div>
+
+      ${PRICING.showPetrolGuarantee && PRICING.petrolReferencePerLitre ? `
+        <div class="nx-petrol mb-4">
+          ${icon("shield", 14)}
+          <div>
+            <strong>Fair petrol guarantee.</strong>
+            This rate was calculated with petrol at
+            ${PRICING.currency} ${PRICING.petrolReferencePerLitre}/L. If fuel
+            moves enough to change it, we re-price openly rather than adding a
+            surcharge at the end of your ride.
+          </div>
+        </div>` : ""}
+
+      <button id="bookBtn" class="btn btn-primary btn-block">Book a ride ${icon("arrow-forward", 18)}</button>
+    </div>
+  `;
+  root.querySelector("#backBtn").addEventListener("click", () => history.back());
+  root.querySelector("#bookBtn").addEventListener("click", () => navigate("/set-locations"));
 }

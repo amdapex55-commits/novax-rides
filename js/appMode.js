@@ -81,7 +81,7 @@ const CONFIGS = {
       "/errand/details", "/errand/tracking",
       "/wallet", "/history", "/profile", "/settings", "/alerts",
       "/loyalty", "/refer", "/business",
-      "/chat", "/support", "/help", "/chat-thread",
+      "/chat", "/support", "/help", "/chat-thread", "/explainer/fixed-fare",
       "/legal/terms", "/legal/privacy", "/legal/cancellation",
       "/legal/safety",
     ],
@@ -111,7 +111,7 @@ const CONFIGS = {
       "/driver/errand-offer", "/driver/errand-progress",
       "/driver/earnings", "/driver/profile", "/driver/vehicle",
       "/driver/notifications", "/driver/incentives", "/driver/settle",
-      "/chat", "/support", "/help", "/chat-thread", "/earnings-explained",
+      "/chat", "/support", "/help", "/chat-thread", "/explainer/fixed-fare", "/earnings-explained",
       "/legal/terms", "/legal/privacy", "/legal/driver-agreement", "/legal/safety",
     ],
     nav: [
@@ -218,7 +218,7 @@ export function routeAllowed(path) {
    Bump alongside the service-worker version in sw.js — they describe the same
    deploy, and a version that never changes is worse than none because it
    looks trustworthy. */
-export const APP_VERSION = "1.0.0-v23";
+export const APP_VERSION = "1.0.0-v24";
 
 export const isCustomerApp = APP === "customer";
 export const isDriverApp = APP === "driver";

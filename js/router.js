@@ -108,6 +108,7 @@ export const ROUTES = {
 
   // "How the money works" — the question every driver and restaurant asks
   // before signing up. Answering it in-app removes the most common call.
+  "/explainer/fixed-fare": { view: () => import("./views/explainers.js"), fn: "renderFixedFareExplainer", auth: "none", nav: false },
   "/earnings-explained": { view: () => import("./views/explainers.js"), fn: "renderDriverEarningsExplainer", auth: "none", nav: false },
   "/commission-explained": { view: () => import("./views/explainers.js"), fn: "renderRestaurantCommissionExplainer", auth: "none", nav: false },
   "/help": { view: () => import("./views/explainers.js"), fn: "renderSupportContact", auth: "none", nav: false },
