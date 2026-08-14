@@ -143,22 +143,22 @@ APNs key, no device-token storage, no send path. This is a real build (item
     default. Five tests assert the produced query directly.
     **[YOU] To use it:** run `seed-demo-accounts.js` (it now sets the flag),
     then set `REVIEW_FLEET_ENABLED=true` in Railway before submitting.
-29. **[TODO] Written reviewer instructions**, step by step, including SOS,
+29. **[DONE] Written reviewer instructions** — `REVIEWER-NOTES.md`, step by step, including SOS,
     share-ride and account deletion.
 30. **[TODO] Strip the shipped binaries** — no ops, no admin, no debug menus,
     no placeholder numbers. Customer build ships customer only.
 
 ## Stage 6 — Declarations (get these exactly right)
 
-31. **[TODO] Play Data Safety form** — every type collected, including CNIC,
+31. **[DONE — draft] Play Data Safety form** — `DATA-SAFETY.md`, checked against the schema — every type collected, including CNIC,
     licence photos, payout details and precise location, plus third-party SDKs.
     Draft is in `PLAY-STORE.md`; it must match what the binary actually does.
-32. **[TODO] Apple App Privacy** — the equivalent in App Store Connect.
+32. **[DONE — draft] Apple App Privacy** — in `DATA-SAFETY.md` — the equivalent in App Store Connect.
 33. **[TODO] Background-location declaration + demo video** for Play. Driver app
     only, with the justification that a driver must transmit position while
     online to be dispatched and tracked for passenger safety.
 34. **[TODO] Content rating questionnaire** and target-audience declarations.
-35. **[TODO] Store assets** — icon, feature graphic (1024×500), 8 screenshots
+35. **[PARTLY DONE] Store assets** — copy in `STORE-LISTING.md`, capture guide in `screenshots/`; the PNGs themselves need capturing on your machine — icon, feature graphic (1024×500), 8 screenshots
     per app showing real UI, short (80) and full (4000) descriptions. Capture
     screenshots from the deployed web app at phone width; the UI is identical.
 

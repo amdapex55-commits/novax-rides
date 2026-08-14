@@ -135,3 +135,88 @@ expected?*
 For each failure, write down: what you did, what happened, what should have
 happened. A test plan with no failures recorded usually means the tests
 weren't really run.
+
+---
+
+# Added since this document was written
+
+Everything below shipped after the original test plan and is **not covered by
+the steps above**. A pass on the old plan no longer means the product works.
+
+## Dispatch and matching
+
+- [ ] **Scored matching.** With two riders online at different distances, the
+      nearer one is offered first. Then make the nearer one decline twice and
+      confirm the further one starts winning — acceptance rate is part of the
+      score (`dispatch.util.ts`).
+- [ ] **New rider is not buried.** A rider with no history must still receive
+      offers; they score neutrally, not badly.
+- [ ] **Radius expansion.** With nobody within 1km but someone at 4km, the job
+      is still placed.
+- [ ] **Ops escalation.** Book with no riders online. At **90s** the customer
+      sees "Nova Go Ops is watching this ride". At **3 min** it becomes "placing
+      this ride by hand", and the job appears in ops → stuck jobs.
+- [ ] **No dead spinner.** That same trip must have `noDriverFoundAt` set, and
+      must never sit silently in REQUESTED.
+
+## Fare integrity
+
+- [ ] Book a trip and check `quotedFare`, `acceptedFare` and `fareVersion` are
+      all set at creation.
+- [ ] Complete it. `finalFare` must equal `acceptedFare` exactly.
+- [ ] `GET /trips/:id/events` returns the full sequence: requested → quoted →
+      offered → accepted → arrived → started → completed.
+- [ ] Ops → stuck job → **See what happened** renders that sequence.
+
+## Push notifications
+
+- [ ] Grant permission after the first booking (it must NOT prompt at launch).
+- [ ] Rider accepts → passenger's phone shows "Rider found" with the app closed.
+- [ ] Rider arrives → notification. Trip completes → notification with the fare.
+- [ ] Sign out, sign in as someone else on the same phone, and confirm the
+      previous user's notifications stop.
+
+## Driver liveness
+
+- [ ] Go online. `driver-status` shows `receivingJobs: true`.
+- [ ] Force-stop the app. Within 60s the driver stops being matched.
+- [ ] **Not getting jobs?** lists the real reason, not a generic message.
+- [ ] Test on a Xiaomi/Redmi, Oppo, Realme and Vivo specifically — their
+      battery managers are the main cause of this failure in this market.
+
+## Commission and settlement
+
+- [ ] Drive until owing >75% of the limit — the driver home shows the amber
+      strip with how much room is left.
+- [ ] Cross the limit — jobs stop AND the app says why, with how to pay.
+- [ ] Settle in ops; jobs resume without toggling offline and back on.
+
+## Cancellation
+
+- [ ] Cancel before a rider accepts → no fee, no count against anyone.
+- [ ] Cancel within 30s of accepting → no fee.
+- [ ] Rider cancels after accepting → customer charged nothing; it counts
+      against the rider's reliability.
+
+## Review fleet (before submitting to the stores)
+
+- [ ] With `REVIEW_FLEET_ENABLED=true`, the demo customer completes a full trip
+      end to end with no human involved.
+- [ ] **A real customer is never matched to a test rider, and a real rider is
+      never offered a test trip.** This is the safety property; verify it
+      deliberately with one real and one test account online at once.
+- [ ] A completed test trip creates **no ledger entries** and does not appear
+      in any driver's earnings.
+
+## Localisation and appearance
+
+- [ ] Switch to Urdu. Whole app is right-to-left; fares, plates and phone
+      numbers stay left-to-right and readable.
+- [ ] Dark mode on the customer app follows the system; the driver app defaults
+      to dark.
+
+## Static checks (run before every push — the hook does this)
+
+```bash
+npm run check
+```
