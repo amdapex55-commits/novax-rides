@@ -102,6 +102,12 @@ export const state = {
      screen that reads this one is reached after a socket event and a
      redirect, which is exactly the path a reload interrupts. Set at booking
      from the quote, then overwritten by the server's figure on completion. */
+  /* Which trip the ops timeline is showing. Declared rather than assigned ad
+     hoc — see the note at the top of this file; an undeclared key lives in
+     memory only and vanishes on the reload a dispatcher does constantly. */
+  get opsTripId() { return read("opsTripId"); },
+  set opsTripId(v) { write("opsTripId", v); },
+
   get lastFare() { return read("lastFare"); },
   set lastFare(v) { write("lastFare", v); },
 

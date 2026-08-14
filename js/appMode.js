@@ -157,7 +157,7 @@ const CONFIGS = {
       "/splash", "/welcome", "/signin", "/signup", "/phone", "/otp",
       "/ops/command", "/ops/dashboard", "/ops/approvals", "/ops/users",
       "/ops/live", "/ops/cancellations", "/ops/balances", "/ops/tickets",
-      "/ops/settle", "/ops/growth",
+      "/ops/settle", "/ops/growth", "/ops/market", "/ops/trip",
       "/support", "/help",
       "/legal/terms", "/legal/privacy",
     ],
@@ -168,6 +168,7 @@ const CONFIGS = {
       { tab: "live", icon: "car", label: "Live", path: "/ops/live" },
       { tab: "approvals", icon: "check-circle", label: "Approve", path: "/ops/approvals" },
       { tab: "settle", icon: "wallet", label: "Settle", path: "/ops/settle" },
+      { tab: "market", icon: "dashboard", label: "Market", path: "/ops/market" },
       { tab: "growth", icon: "gift", label: "Growth", path: "/ops/growth" },
     ],
   },
@@ -206,6 +207,7 @@ export function routeAllowed(path) {
   // Legal pages are linked from signup and from the footer of every app.
   if (path.startsWith("/legal/")) return true;
   if (path.startsWith("/shared/")) return APP_CONFIG.routes.includes("/shared");
+  if (path.startsWith("/ops/trip/")) return APP_CONFIG.routes.includes("/ops/trip");
   return APP_CONFIG.routes.includes(path);
 }
 
@@ -216,7 +218,7 @@ export function routeAllowed(path) {
    Bump alongside the service-worker version in sw.js — they describe the same
    deploy, and a version that never changes is worse than none because it
    looks trustworthy. */
-export const APP_VERSION = "1.0.0-v22";
+export const APP_VERSION = "1.0.0-v23";
 
 export const isCustomerApp = APP === "customer";
 export const isDriverApp = APP === "driver";

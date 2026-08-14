@@ -97,6 +97,8 @@ export const ROUTES = {
   "/ops/dashboard": { view: () => import("./views/ops.js"), fn: "renderOpsDashboard", auth: "ADMIN", nav: true, tab: "dashboard" },
   "/ops/approvals": { view: () => import("./views/ops.js"), fn: "renderOpsApprovals", auth: "ADMIN", nav: true, tab: "approvals" },
   "/ops/settle": { view: () => import("./views/opsSettle.js"), fn: "renderOpsSettle", auth: "ADMIN", nav: true, tab: "settle" },
+  "/ops/market": { view: () => import("./views/opsMarket.js"), fn: "renderOpsMarket", auth: "ADMIN", nav: true, tab: "market" },
+  "/ops/trip": { view: () => import("./views/opsMarket.js"), fn: "renderTripTimeline", auth: "ADMIN", nav: false },
   "/ops/growth": { view: () => import("./views/opsGrowth.js"), fn: "renderOpsGrowth", auth: "ADMIN", nav: true, tab: "growth" },
   "/ops/users": { view: () => import("./views/ops.js"), fn: "renderOpsUsers", auth: "ADMIN", nav: true, tab: "users" },
   "/ops/live": { view: () => import("./views/opsLive.js"), fn: "renderOpsLiveDrivers", auth: "ADMIN", nav: true, tab: "live" },
@@ -244,6 +246,9 @@ async function renderRoute(path) {
   // The view reads the token off location.hash itself.
   let route = ROUTES[path];
   if (!route && path.startsWith("/shared/")) route = ROUTES["/shared"];
+  // #/ops/trip/<id> — same targeted prefix match as /shared/, so a
+  // dispatcher can paste a trip link straight into the address bar.
+  if (!route && path.startsWith("/ops/trip/")) route = ROUTES["/ops/trip"];
   /* SHORT FORMS PEOPLE ACTUALLY TYPE AND SHARE.
      The real routes are the specific first step of each flow
      (/parcel/service, /errand/details, /food/browse), which is right for the

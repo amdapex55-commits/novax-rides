@@ -244,6 +244,8 @@ export const api = {
   // Anonymised nearby-rider positions for the supply indicator on the
   // customer home. Public (a guest browsing needs it) and deliberately
   // coarse — see location.controller.ts for the privacy reasoning.
+  getMarketplaceMetrics: (minutes) => request(`/admin/marketplace?minutes=${minutes || 60}`),
+  getTripEvents: (tripId) => request(`/trips/${tripId}/events`),
   getNearbyRiders: (lat, lng) => request(`/location/nearby?lat=${lat}&lng=${lng}`),
   // Liveness. The server stops believing a driver is online when these stop
   // arriving — see LocationService.recordHeartbeat for why a boolean the app

@@ -13,6 +13,7 @@ import { api } from "../api.js";
 import { icon } from "../icons.js";
 import { toast, esc, fmtMoney, skeletonRows, emptyRich } from "../ui.js";
 import { navigate } from "../router.js";
+import { state } from "../state.js";
 import { socketManager } from "../socket.js";
 import { launchReadiness } from "../launch.config.js";
 
@@ -200,7 +201,11 @@ export function renderOpsCommand(root) {
             </div>
             ${r.value != null ? `<p class="font-bold">${fmtMoney(r.value)}</p>` : ""}
           </div>
-          <p class="text-xs text-secondary mb-3">${esc(r.who?.name || "Customer")} · ${esc(r.phone || "no number")}</p>
+          <p class="text-xs text-secondary mb-2">${esc(r.who?.name || "Customer")} · ${esc(r.phone || "no number")}</p>
+          <!-- Before phoning anyone, read what actually happened. Offered and
+               declined four times is a different call from never found at
+               all. Rides only — the audit trail is on Trip. -->
+          ${r.kind === "TRIP" ? `<button class="nx-sec-action mb-3" data-timeline="${esc(r.id)}" style="padding:0;">${icon("history", 12)} See what happened</button>` : `<div class="mb-3"></div>`}
           <div class="flex gap-2 mb-2">
             ${r.phone ? `<a href="tel:${esc(r.phone)}" class="btn btn-secondary btn-sm" style="flex:1;">Call customer</a>` : ""}
             ${r.extraPhone ? `<a href="tel:${esc(r.extraPhone)}" class="btn btn-secondary btn-sm" style="flex:1;">${esc(r.extraLabel)}</a>` : ""}
@@ -217,6 +222,13 @@ export function renderOpsCommand(root) {
               </div>`}
         </div>
       `).join("");
+
+      block.querySelectorAll("[data-timeline]").forEach((b) =>
+        b.addEventListener("click", () => {
+          state.opsTripId = b.dataset.timeline;
+          navigate("/ops/trip");
+        }),
+      );
 
       block.querySelectorAll("[data-assign]").forEach((b) =>
         b.addEventListener("click", async () => {
