@@ -16,6 +16,7 @@ import { createMap } from "../map.js";
 import { getCurrentCoords } from "../geocode.js";
 import { track } from "../analytics.js";
 import { haptic } from "../haptics.js";
+import { APP_VERSION } from "../appMode.js";
 import { reportHandled } from "../errors.js";
 
 export function renderDriverHome(root) {
@@ -26,6 +27,7 @@ export function renderDriverHome(root) {
   let lastFixAt = 0;
   let tracker = null;
   let staleTimer = 0;
+  let heartbeatTimer = 0;
   let onVisible = null;
   let mapHandle = null;
   let destroyed = false;
@@ -234,6 +236,22 @@ export function renderDriverHome(root) {
     haptic.success();
     toast("You're live — looking for jobs near you");
 
+    /* HEARTBEAT. The server treats liveness as a claim that expires, so this
+       has to keep arriving or matching stops offering jobs — which is the
+       point: if this app is killed by a battery manager, the beats stop and
+       the server notices without needing the dead process to tell it.
+       20s against a 60s staleness window: three missed beats before we are
+       disbelieved, tolerant of one bad tunnel, not of a killed app. */
+    const beat = () => {
+      const conn = navigator.connection || {};
+      api.sendHeartbeat({
+        appVersion: APP_VERSION,
+        networkType: conn.effectiveType || undefined,
+      }).catch(() => { /* one missed beat is not worth surfacing */ });
+    };
+    beat();
+    heartbeatTimer = setInterval(beat, 20_000);
+
     lastFixAt = Date.now();
     staleTimer = setInterval(() => {
       if (!online) return;
@@ -281,6 +299,10 @@ export function renderDriverHome(root) {
     tracker?.stop().catch(() => {});
     tracker = null;
     clearInterval(staleTimer);
+    // Stop asserting liveness. Without this the server keeps believing an
+    // offline driver is available for a further minute.
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = 0;
     if (onVisible) { document.removeEventListener("visibilitychange", onVisible); onVisible = null; }
     const banner = root.querySelector("#gpsStale");
     if (banner) banner.hidden = true;

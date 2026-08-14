@@ -1,0 +1,140 @@
+name: Build Android app bundles
+
+# WHY THIS EXISTS
+#
+# Until now the only machine that could produce a shippable AAB was one
+# particular Mac with Android Studio on it. That is a single point of failure
+# for releasing, and — worse — it means the signing keystore lives in exactly
+# one place. Losing that file means never being able to update the Play
+# listing again; the only remedy is publishing a new app under a new package
+# name and abandoning your reviews and install base.
+#
+# Storing it as an encrypted GitHub secret backs it up by existing.
+#
+# Builds BOTH apps, because they are separate listings with separate package
+# ids and it is easy to ship one and forget the other.
+
+on:
+  workflow_dispatch:      # build on demand
+  push:
+    tags: ["v*"]          # and on every release tag
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      # Don't let a customer-build failure cancel the driver build — when
+      # both are broken you want both error logs in one run, not one.
+      fail-fast: false
+      matrix:
+        app: [customer, driver]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Capacitor's Gradle wrapper needs a JDK. 21 is what AGP 8.x expects.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Assemble the web build for this app
+        # Writes www/ AND rewrites AndroidManifest.xml with only the
+        # permissions this app actually needs — the customer build must never
+        # ship ACCESS_BACKGROUND_LOCATION, which would trigger a Play policy
+        # review for a capability it does not use.
+        run: npm run app:${{ matrix.app }}
+
+      - name: Add the Android platform
+        # android/ is gitignored (it is generated), so CI creates it fresh.
+        # Guarded because `cap add` fails if the directory already exists.
+        run: |
+          if [ ! -d android ]; then npx cap add android; fi
+          npx cap sync android
+
+      - name: Re-apply the per-app manifest
+        # cap sync can regenerate the manifest from the platform template, so
+        # the permission rewrite is applied again AFTER sync. Getting this
+        # order wrong is how the customer build quietly ships background
+        # location.
+        run: npm run app:${{ matrix.app }}
+
+      - name: Confirm the manifest matches the app being built
+        # A build that ships the wrong permissions is worse than a failed one:
+        # it reaches review, gets rejected, and costs a cycle. Fail here.
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          echo "--- permissions in $MANIFEST ---"
+          grep -o 'android.permission.[A-Z_]*' "$MANIFEST" | sort -u
+          if [ "${{ matrix.app }}" = "customer" ]; then
+            if grep -q 'ACCESS_BACKGROUND_LOCATION' "$MANIFEST"; then
+              echo "::error::customer build must NOT request background location"
+              exit 1
+            fi
+          else
+            if ! grep -q 'ACCESS_BACKGROUND_LOCATION' "$MANIFEST"; then
+              echo "::error::driver build MUST request background location or it stops reporting when backgrounded"
+              exit 1
+            fi
+          fi
+
+      - name: Decode the signing keystore
+        # Absent on a fork or before the secret is added — the build still
+        # runs and produces an unsigned bundle, which is enough to prove the
+        # pipeline compiles. Only a signed one can be uploaded to Play.
+        id: keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ANDROID_KEYSTORE_BASE64 not set — building UNSIGNED. Not uploadable to Play."
+          else
+            echo "$KEYSTORE_B64" | base64 -d > android/app/release.keystore
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build the bundle
+        working-directory: android
+        env:
+          SIGNED: ${{ steps.keystore.outputs.signed }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          if [ "$SIGNED" = "true" ]; then
+            ./gradlew bundleRelease \
+              -Pandroid.injected.signing.store.file=$PWD/app/release.keystore \
+              -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+              -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+          else
+            ./gradlew bundleRelease
+          fi
+
+      - name: Remove the keystore from the runner
+        # Belt and braces — the runner is ephemeral, but an artifact upload
+        # that accidentally globbed it would publish the signing key.
+        if: always()
+        run: rm -f android/app/release.keystore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: novago-${{ matrix.app }}-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 30

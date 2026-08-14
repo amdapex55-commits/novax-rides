@@ -253,7 +253,11 @@ function renderBikeTab(panel, isGuest) {
   const soon = (key) => (SERVICES?.[key]?.live === false);
 
   panel.innerHTML = `
-    <button class="nx-where" id="whereToCard">
+    <!-- data-go rather than its own listener: the handler below already
+         wires every element carrying it, so a CTA added here can never end up
+         with no handler again. This one shipped dead — the largest, most
+         obvious button on the home screen did nothing when tapped. -->
+    <button class="nx-where" id="whereToCard" data-go="/set-locations" data-vehicle="BIKE">
       <span class="nx-where-icon">${icon("search", 20)}</span>
       <span class="nx-where-text">
         <span class="nx-where-title">${esc(t("Where to?"))}</span>

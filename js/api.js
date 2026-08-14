@@ -245,6 +245,11 @@ export const api = {
   // customer home. Public (a guest browsing needs it) and deliberately
   // coarse — see location.controller.ts for the privacy reasoning.
   getNearbyRiders: (lat, lng) => request(`/location/nearby?lat=${lat}&lng=${lng}`),
+  // Liveness. The server stops believing a driver is online when these stop
+  // arriving — see LocationService.recordHeartbeat for why a boolean the app
+  // sets is not enough.
+  sendHeartbeat: (device) => request("/location/heartbeat", { method: "POST", body: device || {} }),
+  getDriverStatus: () => request("/location/driver-status"),
 
   // --- Uploads ---
   // purpose must be one of the backend's UploadPurpose enum values

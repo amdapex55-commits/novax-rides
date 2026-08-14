@@ -79,7 +79,7 @@ const CONFIGS = {
       "/food/browse", "/food/restaurant", "/food/cart", "/food/tracking",
       "/parcel/service", "/parcel/details", "/parcel/contact", "/parcel/tracking",
       "/errand/details", "/errand/tracking",
-      "/wallet", "/history", "/profile", "/settings",
+      "/wallet", "/history", "/profile", "/settings", "/alerts",
       "/loyalty", "/refer", "/business",
       "/chat", "/support", "/help", "/chat-thread",
       "/legal/terms", "/legal/privacy", "/legal/cancellation",
@@ -208,6 +208,15 @@ export function routeAllowed(path) {
   if (path.startsWith("/shared/")) return APP_CONFIG.routes.includes("/shared");
   return APP_CONFIG.routes.includes(path);
 }
+
+/* The build identifier reported to the server with each driver heartbeat and
+   shown on the device-diagnostics screen. Ops uses it to answer "are they on
+   an old build?" without asking, which is the first question when one
+   driver's app behaves differently from everyone else's.
+   Bump alongside the service-worker version in sw.js — they describe the same
+   deploy, and a version that never changes is worse than none because it
+   looks trustworthy. */
+export const APP_VERSION = "1.0.0-v22";
 
 export const isCustomerApp = APP === "customer";
 export const isDriverApp = APP === "driver";
