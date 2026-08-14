@@ -81,6 +81,14 @@ export const ALLOW_BID_FARE = false;
  *  can't account for is a different category of problem. */
 export const PAYMENT_METHODS = ["CASH"];
 
+/* Nova Go's cut of every fare, as a percentage.
+   MUST MATCH COMMISSION_RATE in the backend's src/ledger/commission.util.ts
+   (0.15). This copy exists so the driver app can explain the number without a
+   round trip; the backend is what actually splits the money. If they drift, a
+   driver is shown one rate and charged another — which in a cash market is
+   the fastest way to lose a rider. */
+export const COMMISSION_PCT = 15;
+
 /* ---------------------------------------------------------------------------
    2. PRICING  (your choice: Rs 60 base + Rs 22/km, minimum Rs 150)
    These MUST match src/trips/fare.util.ts on the backend. The backend is
@@ -275,6 +283,7 @@ export const COMPANY = {
    dashboard renders and the console prints on every boot.
    --------------------------------------------------------------------------- */
 
+import { settlementConfigured } from "./settlement.config.js";
 import { SUPPORT_STATUS } from "./support.config.js";
 
 export function launchReadiness() {
@@ -298,6 +307,18 @@ export function launchReadiness() {
       label: "Support email configured",
       ok: SUPPORT_STATUS.email,
       fix: "Set SUPPORT.email in js/support.config.js",
+      blocker: true,
+    },
+    {
+      /* A blocker, not a warning. The credit limit stops offering jobs to a
+         driver who owes Rs 2,000 — and with no settlement details configured,
+         the app can tell them they are blocked and not how to fix it. A
+         driver in that state has no route back except phoning ops, and the
+         likely outcome is they stop driving. */
+      id: "settlement-channels",
+      label: "Driver settlement accounts configured",
+      ok: settlementConfigured(),
+      fix: "Fill SETTLEMENT.channels in js/settlement.config.js — drivers pay commission into these",
       blocker: true,
     },
     {

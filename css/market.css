@@ -920,3 +920,78 @@
 
 /* Never let a kicker run under the close button, in either direction. */
 .nx-promo-kicker { padding-inline-end: 30px; }
+
+/* ------------------------------------------------ commission owed ----- */
+/* The driver's debt to the platform, graded. Colour is the whole point: a
+   number that looks the same at Rs 200 and Rs 1,900 gives no warning, and the
+   block at Rs 2,000 then arrives out of nowhere. */
+
+.nx-owe {
+  padding: 18px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--surface-border);
+  background: var(--bg-elevated);
+  --owe-ink: var(--text-secondary);
+}
+.nx-owe-ok      { --owe-ink: var(--success); }
+.nx-owe-notice  { --owe-ink: var(--text-secondary); }
+.nx-owe-warning { --owe-ink: var(--warning); border-color: color-mix(in srgb, var(--warning) 40%, transparent); }
+.nx-owe-blocked { --owe-ink: var(--error);   border-color: color-mix(in srgb, var(--error) 45%, transparent);
+                  background: color-mix(in srgb, var(--error) 6%, var(--bg-elevated)); }
+
+.nx-owe-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-secondary);
+}
+.nx-owe-amount {
+  font-family: var(--font-display); font-weight: 800; font-size: 34px;
+  line-height: 1.1; margin-block-start: 4px;
+  color: var(--text-primary); direction: ltr; font-variant-numeric: tabular-nums;
+}
+.nx-owe-track {
+  height: 8px; border-radius: var(--r-full); background: var(--surface-2);
+  overflow: hidden; margin-block: 12px 8px;
+}
+.nx-owe-fill {
+  height: 100%; border-radius: var(--r-full); background: var(--owe-ink);
+  transition: width 600ms var(--ease-spring);
+}
+.nx-owe-meta  { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.nx-owe-title { font-size: 13.5px; font-weight: 800; color: var(--owe-ink); margin-block-start: 10px; }
+
+/* Payment channel card. The account number is the one thing on this screen
+   that must be transcribable without error, so it gets monospace, generous
+   tracking and its own copy button. */
+.nx-pay-card {
+  padding: 14px; border-radius: var(--r-md);
+  border: 1px solid var(--surface-border); background: var(--bg-elevated);
+}
+.nx-pay-number {
+  font-family: "Inter", ui-monospace, monospace;
+  font-size: 19px; font-weight: 800; letter-spacing: 0.06em;
+  margin-block: 6px 2px; color: var(--text-primary);
+  direction: ltr; unicode-bidi: isolate; user-select: all;
+}
+.nx-copy-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px; min-height: 36px;
+  border-radius: var(--r-full); border: 1px solid var(--surface-border);
+  background: var(--surface); color: var(--text-primary);
+  font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.nx-copy-btn:active { transform: scale(0.95); }
+
+/* Compact strip for the driver home screen. */
+.nx-owe-strip {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 11px 13px; margin-block-start: 10px;
+  border-radius: var(--r-sm); border: 1px solid var(--surface-border);
+  background: var(--bg-elevated); cursor: pointer; text-align: start;
+}
+.nx-owe-strip.warning { border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+                        background: color-mix(in srgb, var(--warning) 9%, var(--bg-elevated)); }
+.nx-owe-strip.blocked { border-color: color-mix(in srgb, var(--error) 50%, transparent);
+                        background: color-mix(in srgb, var(--error) 9%, var(--bg-elevated)); }
+.nx-owe-strip-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--text-muted); }
+.nx-owe-strip.warning .nx-owe-strip-dot { background: var(--warning); }
+.nx-owe-strip.blocked .nx-owe-strip-dot { background: var(--error); animation: nx-live-blink 1.6s ease-in-out infinite; }

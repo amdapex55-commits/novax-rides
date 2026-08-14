@@ -110,7 +110,7 @@ const CONFIGS = {
       "/driver/food-offer", "/driver/food-progress",
       "/driver/errand-offer", "/driver/errand-progress",
       "/driver/earnings", "/driver/profile", "/driver/vehicle",
-      "/driver/notifications", "/driver/incentives",
+      "/driver/notifications", "/driver/incentives", "/driver/settle",
       "/chat", "/support", "/help", "/chat-thread", "/earnings-explained",
       "/legal/terms", "/legal/privacy", "/legal/driver-agreement", "/legal/safety",
     ],

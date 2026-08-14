@@ -64,6 +64,15 @@ export function renderDriverHome(root) {
               <p class="font-bold">★ ${esc(user?.rating ?? "5.0")}</p>
             </div>
           </div>
+
+          <!-- COMMISSION OWED.
+               The credit limit already stopped offering jobs to a driver past
+               Rs 2,000 — silently. From the saddle that looks like a quiet
+               afternoon, then like a broken app. This is the warning that has
+               to arrive before the wall, on the one screen a driver actually
+               watches. Hidden entirely while the balance is comfortable, so
+               it never becomes furniture they stop seeing. -->
+          <button id="oweStrip" class="nx-owe-strip" hidden></button>
         </div>
       </div>
 
@@ -109,6 +118,37 @@ export function renderDriverHome(root) {
       root.querySelector("#jobsToday").textContent = "0";
       root.querySelector("#earnSub").textContent = "Couldn't load earnings";
     });
+
+  // ---------- Commission owed ----------
+  api.getWalletBalance()
+    .then((b) => {
+      if (destroyed) return;
+      const strip = root.querySelector("#oweStrip");
+      if (!strip || !b) return;
+      // "ok" and "notice" stay hidden: a driver two days into the week owing
+      // Rs 300 does not need a banner, and showing one every day is how a
+      // warning stops being read by the time it matters.
+      if (b.level !== "warning" && b.level !== "blocked") return;
+
+      const owed = Number(b.owed || 0).toLocaleString("en-PK");
+      strip.hidden = false;
+      strip.className = `nx-owe-strip ${b.level}`;
+      strip.innerHTML = `
+        <span class="nx-owe-strip-dot"></span>
+        <span style="flex:1;min-width:0;">
+          <span class="font-bold text-sm" style="display:block;">
+            ${b.blocked ? "Jobs paused — settle Rs. " + owed : "Rs. " + owed + " commission due"}
+          </span>
+          <span class="text-xs text-secondary" style="display:block;margin-top:2px;">
+            ${b.blocked
+              ? "Pay to start receiving jobs again"
+              : "Rs. " + Number(b.remainingCredit || 0).toLocaleString("en-PK") + " of trips left before jobs pause"}
+          </span>
+        </span>
+        ${icon("chevronRight", 18)}`;
+      strip.addEventListener("click", () => navigate("/driver/settle"));
+    })
+    .catch(() => { /* the strip simply stays hidden */ });
 
   // ---------- Online / offline ----------
   function paintOnline() {

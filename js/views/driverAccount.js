@@ -2,6 +2,9 @@
 import { api, Token } from "../api.js";
 import { icon } from "../icons.js";
 import { toast, fmtMoney, fmtDate, countUp, skeletonRows, esc } from "../ui.js";
+import { SETTLEMENT, activeSettlementChannels } from "../settlement.config.js";
+import { COMMISSION_PCT } from "../launch.config.js";
+import { haptic } from "../haptics.js";
 
 export function renderEarnings(root) {
   root.innerHTML = `
@@ -372,4 +375,154 @@ export function renderIncentives(root) {
       if (!root.isConnected) return;
       root.querySelector("#incentiveCard").innerHTML = `<div class="empty-state"><p>Couldn't load incentive progress</p></div>`;
     });
+}
+
+/* ------------------------------------------------------- commission owed ---
+
+   WHAT THIS FIXES
+
+   The credit limit already worked: a driver past Rs 2,000 of unsettled
+   commission is filtered out of matching by LocationService.filterEligible
+   and stops being offered jobs. The backend knew the exact figure, knew they
+   were blocked, and knew what would clear it.
+
+   None of it reached the driver. The app kept showing "Online" and jobs
+   simply stopped arriving. From the saddle that is indistinguishable from a
+   quiet afternoon, and then from a broken app — and the driver goes back to
+   Bykea without ever learning they owed Rs 2,000.
+
+   So this screen does three things, in this order:
+     1. says what is owed and how much room is left before work stops
+     2. warns on the way up, not at the wall
+     3. tells them exactly how to pay, into a real account
+
+   The ladder (ok / notice / warning / blocked) is graded server-side against
+   the configured limit, so changing DRIVER_CREDIT_LIMIT_PKR moves the whole
+   thing rather than stranding warnings that fire after the block.           */
+
+const LEVEL_COPY = {
+  ok:      { tone: "ok",      title: "You're all clear" },
+  notice:  { tone: "notice",  title: "Commission building up" },
+  warning: { tone: "warning", title: "Settle soon to keep working" },
+  blocked: { tone: "blocked", title: "Jobs paused until you settle" },
+};
+
+export function renderSettleUp(root) {
+  root.innerHTML = `
+    <div class="page nx-stagger">
+      <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
+      <h1 class="text-xl mb-1">Commission</h1>
+      <p class="text-secondary text-sm mb-4">
+        You collect the full fare in cash. Nova Go's ${COMMISSION_PCT}% is settled separately.
+      </p>
+      <div id="settleBody">${skeletonRows(2)}</div>
+    </div>
+  `;
+  root.querySelector("#backBtn").addEventListener("click", () => history.back());
+
+  api.getWalletBalance()
+    .then((b) => {
+      if (!root.isConnected) return;
+      root.querySelector("#settleBody").innerHTML = settleBodyHtml(b);
+      wireCopyButtons(root);
+    })
+    .catch(() => {
+      if (!root.isConnected) return;
+      root.querySelector("#settleBody").innerHTML =
+        `<div class="empty-state"><p>Couldn't load your balance. Pull down to retry.</p></div>`;
+    });
+}
+
+function settleBodyHtml(b) {
+  const owed = Number(b.owed || 0);
+  const limit = b.creditLimit == null ? null : Math.abs(Number(b.creditLimit));
+  const remaining = b.remainingCredit == null ? null : Number(b.remainingCredit);
+  const level = LEVEL_COPY[b.level] ? b.level : "ok";
+  const meta = LEVEL_COPY[level];
+  // Fill the bar against the limit, so the wall is visible before it is hit.
+  const pct = limit ? Math.max(2, Math.min(100, (owed / limit) * 100)) : 0;
+
+  const channels = activeSettlementChannels();
+
+  return `
+    <div class="nx-owe nx-owe-${meta.tone} mb-4">
+      <p class="nx-owe-label">You owe Nova Go</p>
+      <p class="nx-owe-amount">Rs. ${owed.toLocaleString("en-PK")}</p>
+      ${limit ? `
+        <div class="nx-owe-track"><div class="nx-owe-fill" style="width:${pct.toFixed(0)}%;"></div></div>
+        <p class="nx-owe-meta">
+          ${b.blocked
+            ? `You've reached the Rs. ${limit.toLocaleString("en-PK")} limit. New jobs resume as soon as this is cleared.`
+            : `Rs. ${Number(remaining).toLocaleString("en-PK")} of trips left before jobs pause at Rs. ${limit.toLocaleString("en-PK")}.`}
+        </p>` : ""}
+      <p class="nx-owe-title">${esc(meta.title)}</p>
+    </div>
+
+    ${b.blocked ? `
+      <div class="nx-action-row danger mb-4">
+        <div>
+          <p class="font-bold text-sm">You're not receiving jobs right now</p>
+          <p class="text-xs text-secondary" style="margin-top:3px;">
+            This isn't a suspension and nothing is wrong with your account —
+            it's the unsettled commission. Pay it and you're back on
+            immediately.
+          </p>
+        </div>
+      </div>` : ""}
+
+    ${channels.length === 0 ? `
+      <!-- Nothing configured. Say so honestly rather than rendering four
+           empty account numbers a driver might try to pay into. -->
+      <div class="nx-action-row warn">
+        <div>
+          <p class="font-bold text-sm">Payment details not set up yet</p>
+          <p class="text-xs text-secondary" style="margin-top:3px;">
+            Call the ops desk to settle. (Fill SETTLEMENT in
+            js/settlement.config.js to show payment options here.)
+          </p>
+        </div>
+      </div>` : `
+      <p class="nx-sec-title mb-2">Pay through any of these</p>
+      <div class="flex-col gap-2 mb-4">
+        ${channels.map((c) => `
+          <div class="nx-pay-card">
+            <div class="flex justify-between items-center">
+              <p class="font-bold text-sm">${esc(c.label)}</p>
+              <button class="nx-copy-btn" data-copy="${esc(c.accountNumber)}">${icon("document", 13)} Copy</button>
+            </div>
+            <p class="nx-pay-number">${esc(c.accountNumber)}</p>
+            <p class="text-xs text-secondary">${esc(c.accountTitle)}</p>
+            ${c.bankName ? `<p class="text-xs text-muted">${esc(c.bankName)}</p>` : ""}
+            <p class="text-xs text-muted" style="margin-top:6px;">${esc(c.hint)}</p>
+          </div>`).join("")}
+      </div>
+
+      <div class="nx-action-row info">
+        <div>
+          <p class="font-bold text-sm">After you pay</p>
+          <p class="text-xs text-secondary" style="margin-top:3px;">
+            ${esc(SETTLEMENT.proofInstruction)} Cleared ${esc(SETTLEMENT.clearedWithin)}.
+          </p>
+        </div>
+      </div>`}
+  `;
+}
+
+function wireCopyButtons(root) {
+  root.querySelectorAll("[data-copy]").forEach((btn) =>
+    btn.addEventListener("click", async () => {
+      const value = btn.dataset.copy;
+      haptic.light();
+      try {
+        await navigator.clipboard.writeText(value);
+        const original = btn.innerHTML;
+        btn.innerHTML = `${icon("check", 13)} Copied`;
+        setTimeout(() => { btn.innerHTML = original; }, 1600);
+      } catch {
+        // Clipboard is blocked in some in-app webviews. The number is on
+        // screen either way, so this is a convenience failing, not the task.
+        toast(`Account number: ${value}`);
+      }
+    }),
+  );
 }
