@@ -19,6 +19,7 @@ import {
 } from "../launch.config.js";
 import { haptic } from "../haptics.js";
 import { reportHandled } from "../errors.js";
+import { enablePush } from "../push.js";
 
 const ALL_VEHICLES = [
   { type: "BIKE", name: "Nova Moto", desc: "Fastest through traffic", icon: "bike", tag: "Bike" },
@@ -620,6 +621,15 @@ export function renderRideBooking(root) {
         // become a "recent" — typing into the box and abandoning should not
         // fill someone's home screen with places they never went.
         recordRecent(dropoff);
+        /* THE PERMISSION PROMPT GOES HERE, NOT AT LAUNCH.
+           iOS gives an app exactly one chance at the notification prompt, and
+           a decline is permanent short of a trip to Settings. Asking on first
+           launch spends that chance on someone who has no idea what the app
+           does. Asking here — the instant they have a ride to be told about —
+           is the moment "tell me when my rider arrives" is self-evidently
+           worth a yes. Not awaited: the tracking screen must not wait on a
+           system dialog. */
+        void enablePush();
         navigate("/tracking");
       } catch (err) {
         reportHandled(err, "createTrip", { vehicleType: selectedVehicle });

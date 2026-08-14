@@ -7,6 +7,7 @@ import { APP_CONFIG } from "./appMode.js";
 import { initTheme } from "./theme.js";
 import { initI18n, t } from "./i18n.js";
 import { initNet, isConnectivityError, showNetBanner } from "./net.js";
+import { initPush } from "./push.js";
 import { flush, queueSize } from "./offlineQueue.js";
 import { api } from "./api.js";
 
@@ -70,6 +71,10 @@ function boot() {
   initTheme();
   initI18n();
   initNet();
+  // Listeners only — this does NOT prompt. The permission ask happens after
+  // the first booking (see enablePush), because iOS allows exactly one
+  // prompt and a customer who has not booked yet has no reason to accept.
+  initPush();
   renderShell();
   renderBottomNav();
   initRouter();

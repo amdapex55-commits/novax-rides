@@ -150,7 +150,15 @@ export const api = {
       Token.phone = phone;
       return data;
     }),
-  logout: () => Token.clear(),
+  /* Sign-out clears the session AND stops push reaching this handset.
+     Without the second half, the next person to sign in on a shared phone —
+     which in this market is common for driver handsets — keeps receiving the
+     previous user's job offers until they happen to re-register. Fire and
+     forget: a failed unregister must never block someone from signing out. */
+  logout: () => {
+    import("./push.js").then((m) => m.disablePush()).catch(() => {});
+    Token.clear();
+  },
 
   // --- Users ---
   getMe: () => request("/users/me").then((u) => { Token.user = u; return u; }),
@@ -171,6 +179,11 @@ export const api = {
 
   // --- Notifications ---
   getNotifications: () => request("/notifications/me"),
+  // Called on every cold start once signed in — FCM rotates tokens, so a
+  // one-time registration silently stops working weeks later.
+  registerDevice: (dto) => request("/notifications/devices", { method: "POST", body: dto }),
+  unregisterDevice: (token) =>
+    request(`/notifications/devices/${encodeURIComponent(token)}`, { method: "DELETE" }),
   markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: "PATCH" }),
 
   // --- Support ---
