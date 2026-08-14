@@ -81,6 +81,7 @@ export const ROUTES = {
   "/driver/profile": { view: () => import("./views/driverAccount.js"), fn: "renderDriverProfile", auth: "DRIVER", nav: true, tab: "profile" },
   "/driver/vehicle": { view: () => import("./views/driverAccount.js"), fn: "renderVehicle", auth: "DRIVER", nav: false },
   "/driver/notifications": { view: () => import("./views/driverAccount.js"), fn: "renderDriverNotifications", auth: "DRIVER", nav: true, tab: "alerts" },
+  "/driver/diagnostics": { view: () => import("./views/driverAccount.js"), fn: "renderDriverDiagnostics", auth: "DRIVER", nav: false },
   "/driver/settle": { view: () => import("./views/driverAccount.js"), fn: "renderSettleUp", auth: "DRIVER", nav: false },
   "/driver/incentives": { view: () => import("./views/driverAccount.js"), fn: "renderIncentives", auth: "DRIVER", nav: false },
   "/parcel/service": { view: () => import("./views/parcel.js"), fn: "renderParcelService", auth: "guest", nav: false },

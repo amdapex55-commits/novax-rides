@@ -62,9 +62,29 @@ if printf '%s\n' "$staged" | grep -qE '(^|/)\.![0-9]+!|(^|/)\.DS_Store$'; then
   fail=1
 fi
 
+# Static correctness. These checks exist because eight bugs of exactly the
+# shapes they detect reached production — a symbol used without importing it,
+# a route nothing could reach, a CTA with no handler, an endpoint with no
+# caller. There is no bundler and no type checker on this codebase, so nothing
+# else looks at any of it.
+#
+# Only runs when JS actually changed, so a docs commit stays instant.
+if printf '%s\n' "$staged" | grep -qE '^js/.*\.js$|^scripts/.*\.js$'; then
+  if ! node scripts/check-syntax.js >/dev/null 2>&1; then
+    echo ""
+    echo "  BLOCKED: a module does not parse."
+    node scripts/check-syntax.js 2>&1 | tail -12 | sed 's/^/    /'
+    fail=1
+  elif ! node scripts/audit.js >/dev/null 2>&1; then
+    echo ""
+    node scripts/audit.js 2>&1 | sed 's/^/  /'
+    fail=1
+  fi
+fi
+
 if [ "$fail" -ne 0 ]; then
   echo ""
-  echo "  Commit refused. Remove the secret, then commit again."
+  echo "  Commit refused. Fix the above, then commit again."
   echo "  If this is a false positive:  git commit --no-verify"
   echo ""
   exit 1

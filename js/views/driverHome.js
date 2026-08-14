@@ -93,6 +93,11 @@ export function renderDriverHome(root) {
           <span id="onlineLabel">${online ? "Go Offline" : "Go Online"}</span>
         </button>
         <p class="text-xs text-muted text-center mt-2" id="radarLabel">${radarLabel(online, mode)}</p>
+        <!-- The question every driver eventually asks, one tap from the
+             screen where they ask it. -->
+        <button id="diagBtn" class="nx-sec-action" style="display:block;margin:8px auto 0;">
+          Not getting jobs?
+        </button>
       </div>
     </div>
   `;
@@ -102,6 +107,7 @@ export function renderDriverHome(root) {
   const dot = root.querySelector("#statusDot");
   const radarLabelEl = root.querySelector("#radarLabel");
   const modeSwitch = root.querySelector("#modeSwitch");
+  root.querySelector("#diagBtn")?.addEventListener("click", () => navigate("/driver/diagnostics"));
 
   // ---------- Earnings ----------
   api.getDriverEarnings()

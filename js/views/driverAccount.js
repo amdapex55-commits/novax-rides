@@ -5,6 +5,7 @@ import { toast, fmtMoney, fmtDate, countUp, skeletonRows, esc } from "../ui.js";
 import { SETTLEMENT, activeSettlementChannels } from "../settlement.config.js";
 import { COMMISSION_PCT } from "../launch.config.js";
 import { haptic } from "../haptics.js";
+import { reportHandled } from "../errors.js";
 
 export function renderEarnings(root) {
   root.innerHTML = `
@@ -525,4 +526,130 @@ function wireCopyButtons(root) {
       }
     }),
   );
+}
+
+/* -------------------------------------------------- device diagnostics ---
+
+   "I'm online but I'm not getting any jobs."
+
+   That sentence is the most common thing a driver says to an ops desk, and
+   until now the honest answer was a phone call working through a checklist:
+   is your GPS on, is the app open, are your documents approved, do you owe
+   commission. Every one of those is something the SERVER already knows —
+   LocationService.getDriverStatus computes exactly the conditions matching
+   uses, so it can never tell a driver they are fine while the matcher is
+   skipping them.
+
+   The screen shows REASONS, not a status light. "You are offline" sends
+   someone to a toggle they already switched on; "your location hasn't reached
+   us in four minutes" tells them what to actually do.
+
+   Device health is shown even when everything is fine, because it is what a
+   dispatcher asks for when a driver phones in — and reading it off their own
+   screen is faster than describing where to find it in Android settings.   */
+
+export function renderDriverDiagnostics(root) {
+  root.innerHTML = `
+    <div class="page nx-stagger">
+      <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
+      <h1 class="text-xl mb-1">Why am I not getting jobs?</h1>
+      <p class="text-secondary text-sm mb-4">
+        This is what our servers can see about your phone right now.
+      </p>
+      <div id="diagBody">${skeletonRows(2)}</div>
+    </div>
+  `;
+  root.querySelector("#backBtn").addEventListener("click", () => history.back());
+
+  const body = root.querySelector("#diagBody");
+  let timer = null;
+
+  function load() {
+    api.getDriverStatus()
+      .then((s) => { if (root.isConnected) body.innerHTML = diagHtml(s); })
+      .catch((err) => {
+        if (!root.isConnected) return;
+        reportHandled(err, "driverDiagnostics");
+        body.innerHTML = `<div class="empty-state"><p>Couldn't reach the server. Check your connection.</p></div>`;
+      });
+  }
+  load();
+  // A driver opens this WHILE fixing something — turning GPS back on, coming
+  // out of a basement. Refreshing means they see it clear without knowing to
+  // pull down.
+  timer = setInterval(load, 10_000);
+  return () => clearInterval(timer);
+}
+
+function diagHtml(s) {
+  const ok = s.receivingJobs === true;
+  const d = s.device || {};
+  return `
+    <div class="nx-owe ${ok ? "nx-owe-ok" : "nx-owe-blocked"} mb-4">
+      <p class="nx-owe-label">Right now</p>
+      <p class="nx-owe-title" style="font-size:18px;margin-top:6px;">
+        ${ok ? "You're receiving jobs" : "You're not receiving jobs"}
+      </p>
+      ${ok ? `<p class="nx-owe-meta" style="margin-top:6px;">
+                Everything checks out. If it stays quiet, it's demand, not your phone.
+              </p>` : ""}
+    </div>
+
+    ${(s.blockers || []).length ? `
+      <p class="nx-sec-title mb-2">What's stopping it</p>
+      <div class="flex-col gap-2 mb-4">
+        ${s.blockers.map((b) => `
+          <div class="nx-action-row danger">
+            <div><p class="text-sm" style="font-weight:600;">${esc(b)}</p></div>
+          </div>`).join("")}
+      </div>` : ""}
+
+    <p class="nx-sec-title mb-2">Your device</p>
+    <div class="flex-col gap-1">
+      ${diagRow("Location last received", fmtAgo(d.lastFixSecondsAgo), agoTone(d.lastFixSecondsAgo, 180))}
+      ${diagRow("App last checked in", fmtAgo(d.lastHeartbeatSecondsAgo), agoTone(d.lastHeartbeatSecondsAgo, 60))}
+      ${diagRow("Battery", d.batteryLevel == null ? "Unknown" : `${d.batteryLevel}%`,
+                d.batteryLevel != null && d.batteryLevel < 15 ? "warn" : "ok")}
+      ${diagRow("Network", d.networkType ? String(d.networkType).toUpperCase() : "Unknown", "ok")}
+      ${diagRow("App version", d.appVersion || "Unknown", "ok")}
+    </div>
+
+    <div class="nx-action-row info mt-4">
+      <div>
+        <p class="font-bold text-sm">If your location keeps going stale</p>
+        <p class="text-xs text-secondary" style="margin-top:3px;">
+          Xiaomi, Redmi, Oppo, Realme and Vivo phones stop background apps to
+          save battery. In Settings, find Nova Go and allow it to run in the
+          background and use location "always". Keep the app open while you
+          ride until that's done.
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+function diagRow(label, value, tone) {
+  const colour = tone === "bad" ? "var(--error)" : tone === "warn" ? "var(--warning)" : "var(--text-primary)";
+  return `
+    <div class="list-row" style="min-height:48px;">
+      <p class="text-sm" style="flex:1;">${esc(label)}</p>
+      <p class="font-bold text-sm" style="color:${colour};" dir="ltr">${esc(value)}</p>
+    </div>`;
+}
+
+/** Seconds since something last happened, in words a driver reads at a glance. */
+function fmtAgo(seconds) {
+  if (seconds == null) return "Never";
+  if (seconds < 60) return `${seconds}s ago`;
+  const mins = Math.round(seconds / 60);
+  return mins < 60 ? `${mins} min ago` : `${Math.round(mins / 60)} hr ago`;
+}
+
+/** Amber before the server actually gives up, so a driver can act on a
+ *  problem rather than only being told after it has cost them a job. */
+function agoTone(seconds, staleAfter) {
+  if (seconds == null) return "bad";
+  if (seconds > staleAfter) return "bad";
+  if (seconds > staleAfter * 0.6) return "warn";
+  return "ok";
 }
