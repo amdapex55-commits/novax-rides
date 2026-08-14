@@ -102,10 +102,17 @@ APNs key, no device-token storage, no send path. This is a real build (item
 
 ## Stage 4 — The native capabilities reviewers look for
 
-21. **[TODO] Push notifications.** FCM + APNs, device-token storage, send path,
-    and the events: rider found / arriving / arrived / started / completed for
-    customers; new job / cancellation / settlement / document expiry for
-    drivers. **Nothing of this exists today.**
+21. **[DONE, except credentials] Push notifications.** Built 2026-08-14:
+    `PushService` (console + FCM HTTP v1 via a locally signed service-account
+    JWT, no firebase-admin), `device_tokens` table keyed on the token so a
+    shared handset re-homes to its new owner, dead-token pruning, and
+    `NotificationsService.notify()` writing the in-app row and the push from
+    one call so they cannot drift. Wired to job offer / rider found / rider
+    arrived / trip complete. Permission is asked after the FIRST BOOKING, not
+    at launch — iOS allows one prompt and a decline is permanent.
+    **[YOU] What remains:** create a Firebase project, upload an APNs key to
+    it, and set `PUSH_PROVIDER=fcm` + `FCM_SERVICE_ACCOUNT_JSON` in Railway.
+    Until then it runs in console mode and delivers nothing.
 22. **[TODO] Background location for the driver app only.** `BACKGROUND-GPS.md`
     documents the gap: browser geolocation stops when the app backgrounds, so a
     driver believes they are online while sending nothing. Needs a real
