@@ -49,11 +49,25 @@ export const SERVICES = {
   // Food stays parked: it needs restaurants onboarded and a kitchen actually
   // accepting orders — a supply problem the other two don't have.
   food:   { live: false, label: "Food",   eta: "Coming soon" },
+
+  /* Taxi (car rides). Parked, and SHOWN as parked rather than hidden.
+     Its live flag is DERIVED from VEHICLE_TYPES below rather than set here,
+     because that array is what the booking screen and the backend's
+     LaunchPolicyService actually enforce. Two independent switches for one
+     fact is how a tab reappears offering a booking the server refuses — the
+     exact bug that took the Taxi tab out in the first place. One source of
+     truth, read in both places. */
+  taxi:   { get live() { return VEHICLE_TYPES.includes("CAR"); }, label: "Taxi", eta: "Coming soon" },
 };
 
 /** Vehicle types a customer can actually book. Bike only for the pilot:
  *  every extra vehicle type is another supply pool you have to fill, and a
  *  car request with no cars online is a worse experience than no car option. */
+/* The only vehicle the pilot dispatches. SERVICES.taxi.live reads this, and
+   so does the backend (LAUNCH_VEHICLE_TYPES) — add "CAR" here and to that env
+   var together, or the app offers a booking the server rejects.
+   Declared after SERVICES on purpose: the taxi getter defers to call time, so
+   the order below never matters. */
 export const VEHICLE_TYPES = ["BIKE"];
 
 /** "Name your own fare" (inDrive-style bidding). OFF for the pilot.
@@ -120,13 +134,27 @@ export const PRICING = {
 };
 
 /* ---------------------------------------------------------------------------
-   3. SERVICE ZONE
-   You said you'd pick the zone later. Set `enabled: true` and adjust the
-   centre/radius when you decide — until then the app serves all of Karachi.
+   3. SERVICE ZONE — ALL OF KARACHI
 
-   Why a geofence matters: 40 riders spread across a 3,500 km² city means
-   nobody is ever close enough. The same 40 riders inside one 6km circle is
-   a 4-minute pickup. Density is the entire product.
+   Decided: Nova Go serves the whole city. The fence below exists to reject a
+   booking from Hyderabad or a GPS glitch in the Arabian Sea, and nothing
+   else.
+
+   The density argument that used to live here was right about the arithmetic
+   and wrong about the remedy. 40 riders spread across 3,500 km² means nobody
+   is ever close enough; 40 riders working one district is a four-minute
+   pickup. That is true. But it is a RECRUITMENT problem, not a geofence one.
+
+   Fencing customers out to fix it means someone in Gulshan is told "we don't
+   serve your area", tells their friends the app doesn't work, and never comes
+   back — you have traded a slow pickup for a permanently lost customer, and
+   you have hidden the demand signal that would have told you where to recruit
+   next. Concentrating hiring instead gets you the same density without ever
+   turning a customer away.
+
+   Watch no-match rate and median pickup ETA by area (ops → Today). A district
+   that keeps failing to match is your next recruitment drive, not a reason to
+   shrink this radius.
    --------------------------------------------------------------------------- */
 
 export const ZONE = {

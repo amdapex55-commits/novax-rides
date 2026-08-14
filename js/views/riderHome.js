@@ -16,26 +16,28 @@ import { haptic } from "../haptics.js";
 import { track } from "../analytics.js";
 
 /* TABS ARE DERIVED, NOT HARDCODED.
-   The Taxi tab was a live path to a booking the platform cannot fulfil: it
-   offered car tiers from Rs 450 while VEHICLE_TYPES is bike-only and the
-   backend's LaunchPolicyService rejects any non-BIKE trip. A customer could
-   pick a tier, set pickup and drop-off, and be refused at the last step —
-   the worst possible place to find out.
 
-   Now a tab only exists if we can actually serve it. Food keeps its tab while
-   parked because its screens route to coming-soon and the tap is a real
-   demand signal; Taxi has no such screen, so it goes entirely. */
-const CAN_BOOK_CAR = VEHICLE_TYPES.includes("CAR");
+   Every service the business intends to offer gets a tab. What changes is
+   whether that tab leads to a booking or to a coming-soon screen, and that
+   is read from SERVICES — never written here.
 
-/* Bike leads because bike is the business. It is also the tab that opens by
-   default, and having the selected tab sit second — with a parked service in
-   the primary position — read as though Food were the main event and rides
-   were the sideline. */
+   The history matters. Taxi originally offered car tiers from Rs 450 while
+   VEHICLE_TYPES is bike-only and the backend rejects any non-BIKE trip: a
+   customer could pick a tier, set both addresses, and be refused at the last
+   step. The fix at the time was to delete the tab, which traded one problem
+   for another — a service you plan to launch became invisible, and the taps
+   that would have told you whether anyone wants it stopped being counted.
+
+   So a parked service now behaves exactly like Food does: visible, honest
+   about not being live, and countable as demand. Flip it live in
+   launch.config.js and the real screens come back with no change here. */
 const TABS = [
-  { key: "BIKE", label: "Bike", icon: "bike" },
-  { key: "FOOD", label: "Food", icon: "utensils" },
-  ...(CAN_BOOK_CAR ? [{ key: "TAXI", label: "Taxi", icon: "taxi" }] : []),
+  { key: "BIKE", label: "Bike", icon: "bike", service: "ride" },
+  { key: "FOOD", label: "Food", icon: "utensils", service: "food" },
+  { key: "TAXI", label: "Taxi", icon: "taxi", service: "taxi" },
 ];
+
+const isLive = (svc) => SERVICES?.[svc]?.live === true;
 
 export function renderHome(root) {
   const user = Token.user;
@@ -118,10 +120,15 @@ export function renderHome(root) {
   }
 
   tabBtns.forEach((b) => b.addEventListener("click", () => setTab(b.dataset.tab)));
+  // The "coming soon" tiles inside the Bike panel need to drive the tab strip
+  // above them. Exposed on window rather than threaded through three render
+  // functions, and torn down below so it can never point at a dead panel.
+  window.__novagoSetHomeTab = (key) => setTab(key);
   setTab(active, { animate: false });
 
   return () => {
     stopNearby();
+    delete window.__novagoSetHomeTab;
     if (cleanupPanel) { try { cleanupPanel(); } catch {} }
   };
 }
@@ -282,6 +289,29 @@ function renderBikeTab(panel, isGuest) {
       </button>
     </div>
 
+    <!-- Parked services get a row of their own rather than being mixed in
+         with what you can book right now. Above the fold they would compete
+         with the three live tiles for the same tap; hidden entirely they stop
+         producing the demand signal that decides what launches next. -->
+    ${soon("food") || soon("taxi") ? `
+      <div class="nx-sec"><span class="nx-sec-title">${esc(t("Coming soon"))}</span></div>
+      <div class="nx-tiles cols-2 mb-4">
+        ${soon("food") ? `
+          <button class="nx-tile t-food is-soon" data-tab-go="FOOD">
+            <span class="nx-tile-flag">${esc(t("Soon"))}</span>
+            <span class="nx-tile-icon">${icon("utensils", 21)}</span>
+            <span class="nx-tile-label">${esc(t("Food"))}</span>
+            <span class="nx-tile-sub">${esc(t("Kitchens signing up"))}</span>
+          </button>` : ""}
+        ${soon("taxi") ? `
+          <button class="nx-tile t-biz is-soon" data-tab-go="TAXI">
+            <span class="nx-tile-flag">${esc(t("Soon"))}</span>
+            <span class="nx-tile-icon">${icon("taxi", 21)}</span>
+            <span class="nx-tile-label">${esc(t("Taxi"))}</span>
+            <span class="nx-tile-sub">${esc(t("Bikes only for now"))}</span>
+          </button>` : ""}
+      </div>` : ""}
+
     <!-- Real points against a real tier. Nothing here promises a free ride,
          because nothing in the backend currently grants one — see the note in
          js/promos.js. -->
@@ -369,6 +399,15 @@ function renderBikeTab(panel, isGuest) {
       .catch(() => { /* the strip simply stays hidden */ });
   }
 
+  // A parked tile switches to that service's tab rather than navigating —
+  // the tab is where the honest "not yet, tell me when" panel lives.
+  panel.querySelectorAll("[data-tab-go]").forEach((elm) =>
+    elm.addEventListener("click", () => {
+      haptic.light();
+      window.__novagoSetHomeTab?.(elm.dataset.tabGo);
+    }),
+  );
+
   panel.querySelectorAll("[data-go]").forEach((elm) =>
     elm.addEventListener("click", () => {
       haptic.light();
@@ -435,6 +474,34 @@ const TAXI_TIERS = [
 const TAXI_BASE_FROM = 450; // mirrors VEHICLES' CAR "from" price on the Bike tab's old fare screen
 
 function renderTaxiTab(panel) {
+  /* PARKED. Same contract as Food: say so plainly, take the demand signal,
+     and never render a tier list that leads to a booking the backend refuses.
+     The tier prices below only appear once cars are actually dispatchable. */
+  if (!isLive("taxi")) {
+    panel.innerHTML = `
+      <div class="nx-soon-panel">
+        <div class="nx-soon-art">${icon("taxi", 28)}</div>
+        <h3 class="nx-soon-title">${esc(t("Taxi is coming"))}</h3>
+        <p class="nx-soon-copy">
+          Nova Go runs bikes today &mdash; they beat Karachi traffic and they
+          keep the fare low. Cars need a different set of drivers and a
+          different licence check, so they switch on once the bike service is
+          running properly.
+        </p>
+        <button id="notifyTaxiBtn" class="btn btn-secondary">${icon("bell", 16)} ${esc(t("Tell me when it's live"))}</button>
+      </div>`;
+
+    panel.querySelector("#notifyTaxiBtn").addEventListener("click", (e) => {
+      // No endpoint behind this yet, so it doesn't pretend to have signed
+      // anyone up — it records the intent and says something true.
+      track("taxi_interest", {});
+      haptic.light();
+      e.currentTarget.disabled = true;
+      e.currentTarget.innerHTML = `${icon("check-circle", 16)} ${esc(t("We'll let you know"))}`;
+    });
+    return () => {};
+  }
+
   let selected = state.taxiTier || "STANDARD";
   panel.innerHTML = `
     <div class="glow-card mb-4">
@@ -447,18 +514,18 @@ function renderTaxiTab(panel) {
       </div>
     </div>
     <div class="flex-col gap-3 mb-4" id="tierList">
-      ${TAXI_TIERS.map((t) => `
-        <button class="option-card${t.key === selected ? " selected" : ""}" data-tier="${t.key}">
-          <div class="list-row-icon">${icon(t.icon, 20)}</div>
+      ${TAXI_TIERS.map((tier) => `
+        <button class="option-card${tier.key === selected ? " selected" : ""}" data-tier="${tier.key}">
+          <div class="list-row-icon">${icon(tier.icon, 20)}</div>
           <div class="flex-col" style="flex:1;">
-            <p class="font-bold">${t.name}</p>
-            <p class="text-secondary text-sm">${t.desc}</p>
+            <p class="font-bold">${tier.name}</p>
+            <p class="text-secondary text-sm">${tier.desc}</p>
           </div>
-          <p class="font-bold text-accent">from ${fmtMoney(Math.round(TAXI_BASE_FROM * t.multiplier))}</p>
+          <p class="font-bold text-accent">from ${fmtMoney(Math.round(TAXI_BASE_FROM * tier.multiplier))}</p>
         </button>`).join("")}
     </div>
     <p class="text-xs text-muted mb-4 text-center">Tier sets your comfort preference — the real fare is calculated by the backend from live distance once you request, same as every Nova Go ride.</p>
-    <button id="taxiContinueBtn" class="btn btn-primary btn-block">Set Pickup & Drop-off ${icon("arrow-forward", 18)}</button>
+    <button id="taxiContinueBtn" class="btn btn-primary btn-block">Set Pickup &amp; Drop-off ${icon("arrow-forward", 18)}</button>
   `;
 
   panel.querySelectorAll("[data-tier]").forEach((c) => {
@@ -474,6 +541,7 @@ function renderTaxiTab(panel) {
     state.taxiTier = selected;
     navigate("/set-locations");
   });
+  return () => {};
 }
 
 // ---------------- Food tab (restaurant marketplace teaser) ----------------

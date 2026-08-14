@@ -57,6 +57,12 @@ const UR = {
   "Alerts": "اطلاعات",
   "New": "نیا",
   "Soon": "جلد",
+  "Coming soon": "جلد آ رہا ہے",
+  "Taxi is coming": "ٹیکسی جلد آ رہی ہے",
+  "Tell me when it's live": "شروع ہونے پر مجھے بتائیں",
+  "We'll let you know": "ہم آپ کو بتا دیں گے",
+  "Kitchens signing up": "ریستوران شامل ہو رہے ہیں",
+  "Bikes only for now": "ابھی صرف بائیک",
 
   // --- greeting ---
   "Good morning": "صبح بخیر",

@@ -51,15 +51,41 @@ These print into the Terms, Privacy Policy and Rider Agreement.
 and specific to how Nova Go works, but I'm not a lawyer and it isn't legal
 advice. Budget a day for this; it's the item most likely to slip.
 
-**4. Choose your zone**
+**4. Zone — already set to all of Karachi**
 
 ```js
-ZONE = { enabled: true, name: "Clifton & DHA",
-         center: { lat: 24.8138, lng: 67.0300 }, radiusKm: 6 }
+ZONE = { enabled: true, name: "Karachi",
+         center: { lat: 24.9200, lng: 67.1000 }, radiusKm: 45 }
 ```
 
-Smaller is better. 40 riders across Karachi is nobody nearby; 40 riders in a
-6km circle is a 4-minute pickup.
+Nothing to choose. The fence exists to reject Hyderabad, not to reject Malir.
+
+**But the supply problem this used to solve is real, and it did not go away.**
+
+40 riders spread across a 3,500 km² city is nobody nearby. 40 riders working
+one district is a four-minute pickup. That arithmetic does not change because
+the geofence got wider — the difference is *where you fix it*.
+
+Fixing it by fencing customers out means a customer in Gulshan is told "we
+don't serve your area", tells their friends Nova Go doesn't work, and never
+opens the app again. Fixing it by concentrating **recruitment** means the same
+customer gets a longer wait once, and a fast pickup as soon as you sign riders
+in their area.
+
+So: recruit riders in tight clusters, one district at a time. Let customers
+book from anywhere.
+
+**Watch these while supply is thin** — they are the early warning that you
+have widened faster than you have recruited:
+
+| Metric | Where | What it means |
+|---|---|---|
+| No-match rate by area | ops → Today | Where demand exists and supply does not — your next recruitment drive |
+| Median pickup ETA by area | ops → Today | Rising in a district means it is going thin |
+| Requests with zero riders in 5km | ops → Live | The honest "we could not serve this" count |
+
+If an area shows repeated no-matches, that is a recruitment target, not a
+reason to switch the fence back on.
 
 **5. Deploy**
 

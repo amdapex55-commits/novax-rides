@@ -34,12 +34,28 @@ website: "https://novago.pk",
 effectiveDate: "1 September 2026",
 ```
 
-And the zone, around line 95 — set `enabled: true` when you've chosen:
+The zone is already set, and already on:
 
 ```js
-ZONE = { enabled: true, name: "Clifton & DHA",
-         center: { lat: 24.8138, lng: 67.0300 }, radiusKm: 6 }
+ZONE = { enabled: true, name: "Karachi",
+         center: { lat: 24.9200, lng: 67.1000 }, radiusKm: 45 }
 ```
+
+**Nova Go serves all of Karachi.** That radius is drawn from the geographic
+centre of the city — not Clifton, which would push the circle out to sea and
+cut off the north — and is wide enough to cover Malir and Bin Qasim in the
+east, Baldia and Hawksbay in the west, North Karachi and Gadap above, Sea View
+below.
+
+It is a **sanity boundary, not a service area.** Its only job is to reject a
+booking from Hyderabad or a GPS glitch in the Arabian Sea. It is not there to
+decide who you serve.
+
+Keep it in step with the backend (`LAUNCH_ZONE_*` in Railway, defaults in
+`src/launch/launch-policy.service.ts`). The frontend copy is what makes the UI
+honest before a request is sent; the backend is what makes it true. There are
+tests asserting the default covers six named Karachi neighbourhoods and still
+rejects Hyderabad and Lahore.
 
 Save both files.
 
