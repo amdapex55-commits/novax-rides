@@ -156,3 +156,67 @@ silently dead.
 Only the driver app tracks in the background. Adding these permissions to the
 customer build would mean a Play Store background-location declaration, and a
 review, for a capability that build never uses.
+
+---
+
+## Push notifications — the native half
+
+`@capacitor/push-notifications` is now a dependency and `cap sync` registers it
+(three plugins for android: background-geolocation, geolocation,
+push-notifications). `js/push.js` finds it through `window.Capacitor.Plugins`
+and the backend endpoints it talks to already exist.
+
+What is NOT done, and cannot be done from this repo: **`android/` is
+gitignored.** It is regenerated per machine, so the Gradle wiring below has to
+be applied wherever you actually build, and it will not arrive with a `git
+pull`.
+
+### 1. Drop in `google-services.json`
+
+From the Firebase console → Project settings → your Android app. It goes at:
+
+```
+android/app/google-services.json
+```
+
+The applicationId inside it must match the app you are building —
+`pk.novago.driver` or `pk.novago.customer`. One file per app; swapping apps
+means swapping this file, the same trap as the manifest.
+
+### 2. Add the Google services Gradle plugin
+
+`android/build.gradle`, in `buildscript { dependencies { ... } }`:
+
+```gradle
+classpath 'com.google.gms:google-services:4.4.2'
+```
+
+`android/app/build.gradle`, at the very bottom:
+
+```gradle
+apply plugin: 'com.google.gms.google-services'
+```
+
+**The build fails if the plugin is applied and `google-services.json` is
+missing.** That is the correct behaviour — a push build with no FCM config
+would install, run, and silently never receive anything — but it means step 1
+comes first.
+
+### 3. Verify on a real device
+
+An emulator without Play Services will not register. On a real phone:
+
+- launch the app and accept the notification prompt (Android 13+ needs
+  `POST_NOTIFICATIONS`, which `scripts/select-app.js` already writes for the
+  driver app)
+- confirm a row appears via `GET /api/v1/notifications/devices` for that user
+- send a test push from the Firebase console to that token
+
+If registration fails, `push.js` reports it through `registrationError` rather
+than throwing — check the console rather than expecting a crash.
+
+### Not verified here
+
+None of the above was run: this machine has no Android SDK, no Gradle and no
+`google-services.json`. The JavaScript side and the plugin registration are
+confirmed; the native build is not.
