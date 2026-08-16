@@ -38,6 +38,7 @@ export const ROUTES = {
   // way and the flow can be switched back with a redirect.
   "/signin": { view: () => import("./views/account.js"), fn: "renderSignIn", auth: "none", nav: false },
   "/signup": { view: () => import("./views/account.js"), fn: "renderSignUp", auth: "none", nav: false },
+  "/forgot-password": { view: () => import("./views/account.js"), fn: "renderForgotPassword", auth: "none", nav: false },
   // Home swaps with the pilot. With one service live the customer gets the
   // focused bike-hailing screen (map + "Where to?"); once a second service
   // goes live in launch.config.js the multi-service tabbed home returns.

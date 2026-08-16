@@ -110,6 +110,15 @@ export const api = {
   // financial records survive (see users.service.ts).
   deleteAccount: () => request("/users/me", { method: "DELETE" }),
 
+  /* Recovery is a REQUEST, not a reset: there is no delivery channel yet, so
+     ops closes the loop by phone. Same response whether or not the contact
+     exists — see the backend. */
+  requestPasswordReset: (contact, note) =>
+    request("/users/password-reset-request", {
+      method: "POST",
+      body: { contact, ...(note ? { note } : {}) },
+    }),
+
   /* Password auth — the only signup path. The OTP client methods were
      removed with the screens that called them; the backend endpoints stay,
      gated off behind ENABLE_OTP_LOGIN, for whenever an SMS sender is

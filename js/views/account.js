@@ -75,7 +75,11 @@ export function renderSignIn(root) {
           </button>
         </form>
 
-        <p class="text-sm text-center mt-5">
+        <p class="text-sm text-center mt-4">
+          <a href="#/forgot-password" class="nx-link-strong">Forgot your password?</a>
+        </p>
+
+        <p class="text-sm text-center mt-3">
           New to Nova Go?
           <a href="#/signup" class="nx-link-strong">Create an account</a>
         </p>
@@ -337,5 +341,88 @@ function wirePasswordToggle(root) {
     const showing = field.type === "text";
     field.type = showing ? "password" : "text";
     toggle.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+  });
+}
+
+
+/**
+ * Forgot password.
+ *
+ * There is no emailed reset link, because there is no email provider and no
+ * SMS sender — see the backend's requestPasswordReset. So this is honest
+ * about what happens next: a person reads the request and calls you back.
+ *
+ * The confirmation is deliberately the same whether or not the contact
+ * matches an account. Telling an anonymous form "no such account" turns it
+ * into a way to find out who has one.
+ */
+export function renderForgotPassword(root) {
+  root.innerHTML = `
+    <div class="page nx-auth" style="min-height:100dvh;display:flex;flex-direction:column;">
+      <div id="forgotCard" style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+        <div class="nx-auth-mark">${icon("bolt", 26, 2)}</div>
+        <h1 class="nx-auth-title">Forgot your password?</h1>
+        <p class="nx-auth-sub">
+          Tell us the number or email you signed up with and our team will
+          contact you to reset it.
+        </p>
+
+        <form id="forgotForm" novalidate>
+          <label class="field-label" for="contact">Mobile number or email</label>
+          <input id="contact" class="input mb-2" type="text" autocomplete="username"
+                 placeholder="0300 1234567 or you@example.com" required/>
+
+          <p class="nx-auth-hint" id="hint">&nbsp;</p>
+
+          <button type="submit" id="submitBtn" class="btn btn-primary btn-block"
+                  style="height:56px;font-size:16px;">
+            Send request ${icon("arrow-forward", 18)}
+          </button>
+        </form>
+
+        <p class="text-sm text-center mt-5">
+          Remembered it? <a href="#/signin" class="nx-link-strong">Sign in</a>
+        </p>
+      </div>
+    </div>
+  `;
+
+  const form = root.querySelector("#forgotForm");
+  const btn = root.querySelector("#submitBtn");
+  const hint = root.querySelector("#hint");
+  let submitting = false;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+
+    const contact = root.querySelector("#contact").value.trim();
+    if (contact.length < 5) {
+      hint.textContent = "Enter the number or email you signed up with.";
+      return;
+    }
+
+    submitting = true;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span>`;
+    try {
+      const res = await api.requestPasswordReset(contact);
+      // Replaces the form outright: leaving a submit button on screen invites
+      // a second and third request for something a human has to action.
+      root.querySelector("#forgotCard").innerHTML = `
+        <div class="text-center">
+          <div class="nx-auth-mark">${icon("check-circle", 26, 2)}</div>
+          <h1 class="nx-auth-title mt-3">Request sent</h1>
+          <p class="nx-auth-sub">${res.message}</p>
+          <a href="#/signin" class="btn btn-primary btn-block mt-4"
+             style="height:56px;font-size:16px;">Back to sign in</a>
+        </div>
+      `;
+    } catch (err) {
+      hint.textContent = err.message || "Could not send that request. Try again.";
+      submitting = false;
+      btn.disabled = false;
+      btn.innerHTML = `Send request ${icon("arrow-forward", 18)}`;
+    }
   });
 }
