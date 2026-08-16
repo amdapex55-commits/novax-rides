@@ -18,6 +18,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { execSync } = require("child_process");
 
 const root = path.join(__dirname, "..");
 const out = path.join(root, "public");
@@ -205,6 +206,93 @@ for (const f of FILES) {
   cspApplied++;
 }
 
+/* Strip sourceMappingURL comments from what ships.
+
+   The vendored socket.io build carries one, and the .map it points at is
+   deliberately not shipped — so every page load fetched it and took a 404.
+   Harmless but noisy, and the noise is the problem: a console with a
+   permanent 404 in it is a console nobody reads, which is where the real
+   CSP and module errors were hiding.
+
+   Only the comment goes; the code is untouched.                            */
+{
+  let stripped = 0;
+  const strip = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) { strip(p); continue; }
+      if (!/\.(js|css)$/.test(p)) continue;
+      const src = fs.readFileSync(p, "utf8");
+      const cleaned = src.replace(/\n?\/\/[#@]\s*sourceMappingURL=.*$/gm, "")
+                         .replace(/\/\*[#@]\s*sourceMappingURL=[\s\S]*?\*\//g, "");
+      if (cleaned !== src) { fs.writeFileSync(p, cleaned); stripped++; }
+    }
+  };
+  strip(out);
+  if (stripped) console.log(`  stripped sourceMappingURL from ${stripped} file(s)`);
+}
+
+/* --------------------------------------------------- SERVICE WORKER ---
+
+   Stamp the service worker VERSION from the commit being built.
+
+   This was a manual constant with a comment asking the next person to
+   remember. They did not, four times in one day. The failure it causes is
+   nasty and quiet: navigations are network-first so the HTML shell updates,
+   same-origin assets are cache-first so the JS modules do not, and the cache
+   is only dropped when VERSION changes. A returning user therefore runs the
+   new shell against their old modules, and for ES modules that is not a
+   degraded experience — one missing export throws and takes the whole module
+   graph with it, leaving a page that renders its static markup and does
+   nothing at all.
+
+   Deriving it from the commit means it cannot be forgotten, and it also
+   answers "which build is this phone running?" — the same string appears in
+   build-manifest.json.
+
+   The source file keeps its hand-written value so local dev is unchanged;
+   only the copy in public/ is stamped.                                     */
+
+let buildId;
+try {
+  const sha = execSync("git rev-parse --short HEAD", { cwd: root }).toString().trim();
+  buildId = `novago-${sha}`;
+} catch {
+  // Not a git checkout (a tarball, a fresh CI cache). A timestamp still
+  // changes on every build, which is the property that actually matters.
+  buildId = `novago-${Date.now().toString(36)}`;
+}
+
+{
+  const swPath = path.join(out, "sw.js");
+  const sw = fs.readFileSync(swPath, "utf8");
+  const stamped = sw.replace(/const VERSION = "[^"]*";/, `const VERSION = "${buildId}";`);
+  if (stamped === sw) {
+    // The constant moved or was renamed. Failing here is correct: shipping an
+    // unstamped service worker is the exact bug this block exists to prevent.
+    console.error("\n  ABORT: could not stamp VERSION in sw.js — the constant was not found.\n");
+    process.exit(1);
+  }
+  fs.writeFileSync(swPath, stamped);
+}
+
+/* A build manifest, so ops can answer "which version is this customer on?"
+   without guessing. Hashes are of what actually shipped, after CSP
+   injection, not of the sources. */
+{
+  const files = {};
+  for (const f of FILES) {
+    const dest = path.join(out, f);
+    if (!fs.existsSync(dest)) continue;
+    files[f] = "sha256-" + crypto.createHash("sha256")
+      .update(fs.readFileSync(dest)).digest("base64").slice(0, 16);
+  }
+  fs.writeFileSync(
+    path.join(out, "build-manifest.json"),
+    JSON.stringify({ version: buildId, builtAt: new Date().toISOString(), files }, null, 2) + "\n",
+  );
+}
+
 // Fail loudly if an excluded file somehow made it in.
 for (const bad of EXCLUDED) {
   if (fs.existsSync(path.join(out, bad))) {
@@ -218,6 +306,7 @@ console.log(`
 
     ${copied} files + ${DIRS.length} asset directories
     CSP injected into ${cspApplied} HTML files (inline scripts hashed)
+    Service worker stamped ${buildId}
     EXCLUDED: ${EXCLUDED.join(", ")}
 
   Push public/ to GitHub Pages. Ops ships too — it's browser-only\n  and gated on the ADMIN role.

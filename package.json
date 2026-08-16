@@ -2,7 +2,7 @@
   "name": "novago-apps",
   "version": "1.0.0",
   "private": true,
-  "description": "Nova Go — one codebase, four apps (customer / driver / merchant / ops).",
+  "description": "Nova Go \u2014 one codebase, four apps (customer / driver / merchant / ops).",
   "scripts": {
     "serve": "npx http-server . -p 8100 -c-1",
     "app:customer": "node scripts/select-app.js customer",
@@ -19,10 +19,11 @@
     "cap:open:ios": "npx cap open ios",
     "app:web": "node scripts/select-app.js web",
     "vendor:socket": "mkdir -p vendor && curl -fL -o vendor/socket.io.min.js https://cdn.socket.io/4.7.5/socket.io.min.js && echo 'vendored -> vendor/socket.io.min.js'",
-    "deploy:public": "node scripts/deploy-public.js",
+    "deploy:public": "node scripts/deploy-public.js && node scripts/verify-build.js",
     "vendor:fonts": "bash scripts/vendor-fonts.sh",
     "audit": "node scripts/audit.js",
-    "check": "node scripts/check-syntax.js && node scripts/audit.js"
+    "check": "node scripts/check-syntax.js && node scripts/audit.js",
+    "verify": "node scripts/verify-build.js"
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.26",
