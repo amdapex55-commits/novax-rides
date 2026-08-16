@@ -63,7 +63,7 @@ export const ROUTES = {
   "/legal/restaurant-agreement": { view: () => import("./views/legal.js"), fn: "renderRestaurantAgreement", auth: "none", nav: false },
   "/legal/safety": { view: () => import("./views/legal.js"), fn: "renderSafety", auth: "none", nav: false },
   "/rate": { view: () => import("./views/riderTrip.js"), fn: "renderRateTrip", auth: "RIDER", nav: false },
-  "/wallet": { view: () => import("./views/riderAccount.js"), fn: "renderWallet", auth: "guest", nav: true, tab: "wallet" },
+  "/wallet": { view: () => import("./views/riderAccount.js"), fn: "renderWallet", auth: "guest", nav: true, tab: "wallet", navTab: "profile" },
   "/history": { view: () => import("./views/riderAccount.js"), fn: "renderTripHistory", auth: "guest", nav: true, tab: "history" },
   "/profile": { view: () => import("./views/riderAccount.js"), fn: "renderProfile", auth: "guest", nav: true, tab: "profile" },
   "/alerts": { view: () => import("./views/riderExtras.js"), fn: "renderAlerts", auth: "RIDER", nav: false },
@@ -94,18 +94,18 @@ export const ROUTES = {
   "/food/restaurant": { view: () => import("./views/food.js"), fn: "renderRestaurantMenu", auth: "guest", nav: false },
   "/food/cart": { view: () => import("./views/food.js"), fn: "renderFoodCart", auth: "guest", nav: false },
   "/food/tracking": { view: () => import("./views/food.js"), fn: "renderFoodTracking", auth: "RIDER", nav: false },
-  "/ops/command": { view: () => import("./views/opsCommand.js"), fn: "renderOpsCommand", auth: "ADMIN", nav: true, tab: "command" },
+  "/ops/command": { view: () => import("./views/opsCommand.js"), fn: "renderOpsCommand", auth: "ADMIN", nav: true, tab: "command", navTab: "dashboard" },
   "/ops/dashboard": { view: () => import("./views/ops.js"), fn: "renderOpsDashboard", auth: "ADMIN", nav: true, tab: "dashboard" },
   "/ops/approvals": { view: () => import("./views/ops.js"), fn: "renderOpsApprovals", auth: "ADMIN", nav: true, tab: "approvals" },
   "/ops/settle": { view: () => import("./views/opsSettle.js"), fn: "renderOpsSettle", auth: "ADMIN", nav: true, tab: "settle" },
   "/ops/market": { view: () => import("./views/opsMarket.js"), fn: "renderOpsMarket", auth: "ADMIN", nav: true, tab: "market" },
   "/ops/trip": { view: () => import("./views/opsMarket.js"), fn: "renderTripTimeline", auth: "ADMIN", nav: false },
   "/ops/growth": { view: () => import("./views/opsGrowth.js"), fn: "renderOpsGrowth", auth: "ADMIN", nav: true, tab: "growth" },
-  "/ops/users": { view: () => import("./views/ops.js"), fn: "renderOpsUsers", auth: "ADMIN", nav: true, tab: "users" },
+  "/ops/users": { view: () => import("./views/ops.js"), fn: "renderOpsUsers", auth: "ADMIN", nav: true, tab: "users", navTab: "approvals" },
   "/ops/live": { view: () => import("./views/opsLive.js"), fn: "renderOpsLiveDrivers", auth: "ADMIN", nav: true, tab: "live" },
   "/ops/cancellations": { view: () => import("./views/opsLive.js"), fn: "renderOpsCancellations", auth: "ADMIN", nav: false },
   "/ops/balances": { view: () => import("./views/opsLive.js"), fn: "renderOpsBalances", auth: "ADMIN", nav: false },
-  "/ops/tickets": { view: () => import("./views/opsLive.js"), fn: "renderOpsTickets", auth: "ADMIN", nav: true, tab: "tickets" },
+  "/ops/tickets": { view: () => import("./views/opsLive.js"), fn: "renderOpsTickets", auth: "ADMIN", nav: true, tab: "tickets", navTab: "dashboard" },
 
   // "How the money works" — the question every driver and restaurant asks
   // before signing up. Answering it in-app removes the most common call.
@@ -331,7 +331,7 @@ async function renderRoute(path) {
   container.appendChild(wrap);
 
   nav.classList.toggle("hidden", !route.nav);
-  if (route.nav) renderNavActive(route.tab);
+  if (route.nav) renderNavActive(route.navTab || route.tab);
 
   try {
     // Fetch the view module on demand. The browser caches it after the first
@@ -349,6 +349,12 @@ async function renderRoute(path) {
   window.scrollTo(0, 0);
 }
 
+// `tab` here is the nav entry to light up, which is not always the route's own
+// tab: screens reached from a tab rather than from the bar itself (the wallet,
+// the ops command center) have no nav entry of their own and declare a
+// `navTab` parent instead. Without that they highlighted nothing, which read
+// as "you have left the app" — most visibly on /ops/command, where every ADMIN
+// lands straight after signing in.
 function renderNavActive(tab) {
   document.querySelectorAll(".nav-item").forEach((n) => n.classList.toggle("active", n.dataset.tab === tab));
 }

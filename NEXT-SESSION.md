@@ -121,9 +121,13 @@ stricter.
   project, not a pre-launch one.
 - **Only 24 unit tests, no integration tests.** Nothing covers a full trip
   lifecycle, OTP, KYC approval, or the ledger end to end.
-- **Ops nav cosmetic bug:** `/ops/dashboard` is routed with `tab: "dashboard"`
-  but `appMode.js` has no matching nav entry, so its highlight silently matches
-  nothing.
+- ~~**Ops nav cosmetic bug**~~ **FIXED 2026-08-16.** `/ops/dashboard` had
+  gained its nav entry already, but three more routes had the same fault —
+  `/ops/command`, `/ops/users`, `/ops/tickets` — plus `/wallet` on the customer
+  app. `/ops/command` was the visible one: it is where every ADMIN lands after
+  signing in, showing a nav bar highlighting nothing. Routes with no nav entry
+  of their own now declare a `navTab` parent in `router.js`. A new
+  `orphan-nav-tab` rule in `scripts/audit.js` fails the build if it recurs.
 
 ---
 
@@ -210,23 +214,25 @@ higher-risk one and needs no push.
 
 ## Found while testing, not fixed (out of scope, but real)
 
-**Deleting an account does not revoke its existing tokens.**
+**Deleting an account did not revoke its existing tokens. FIXED 2026-08-16.**
 
-Verified against production on 2026-08-13. After `DELETE /users/me`:
+Verified against production on 2026-08-13: after `DELETE /users/me` the row was
+correctly anonymised and `POST /auth/login` correctly refused, but the access
+token issued before deletion still authenticated for up to its full 30-day
+life. Ops suspension had the same hole — `isActive` was re-checked on socket
+connect and on every match, but never on the HTTP path, so a suspended user
+kept ordinary API access.
 
-- the row is correctly anonymised — phone scrubbed, name becomes "Deleted user"
-- `POST /auth/login` correctly refuses with 401
-- **but the access token issued before deletion still authenticates**, and
-  `GET /users/me` keeps returning 200 for up to its full 30-day lifetime
+Fixed with a Redis denylist (`auth/token-denylist.service.ts`), checked in
+`JwtStrategy.validate` and written by `UsersService.deleteOwnAccount` and
+`AdminService.setUserActive`. Reactivation clears the entry, so an unsuspended
+user is not forced to sign in again. Entries expire after `JWT_ACCESS_TTL`.
 
-So a deleted account remains usable on whatever device it was already signed
-in on, until the token expires on its own. Practically this is a phone the
-user still holds, so it is low severity — but it is the kind of thing a Play
-Store data-deletion review asks about directly, and "we deleted your data" is
-weaker than it sounds if the session outlives it.
+**It fails OPEN if Redis is down** — deliberately. Failing closed would sign
+out every user on the platform, drivers mid-trip included, the moment Redis
+blinked; that is a much larger incident than a revoked session on a phone the
+person is still holding. The failure logs at error level. 7 unit tests cover
+it, including the fail-open path.
 
-**Fix:** on deletion, either bump a per-user token epoch that `JwtStrategy`
-checks, or add the user to a short-lived Redis denylist keyed until the
-longest possible token expiry. Not attempted here because it touches the auth
-path and wanted its own testing pass rather than being folded into a UI
-change.
+**Still worth doing:** this is the answer to the Play data-deletion review
+question, so say it in those words on the deletion screen if asked.

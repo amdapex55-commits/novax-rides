@@ -97,6 +97,28 @@ for (const f of JS_FILES) {
   }
 }
 
+/* ----------------------------------------------------------------- 2b --- */
+/* A route drawn WITH the nav bar whose tab matches no nav entry in any app.
+   The bar renders, renderNavActive() finds no `[data-tab]` to light up, and
+   the screen reads as though you have stepped outside the app. It is silent:
+   nothing errors, nothing 404s, the highlight is just never there. Screens
+   entered from a tab rather than from the bar declare a `navTab` parent, and
+   that is what has to resolve.                                              */
+{
+  const navEntries = new Set(
+    [...read("js/appMode.js").matchAll(/\{\s*tab:\s*"([^"]+)"/g)].map((m) => m[1]),
+  );
+  const navRoutes = router.matchAll(
+    /"(\/[^"]*)":\s*\{[^}]*?nav:\s*true[^}]*?tab:\s*"([^"]+)"(?:,\s*navTab:\s*"([^"]+)")?/g,
+  );
+  for (const [, path, tab, navTab] of navRoutes) {
+    const highlights = navTab || tab;
+    if (!navEntries.has(highlights)) {
+      fail("orphan-nav-tab", `${path} highlights "${highlights}", which no app's nav defines`);
+    }
+  }
+}
+
 /* ------------------------------------------------------------------ 3 --- */
 /* A route registered in the router but missing from every app's allowlist is
    unreachable: routeAllowed() rejects it and the router bounces to home. The
@@ -222,7 +244,7 @@ for (const f of JS_FILES.filter((p) => p.includes("/views/") && !/ops/i.test(p))
 /* ---------------------------------------------------------------- out --- */
 const byCheck = findings.reduce((a, f) => ((a[f.check] ??= []).push(f.detail), a), {});
 const CHECKS = [
-  "undefined-symbol", "dead-nav-target", "unreachable-route", "dead-cta",
+  "undefined-symbol", "dead-nav-target", "orphan-nav-tab", "unreachable-route", "dead-cta",
   "missing-endpoint", "undeclared-state", "undefined-css-class", "ships-internal",
 ];
 console.log("\n  Nova Go audit\n");
