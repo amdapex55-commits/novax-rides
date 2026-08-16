@@ -581,3 +581,48 @@ export function initOpsFeed(root) {
 
   return () => clearTimeout(timer);
 }
+
+/* ==========================================================================
+   9. OPS DOOR — three taps on the wordmark.
+
+   Ops is a browser-only console for the dispatch desk. It has no business
+   being advertised on a marketing page, but it also cannot be *removed* from
+   a static host: ops.html is a file on GitHub Pages, and anyone who types the
+   filename gets it. So this is a door, not a lock.
+
+   WHAT ACTUALLY PROTECTS OPS is the ADMIN role, enforced server-side on every
+   /ops route and every admin API. This handler only stops the console from
+   being one visible click away from the front page — it is obscurity, and it
+   is worth exactly what obscurity is worth. The real fix is a separate
+   private host (ops.novago.pk behind Cloudflare Access); see DEPLOY.md.
+
+   Three taps because two happen by accident on a logo that is also a
+   "back to top" anchor, and four is a puzzle nobody solves by accident.
+   ========================================================================== */
+
+const OPS_TAPS_REQUIRED = 3;
+const OPS_TAP_WINDOW_MS = 1200;
+
+export function initOpsDoor(logo, { href = "ops.html" } = {}) {
+  if (!logo) return;
+  let taps = 0;
+  let timer = null;
+
+  logo.addEventListener("click", (e) => {
+    taps += 1;
+
+    // Let the first tap behave like the anchor it is — the logo is a
+    // "back to top" link and breaking that to hide a door would be a bad
+    // trade. Only the run that reaches the threshold is intercepted.
+    if (taps >= OPS_TAPS_REQUIRED) {
+      e.preventDefault();
+      clearTimeout(timer);
+      taps = 0;
+      window.location.href = href;
+      return;
+    }
+
+    clearTimeout(timer);
+    timer = setTimeout(() => { taps = 0; }, OPS_TAP_WINDOW_MS);
+  });
+}

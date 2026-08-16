@@ -560,7 +560,7 @@
   import { initHero } from "./js/landing.js";
   import {
     initHeroPhone, initCounters, initSwitcher,
-    initJourney, initEarnings, initOpsFeed,
+    initJourney, initEarnings, initOpsFeed, initOpsDoor,
   } from "./js/landing-ui.js";
   import { COMMERCIALS } from "./js/support.config.js";
 
@@ -572,6 +572,10 @@
   initJourney(document.getElementById("journey"));
   initOpsFeed(document.getElementById("opsConsole"));
   initCounters();
+
+  // Three taps on the wordmark opens the dispatch console. Obscurity, not
+  // security — see initOpsDoor.
+  initOpsDoor(document.querySelector(".nx-logo"));
 
   // Commission comes from support.config.js — the same file the apps read —
   // so the site can never quote a rate the product doesn't charge.
