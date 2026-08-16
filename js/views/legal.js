@@ -186,8 +186,10 @@ export const renderPrivacy = page("Privacy Policy", `
   <h3>1. What we collect</h3>
   <p><strong>From passengers:</strong></p>
   <ul>
-    <li>Mobile number (required — this is how you sign in)</li>
-    <li>Name, if you give us one</li>
+    <li>Mobile number (required — you can sign in with it)</li>
+    <li>Email address (required — you can sign in with this instead)</li>
+    <li>Your first and last name (required)</li>
+    <li>A password, which we store only as a one-way hash and cannot read</li>
     <li>Pickup and drop-off locations for each trip</li>
     <li>Live location while a trip is active</li>
     <li>Trip history, fares and ratings</li>
