@@ -73,7 +73,7 @@ const CONFIGS = {
     // /coming-soon instead. See routeAllowed() below, which redirects any
     // parked service route to the coming-soon screen.
     routes: [
-      "/splash", "/welcome", "/signin", "/signup", "/phone", "/otp",
+      "/splash", "/welcome", "/signin", "/signup",
       "/home", "/ride", "/set-locations", "/fare", "/tracking", "/rate", "/shared",
       "/coming-soon",
       "/food/browse", "/food/restaurant", "/food/cart", "/food/tracking",
@@ -104,7 +104,7 @@ const CONFIGS = {
     allowedRoles: ["DRIVER"],
     home: "/driver/home",
     routes: [
-      "/splash", "/welcome", "/signin", "/signup", "/phone", "/otp",
+      "/splash", "/welcome", "/signin", "/signup",
       "/driver/onboarding", "/driver/pending", "/driver/kyc",
       "/driver/home", "/driver/offer", "/driver/progress",
       "/driver/food-offer", "/driver/food-progress",
@@ -130,7 +130,7 @@ const CONFIGS = {
     allowedRoles: ["RESTAURANT"],
     home: "/restaurant/orders",
     routes: [
-      "/splash", "/welcome", "/signin", "/signup", "/phone", "/otp",
+      "/splash", "/welcome", "/signin", "/signup",
       "/restaurant/onboarding", "/restaurant/pending",
       "/restaurant/orders", "/restaurant/menu", "/restaurant/profile",
       "/chat", "/support", "/help", "/commission-explained",
@@ -154,7 +154,7 @@ const CONFIGS = {
     allowedRoles: ["ADMIN"],
     home: "/ops/dashboard",
     routes: [
-      "/splash", "/welcome", "/signin", "/signup", "/phone", "/otp",
+      "/splash", "/welcome", "/signin", "/signup",
       "/ops/command", "/ops/dashboard", "/ops/approvals", "/ops/users",
       "/ops/live", "/ops/cancellations", "/ops/balances", "/ops/tickets",
       "/ops/settle", "/ops/growth", "/ops/market", "/ops/trip",
@@ -197,8 +197,6 @@ const UNIVERSAL_ROUTES = new Set([
   "/welcome",
   "/signin",
   "/signup",
-  "/phone",
-  "/otp",
   "/coming-soon",
 ]);
 

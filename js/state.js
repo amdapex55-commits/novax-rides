@@ -84,9 +84,9 @@ export const state = {
   get offerErrandId() { return read("offerErrandId"); },
   set offerErrandId(v) { write("offerErrandId", v); },
 
-  // Where to send the user after they finish phone+OTP login — set right
-  // before bouncing a guest to /phone (either by the router's auth guard or
-  // by an action button like "Request Ride"), consumed once on success.
+  // Where to send the user after they sign in — set right before bouncing a
+  // guest to /signin (either by the router's auth guard or by an action
+  // button like "Request Ride"), consumed once on success.
   get postAuthRedirect() { return read("postAuthRedirect"); },
   set postAuthRedirect(v) { write("postAuthRedirect", v); },
 

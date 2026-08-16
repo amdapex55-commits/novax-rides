@@ -7,23 +7,15 @@ and healthy on Railway.
 
 ## 🔴 Do these first — each is minutes, and two of them are live problems
 
-**1. Finish the Pages deploy switch.** Two steps, both in the GitHub UI:
+**1. ~~Finish the Pages deploy switch.~~ DONE — verified live 2026-08-16.**
+`deploy.yml` is in `.github/workflows/`, Pages is building from Actions, and
+`js/map-token.js` returns 200 on the deployed site, so Mapbox is live.
 
-- `deploy.yml` is sitting in the **repo root**. Workflows only run from
-  `.github/workflows/`. Open it → pencil → change the filename box to
-  `.github/workflows/deploy.yml` → commit. (Typing `/` creates the folders.)
-- Settings → Pages → Source: change **"Deploy from a branch"** to
-  **"GitHub Actions"**.
-
-Until both are done, two things are true and both are bad:
-
-- **`ops.html` is publicly reachable.** Pages serves the repo root, so the
-  dispatch console is on the open internet. Verified returning 200.
-- **Mapbox is not live.** `js/map-token.js` is gitignored and written by the
-  workflow from the `MAPBOX_TOKEN` secret, so the site is still on the free
-  Carto basemap.
-
-Verify after: `ops.html` should 404, `js/map-token.js` should 200.
+**`ops.html` being public is now DELIBERATE, not a bug.** The workflow's own
+check *requires* it in the build: ops is web-only and is protected by the
+ADMIN role server-side, not by being absent. Excluding it just meant there was
+nowhere to run the dispatch desk from. (One stale comment in `deploy.yml` still
+says the build "deliberately leaves ops.html behind" — it does not.)
 
 **2. Add `SENTRY_DSN` to Railway variables.** Backend error reporting is wired
 but a no-op without it. The DSN is in the local `.env` (gitignored). Boot logs
@@ -49,15 +41,24 @@ page shows a "not ready to publish" banner.
 **6. Lawyer review** of the five policies. Budget a day; it's the item most
 likely to slip.
 
-**7. SMS provider — start this immediately, it has the longest lead time.**
-Nobody can sign up without OTP delivery. `config.validation.ts` refuses to boot
-production with `SMS_PROVIDER=console`. Twilio works as a stopgap but is
-expensive to Pakistani numbers with mixed deliverability; a local aggregator
-(Jazz/Telenor/Zong corporate SMS) is cheaper and lands better but needs a
-registered mask and business documents — **weeks, not days**. The interface in
-`sms.service.ts` is already swappable.
+**7. ~~SMS provider~~ — NOT A BLOCKER. Verified against production 2026-08-16.**
 
----
+This was listed as the longest-lead-time item on the critical path and it is
+not on the path at all. OTP is opt-in and off: `ENABLE_OTP_LOGIN` defaults to
+false, the controller refuses `/auth/otp/*` while it is, and `config.validation`
+only demands an SMS provider when OTP is switched on. Password signup is the
+live path.
+
+Proven end to end against production: `POST /api/v1/auth/register` returns
+tokens immediately, no SMS anywhere in the flow.
+
+The phone+OTP SCREENS were removed from the frontend on 2026-08-16 — they could
+only ever have failed, and their copy ("No password. We'll text you a code")
+promised something that could not happen. They are in git history for whenever
+a sender is provisioned; the backend endpoints are untouched behind the flag.
+
+Provision a sender when you want OTP as a *second* login option. Nothing is
+blocked on it.
 
 ## 🟡 Code work still outstanding
 

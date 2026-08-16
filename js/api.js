@@ -110,10 +110,12 @@ export const api = {
   // financial records survive (see users.service.ts).
   deleteAccount: () => request("/users/me", { method: "DELETE" }),
 
-  /* Password auth. OTP below still works and is kept deliberately — when an
-     SMS sender is provisioned, both flows run side by side.
+  /* Password auth — the only signup path. The OTP client methods were
+     removed with the screens that called them; the backend endpoints stay,
+     gated off behind ENABLE_OTP_LOGIN, for whenever an SMS sender is
+     provisioned.
 
-     TOKEN STORAGE LIVES HERE, not in the view. verifyOtp has always worked
+     TOKEN STORAGE LIVES HERE, not in the view. The OTP flow had always worked
      this way and register/login did not, which is what broke signup: the
      screen called a Token.set() that has never existed on this object (it
      exposes `access`/`refresh`/`user` setters and clear(), nothing else), so
@@ -141,15 +143,6 @@ export const api = {
       return data;
     }),
 
-  requestOtp: (phone, referralCode, role) =>
-    request("/auth/otp/request", { method: "POST", body: { phone, ...(referralCode ? { referralCode } : {}), ...(role ? { role } : {}) } }),
-  verifyOtp: (phone, code) =>
-    request("/auth/otp/verify", { method: "POST", body: { phone, code } }).then((data) => {
-      Token.access = data.accessToken;
-      Token.refresh = data.refreshToken;
-      Token.phone = phone;
-      return data;
-    }),
   /* Sign-out clears the session AND stops push reaching this handset.
      Without the second half, the next person to sign in on a shared phone —
      which in this market is common for driver handsets — keeps receiving the
