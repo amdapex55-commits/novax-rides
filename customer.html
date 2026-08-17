@@ -7,6 +7,17 @@
 <title>Nova Go Bike — Book a bike in Karachi</title>
 <meta name="description" content="Book a bike across Karachi. Fixed fare shown before you book, verified riders, pay cash."/>
 <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+<!-- iOS has no manifest support worth the name: without these three,
+     "Add to Home Screen" produces a bookmark that opens in Safari WITH the
+     address bar, which is not an app and does not feel like one. Android
+     reads the manifest and needs none of this; iOS reads none of the
+     manifest and needs all of it. -->
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<!-- black-translucent lets the app paint under the status bar, which is why
+     every view already accounts for --safe-top. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Nova Go"/>
 <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png"/>
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png"/>
 <link rel="manifest" href="manifest.customer.json"/>

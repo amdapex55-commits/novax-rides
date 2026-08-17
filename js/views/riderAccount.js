@@ -2,7 +2,8 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, fmtMoney, fmtDate, countUp, skeletonRows, esc } from "../ui.js";
+import { offerInstall, isInstalled } from "../install.js";
+import { toast, fmtMoney, fmtDate, countUp, skeletonRows, esc, alertUser} from "../ui.js";
 import { navigate } from "../router.js";
 import { reportHandled } from "../errors.js";
 import { t, getLang, setLang } from "../i18n.js";
@@ -323,6 +324,13 @@ export function renderProfile(root) {
           <div class="list-row-icon">${icon("bell", 18)}</div>
           <p style="flex:1;" class="font-bold text-sm">Notifications</p>${icon("chevronRight", 18)}
         </div>
+        <!-- Only rendered when the app is NOT already installed, so it
+             cannot become a row that does nothing on the device where it
+             would matter most. -->
+        <div class="list-row" style="cursor:pointer;" id="installRow" hidden>
+          <div class="list-row-icon">${icon("add", 18)}</div>
+          <p style="flex:1;" class="font-bold text-sm">Add to home screen</p>${icon("chevronRight", 18)}
+        </div>
         <div class="list-row" style="cursor:pointer;" data-nav="/settings">
           <div class="list-row-icon">${icon("settings", 18)}</div>
           <p style="flex:1;" class="font-bold text-sm">Settings</p>${icon("chevronRight", 18)}
@@ -348,6 +356,24 @@ export function renderProfile(root) {
       <p class="text-xs text-muted text-center mt-5">Nova Go · Cash payments · Karachi</p>
     </div>
   `;
+
+  /* Add to home screen. An explicit row rather than a pop-up: the prompt
+     that interrupts you is the one you dismiss without reading, and this is
+     a thing people go looking for once they have decided they like the app. */
+  const installRow = root.querySelector("#installRow");
+  if (installRow && !isInstalled()) {
+    installRow.hidden = false;
+    installRow.addEventListener("click", () => {
+      // force: they asked for it, so a previous dismissal is not a refusal.
+      if (!offerInstall({ force: true })) {
+        alertUser("This browser can't add apps to the home screen.", {
+          suggestion: "Open novago.pk in Chrome or Safari and try again.",
+          tone: "info",
+        });
+      }
+    });
+  }
+
 
   api.getMe().then((u) => {
     root.querySelector("#nameText").textContent = u.name || "Nova Go Rider";

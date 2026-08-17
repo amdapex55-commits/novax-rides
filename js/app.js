@@ -8,6 +8,7 @@ import { initTheme } from "./theme.js";
 import { initI18n, t } from "./i18n.js";
 import { initNet, isConnectivityError, showNetBanner } from "./net.js";
 import { initPush } from "./push.js";
+import { initInstall } from "./install.js";
 import { flush, queueSize } from "./offlineQueue.js";
 import { api } from "./api.js";
 
@@ -79,6 +80,9 @@ function boot() {
   // the first booking (see enablePush), because iOS allows exactly one
   // prompt and a customer who has not booked yet has no reason to accept.
   initPush();
+  // Captures beforeinstallprompt only — it does not ask anyone anything
+  // yet. The ask happens after the app has been used; see offerInstall.
+  initInstall();
   renderShell();
   renderBottomNav();
   initRouter();

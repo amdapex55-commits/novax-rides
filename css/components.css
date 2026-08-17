@@ -1060,3 +1060,50 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   border-bottom: 1px solid var(--surface-border);
 }
 .legal-body th { color: var(--text-primary); font-weight: 700; }
+
+/* ---------- Add to home screen (iOS) ----------
+   Android gets the real OS dialog. iOS has no install API whatsoever, so
+   this shows the gesture instead of describing it — and only ever once,
+   because a prompt that returns after being refused is how people learn to
+   dismiss prompts without reading them. */
+.nx-install-scrim {
+  position: fixed; inset: 0; z-index: 500;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(6, 4, 12, 0.62);
+  opacity: 0;
+  transition: opacity 220ms var(--ease-out);
+}
+.nx-install-scrim.show { opacity: 1; }
+.nx-install-card {
+  width: 100%; max-width: 460px;
+  padding: 24px 22px calc(22px + var(--safe-bottom));
+  background: var(--bg);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: 0 -12px 44px rgba(6, 4, 12, 0.4);
+  transform: translateY(18px);
+  transition: transform 260ms var(--ease-spring);
+}
+.nx-install-scrim.show .nx-install-card { transform: none; }
+.nx-install-mark {
+  display: grid; place-items: center;
+  width: 48px; height: 48px; margin-bottom: 14px;
+  border-radius: var(--r-lg);
+  color: #fff; background: var(--accent-gradient);
+}
+.nx-install-title { font-size: 19px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.nx-install-body { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px; }
+.nx-install-steps { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.nx-install-steps li {
+  display: flex; align-items: center; gap: 11px;
+  font-size: 14px; color: var(--text-primary); line-height: 1.4;
+}
+.nx-install-step-n {
+  flex: none; display: grid; place-items: center;
+  width: 26px; height: 26px; border-radius: var(--r-full);
+  font-size: 12.5px; font-weight: 700;
+  color: var(--accent); background: var(--accent-soft, rgba(124, 58, 237, 0.13));
+}
+@media (prefers-reduced-motion: reduce) {
+  .nx-install-scrim, .nx-install-card { transition: none; }
+  .nx-install-card { transform: none; }
+}
