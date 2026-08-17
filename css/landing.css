@@ -641,3 +641,267 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
      "Pay in". */
   .nx-h1 { letter-spacing: -0.035em; }
 }
+
+/* ==========================================================================
+   TRUCK ART
+
+   The page's problem was never the visuals — it was that nothing on it
+   could ONLY be Nova Go. Swap the logo and the purple and it is any SaaS
+   landing page: hero, stat row, feature tabs, numbered steps, footer.
+
+   Karachi has its own visual language and every competitor ignores it.
+   Truck and rickshaw art: saturated colour against black, chrome and gold
+   lettering, ornamental borders, a specific gaudy confidence. Used with
+   restraint it is unmistakable within a second, and it earns the loud
+   purple that is already here rather than apologising for it.
+
+   All CSS and inline SVG — no images, no font downloads, no framerate cost
+   on the cheap Android this is actually opened on.
+   ========================================================================== */
+:root {
+  /* Pulled from the palette that actually appears on a Karachi truck:
+     these are not brand-adjacent pastels, they are the real thing. */
+  --nx-truck-red:   #e11d48;
+  --nx-truck-gold:  #f5a524;
+  --nx-truck-green: #0d9488;
+  --nx-truck-pink:  #ec4899;
+  --nx-truck-cyan:  #06b6d4;
+  --nx-chrome-1: #fff8e1;
+  --nx-chrome-2: #f5a524;
+  --nx-chrome-3: #b45309;
+}
+
+/* ---- Ornamental rule ----------------------------------------------------
+   The scalloped band that runs along a truck's tailgate, reduced to a
+   repeating gradient so it costs one element and no requests. */
+.nx-truck-rule {
+  height: 14px;
+  width: 100%;
+  border: 0;
+  margin: 0;
+  background:
+    repeating-linear-gradient(90deg,
+      var(--nx-truck-red)   0 18px,
+      var(--nx-truck-gold)  18px 36px,
+      var(--nx-truck-green) 36px 54px,
+      var(--nx-truck-pink)  54px 72px,
+      var(--nx-truck-cyan)  72px 90px);
+  -webkit-mask: radial-gradient(circle at 9px 14px, #000 6px, transparent 6.5px) repeat-x 0 0 / 18px 14px;
+  mask: radial-gradient(circle at 9px 14px, #000 6px, transparent 6.5px) repeat-x 0 0 / 18px 14px;
+  opacity: 0.9;
+}
+.nx-truck-rule.flip { transform: rotate(180deg); }
+
+/* ---- Chrome lettering ---------------------------------------------------
+   Truck lettering is metal: a hard light band across the middle, dark
+   below, a hairline outline holding it together. This is that in a
+   background-clip, which stays crisp at any size and costs nothing. */
+.nx-chrome {
+  /* NO mid-band highlight. Two attempts at a bright stripe across the
+     middle both read as a strikethrough through the word — at heading
+     weight a light horizontal line inside a letterform is a line through
+     it, whatever it was meant to be.
+     Real chrome lettering does not have a stripe: it has a HORIZON, where
+     the polished surface stops reflecting sky and starts reflecting
+     ground. So the gradient flips once, high, and the contrast across that
+     flip does all the work. */
+  background: linear-gradient(180deg,
+    #fffdf5 0%,
+    #ffe9a8 44%,
+    #d98f0d 56%,
+    var(--nx-chrome-3) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Paint-order keeps the stroke behind the fill so the letterform stays
+     readable instead of being eaten by its own outline. */
+  /* A hard 2px black offset under a light band is what completed the
+     strikethrough illusion. A soft shadow gives the same lift without
+     drawing an edge across the letterforms. */
+  -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.28);
+  paint-order: stroke fill;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+}
+
+/* ---- Urdu ---------------------------------------------------------------
+   Deliberately NO webfont. A Nastaliq file is 100KB+ and this project made
+   a considered decision not to ship an Urdu font; one decorative line is
+   not a reason to reverse it. Android and iOS both render Urdu from a
+   system face, so the script is correct even where the calligraphy is not.
+   If real Nastaliq is wanted later it should be a subset of exactly these
+   glyphs, measured before it ships. */
+.nx-urdu {
+  font-family: "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Urdu Typesetting", serif;
+  direction: rtl;
+  unicode-bidi: isolate;
+  line-height: 2.1;
+}
+
+/* ---- The tagline lockup ---- */
+.nx-tagline-lockup {
+  display: flex; align-items: baseline; flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 0 0 18px;
+}
+.nx-tagline-roman {
+  font-family: Sora, Inter, system-ui, sans-serif;
+  font-size: clamp(21px, 5.4vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.nx-tagline-urdu {
+  font-size: clamp(19px, 5vw, 27px);
+  color: var(--nx-truck-gold);
+  opacity: 0.92;
+}
+
+/* ---- The rhythm break --------------------------------------------------- */
+.nx-truckband {
+  /* Full-bleed out of the centred column above and below it. */
+  margin: 96px 0;
+  background:
+    radial-gradient(120% 140% at 18% 30%, rgba(225, 29, 72, 0.16), transparent 62%),
+    radial-gradient(110% 120% at 88% 70%, rgba(13, 148, 136, 0.16), transparent 60%),
+    #0a0710;
+}
+.nx-truckband-inner {
+  /* Deliberately off-centre — the one asymmetric moment on the page. */
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 62px 24px 66px;
+  max-inline-size: 46rem;
+  margin-inline-start: max(24px, min(12vw, 190px));
+}
+.nx-truckband-kicker {
+  font-size: 12px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--nx-truck-gold); margin-bottom: 14px;
+}
+.nx-truckband-title { margin-bottom: 18px; }
+.nx-truckband-body { font-size: 17px; line-height: 1.62; color: var(--nx-dim); max-width: 40rem; }
+.nx-truckband-urdu {
+  margin-top: 18px;
+  font-size: clamp(17px, 4.4vw, 22px);
+  color: var(--nx-truck-gold);
+  opacity: 0.85;
+}
+@media (max-width: 767px) {
+  .nx-truckband { margin: 64px 0; }
+  .nx-truckband-inner { margin-inline-start: 0; padding: 44px 20px 48px; }
+  .nx-truckband-body { font-size: 15.5px; }
+}
+
+/* ==========================================================================
+   PHOTOGRAPHY
+
+   The single biggest thing separating this page from a template is a real
+   photograph of a real rider on a real Karachi road. Everything below is
+   written so the page works BEFORE those files exist and improves the moment
+   they land — no build step, no JS, no layout shift.
+
+   image-set() with a url() fallback means a missing file simply does not
+   paint and the gradient hero shows through, rather than leaving a grey box
+   where a photo should be.
+   ========================================================================== */
+
+/* ---- Hero -------------------------------------------------------------- */
+.nx-hero {
+  position: relative;
+  isolation: isolate;
+}
+.nx-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: url("../images/hero-rider.jpg");
+  background-size: cover;
+  /* Faces sit in the upper third of a portrait shot — centring crops heads
+     off on a short viewport. */
+  background-position: 50% 28%;
+  opacity: 0;
+  transition: opacity 600ms var(--nx-ease);
+}
+/* Only reveal the photo where there is room for it to be a photo rather
+   than a texture. Below this the copy has to win. */
+@media (min-width: 900px) {
+  .nx-hero::after {
+    inset: 0 0 0 46%;
+    opacity: 1;
+    /* Feathered into the copy instead of a hard seam, so the photo reads as
+       part of the page rather than a panel pasted onto it. */
+    -webkit-mask: linear-gradient(90deg, transparent 0%, #000 22%);
+    mask: linear-gradient(90deg, transparent 0%, #000 22%);
+  }
+  .nx-hero-copy { max-width: 46rem; }
+}
+/* On a phone the photo goes BEHIND the words at low opacity — not stacked
+   above them. Stacking a hero image over hero copy is what pushes the CTA
+   below the fold, and the CTA is the entire job of this screen. */
+@media (max-width: 899px) {
+  .nx-hero::after {
+    opacity: 0.28;
+    background-position: 62% 22%;
+    -webkit-mask: linear-gradient(180deg, #000 0%, transparent 78%);
+    mask: linear-gradient(180deg, #000 0%, transparent 78%);
+  }
+}
+
+/* ---- Photo panels elsewhere -------------------------------------------- */
+.nx-photo {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #14101c center/cover no-repeat;
+  aspect-ratio: 4 / 3;
+}
+.nx-photo::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 45%, rgba(5, 7, 10, 0.85) 100%);
+}
+.nx-photo-parcel { background-image: url("../images/parcel-handover.jpg"); }
+.nx-photo-street { background-image: url("../images/rider-street.jpg"); aspect-ratio: 5 / 3; }
+/* A caption over the bottom of the image, which is where the gradient above
+   has already made room for it. */
+.nx-photo-cap {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+  padding: 18px 20px;
+  font-size: 14px; font-weight: 600; color: #fff;
+}
+
+/* ---- Assurance strip ----------------------------------------------------
+   Four across on desktop, two across on a phone. NOT a single stacked
+   column: four full-width rows is four screens of scrolling for four short
+   sentences, and the fourth is never read. Two-up keeps the whole set
+   visible in one glance at 375px. */
+.nx-assure { padding: 26px 0 8px; }
+.nx-assure-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+.nx-assure-item {
+  padding: 20px 18px;
+  border: 1px solid var(--nx-border);
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), transparent 70%);
+}
+.nx-assure-ic {
+  display: grid; place-items: center;
+  width: 40px; height: 40px; margin-bottom: 12px;
+  border-radius: 11px;
+  color: var(--nx-ride);
+  background: rgba(167, 139, 250, 0.13);
+}
+.nx-assure-item h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.nx-assure-item p { font-size: 13.5px; line-height: 1.55; color: var(--nx-dim); }
+
+@media (max-width: 1023px) { .nx-assure-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) {
+  .nx-assure-grid { gap: 12px; }
+  .nx-assure-item { padding: 15px 13px; }
+  .nx-assure-item h3 { font-size: 14px; }
+  .nx-assure-item p { font-size: 12.8px; }
+  /* Two columns is still right at 375px — a 2x2 block reads as one unit and
+     fits on screen; four stacked rows would not. */
+}

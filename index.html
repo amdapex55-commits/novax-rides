@@ -123,6 +123,15 @@
         Pay in cash.
       </h1>
 
+      <!-- The tagline in the language it was thought in, next to the one
+           people type. Chrome lettering because that is how it would be
+           painted on the back of a truck, which is the only place this
+           phrase has ever belonged. -->
+      <p class="nx-tagline-lockup">
+        <span class="nx-tagline-roman nx-chrome">BAS NOVA KRO.</span>
+        <span class="nx-urdu nx-tagline-urdu" lang="ur">بس نووا کرو</span>
+      </p>
+
       <p class="nx-lead">
         Bike rides, parcels and errands across Karachi. You see the fare
         before you book &mdash; and that's the fare you pay.
@@ -136,18 +145,25 @@
         <a href="driver.html" class="nx-btn nx-btn-ghost">Drive with Nova Go</a>
       </div>
 
+      <!-- PHOTO SLOT.
+           Empty until images/hero-rider.jpg exists. The rule that paints it
+           lives in landing.css and the gradient underneath stays visible
+           until a file is actually there, so a missing photo is a plain hero
+           rather than a broken one. -->
       <div class="nx-hero-proof">
         <div class="nx-proof-item">
           <div class="v" style="color:var(--nx-ride);">Rs. 150</div>
-          <div class="l">Minimum fare</div>
+          <div class="l">Minimum fare &mdash; then Rs 22 per road kilometre</div>
         </div>
         <div class="nx-proof-item">
           <div class="v">Cash</div>
           <div class="l">No cards, no top-ups</div>
         </div>
         <div class="nx-proof-item">
-          <div class="v" style="color:var(--nx-ops);">100%</div>
-          <div class="l">Riders verified by a person</div>
+          <!-- "100% verified" is a claim. The checkable version is what we
+               actually look at, so that is what it now says. -->
+          <div class="v" style="color:var(--nx-ops);">CNIC</div>
+          <div class="l">Licence and CNIC checked by a person, not a script</div>
         </div>
       </div>
     </div>
@@ -231,6 +247,73 @@
       </div>
     </div>
   </div>
+</section>
+
+<!-- ==================================================== ASSURANCE STRIP -->
+<!-- The four-up strip from the brand mockups, with the copy changed to
+     things that are true today.
+
+     The mockups carry "10K+ Happy Customers", "99.5% On-time", "50+ Cities
+     Across Pakistan" and "24/7 Support". Not one of those can go on the site:
+     no trip has completed yet, the service is Karachi-only, and the support
+     numbers in support.config.js are still empty — the app hides its own
+     contact buttons because of it. A launch page that opens with four
+     unverifiable numbers is the fastest way to be disbelieved about the one
+     claim that matters, which is the fare.
+
+     So these say what the product actually does. They can be swapped for
+     real numbers the day there are real numbers. -->
+<section class="nx-assure" aria-label="What you get">
+  <div class="nx-wrap nx-assure-grid">
+    <div class="nx-assure-item">
+      <span class="nx-assure-ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
+      <h3>Checked by a person</h3>
+      <p>Every rider's licence and CNIC is looked at by a human before they can take a job.</p>
+    </div>
+    <div class="nx-assure-item">
+      <span class="nx-assure-ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg></span>
+      <h3>The fare you were quoted</h3>
+      <p>Rs 150 minimum, then Rs 22 per road kilometre. Shown before you book, and it does not move.</p>
+    </div>
+    <div class="nx-assure-item">
+      <span class="nx-assure-ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+      <h3>Someone is watching</h3>
+      <p>If nothing is matched in three minutes a person at the desk sees it and phones a rider.</p>
+    </div>
+    <div class="nx-assure-item">
+      <span class="nx-assure-ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M10 6h4"/></svg></span>
+      <h3>Cash, no account needed</h3>
+      <p>Pay the rider directly. No wallet to top up and no card to add before your first trip.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================== TRUCK BAND -->
+<!-- THE RHYTHM BREAK.
+     Every section above and below this is the same width, the same padding
+     and centred, which is what makes a page scan as a template no matter
+     how good the individual parts are. This one is full-bleed, off-centre,
+     and loud on purpose — it resets the eye once, in the middle, where the
+     scroll would otherwise settle into a pattern.
+
+     It is also the only place the truck palette runs at full strength. -->
+<section class="nx-truckband" aria-labelledby="truckbandTitle">
+  <hr class="nx-truck-rule" aria-hidden="true"/>
+  <div class="nx-truckband-inner">
+    <p class="nx-truckband-kicker">Karachi, since day one</p>
+    <h2 class="nx-h2 nx-truckband-title" id="truckbandTitle">
+      Built for <span class="nx-chrome">these roads</span>,<br/>
+      not adapted for them.
+    </h2>
+    <p class="nx-truckband-body">
+      The fare is worked out from real road distance, because a straight
+      line across the map has never once been the route. Riders are approved
+      by a person who looks at the licence. Payment is cash, because that is
+      what is in people's pockets.
+    </p>
+    <p class="nx-urdu nx-truckband-urdu" lang="ur">کراچی کی سڑکوں کے لیے</p>
+  </div>
+  <hr class="nx-truck-rule flip" aria-hidden="true"/>
 </section>
 
 <!-- =========================================================== JOURNEY -->
@@ -511,8 +594,11 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
         <a href="driver.html" class="nx-btn nx-btn-ghost">Drive with Nova Go</a>
-        
-        <a href="ops.html" class="nx-btn nx-btn-ghost">Ops command</a>
+        <!-- The "Ops command" button that used to sit here linked straight to
+             ops.html from the public front page, which made the three-tap
+             door on the wordmark pointless — the console was one visible
+             click away the whole time. Dispatch reaches it by tapping the
+             wordmark three times; see initOpsDoor in landing-ui.js. -->
       </div>
     </div>
   </div>
