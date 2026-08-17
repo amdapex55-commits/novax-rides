@@ -158,13 +158,26 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-size: 15px; font-weight: 700; white-space: nowrap;
   transition: transform 260ms var(--nx-spring), box-shadow 260ms, background 260ms, border-color 260ms;
 }
-.nx-btn-primary { background: linear-gradient(135deg, #7c3aed, #5b21b6); color: #ffffff; box-shadow: 0 8px 30px rgba(167,139,250,0.3); }
+.nx-btn-primary { background: var(--brand-gradient); color: #ffffff; box-shadow: var(--brand-glow); }
 .nx-btn-primary:hover { transform: translateY(-3px); box-shadow: 0 14px 44px rgba(167,139,250,0.44); }
 .nx-btn-ghost { border: 1px solid var(--nx-border-2); color: var(--nx-text); background: rgba(255,255,255,0.03); }
 .nx-btn-ghost:hover { transform: translateY(-3px); border-color: var(--nx-ride); background: rgba(167,139,250,0.08); }
 
 /* Hero proof strip */
-.nx-hero-proof { display: flex; flex-wrap: wrap; gap: 28px; }
+/* Three facts, laid out as three. As a flex row that wraps, the third item
+   dropped to a line of its own whenever the copy grew — which read as a wrap
+   accident rather than a decision, because it was one. A grid commits: three
+   across where there is room, three down where there is not, and never two
+   plus an orphan. */
+.nx-hero-proof {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px 26px;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .nx-hero-proof { grid-template-columns: 1fr; gap: 14px; }
+}
 .nx-proof-item .v {
   font-family: "Sora", sans-serif; font-size: 24px; font-weight: 800;
   letter-spacing: -0.03em; line-height: 1;
@@ -904,4 +917,88 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   .nx-assure-item p { font-size: 12.8px; }
   /* Two columns is still right at 375px — a 2x2 block reads as one unit and
      fits on screen; four stacked rows would not. */
+}
+
+/* ==========================================================================
+   TRUCK ART, FURTHER
+
+   The first pass was a nod: one band, two rules, chrome on two phrases.
+   This commits it — the ornament now runs through the page's structure
+   rather than sitting in one section of it. Still zero images and zero
+   requests: every motif below is a gradient or a mask.
+   ========================================================================== */
+
+/* ---- Chamfered ornament corners on the assurance cards ------------------
+   Truck panels are almost never plain rectangles; the corner is cut, and
+   the cut is picked out in a second colour. A conic-gradient border with a
+   clipped corner gives that without a single extra element. */
+.nx-assure-item {
+  position: relative;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+.nx-assure-item::before {
+  content: "";
+  position: absolute; inset: 0;
+  padding: 1px;
+  background: conic-gradient(from 210deg,
+    var(--nx-truck-gold), var(--nx-truck-red), var(--nx-truck-pink),
+    var(--nx-truck-cyan), var(--nx-truck-green), var(--nx-truck-gold));
+  /* Border-only: fill the box, then punch the middle out. */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.34;
+  pointer-events: none;
+  clip-path: inherit;
+  transition: opacity 260ms var(--nx-ease);
+}
+.nx-assure-item:hover::before { opacity: 0.75; }
+
+/* ---- Section kickers get the hanging ornament --------------------------
+   The small dangling pendant under truck lettering, as a ::after. */
+.nx-kicker {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 9px;
+}
+.nx-kicker::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%; height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg,
+    var(--nx-truck-gold), var(--nx-truck-red) 42%, var(--nx-truck-pink) 70%, transparent);
+}
+
+/* ---- The footer gets a full tailgate ------------------------------------ */
+.nx-footer {
+  position: relative;
+  border-top: 0;
+}
+.nx-footer::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 14px;
+  background:
+    repeating-linear-gradient(90deg,
+      var(--nx-truck-red) 0 18px, var(--nx-truck-gold) 18px 36px,
+      var(--nx-truck-green) 36px 54px, var(--nx-truck-pink) 54px 72px,
+      var(--nx-truck-cyan) 72px 90px);
+  -webkit-mask: radial-gradient(circle at 9px 0, transparent 6px, #000 6.5px) repeat-x 0 0 / 18px 14px;
+  mask: radial-gradient(circle at 9px 0, transparent 6px, #000 6.5px) repeat-x 0 0 / 18px 14px;
+  opacity: 0.85;
+}
+.nx-footer-inner { padding-top: 16px; }
+
+/* ---- The eyebrow becomes a painted plate -------------------------------- */
+.nx-eyebrow {
+  border-color: rgba(245, 165, 36, 0.4);
+  background:
+    linear-gradient(180deg, rgba(245, 165, 36, 0.14), rgba(225, 29, 72, 0.09));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-assure-item::before { transition: none; }
 }

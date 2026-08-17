@@ -47,8 +47,8 @@ function afterAuth() {
 
 export function renderSignIn(root) {
   root.innerHTML = `
-    <div class="page nx-auth" style="min-height:100dvh;display:flex;flex-direction:column;">
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <div class="page nx-auth nx-auth-page">
+      <div class="nx-auth-stack">
         <div class="nx-auth-mark">${icon("bolt", 26, 2)}</div>
         <h1 class="nx-auth-title">Welcome back</h1>
         <p class="nx-auth-sub">Sign in to keep moving.</p>
@@ -130,8 +130,8 @@ export function renderSignUp(root) {
   const isDriver = role === "DRIVER";
 
   root.innerHTML = `
-    <div class="page nx-auth" style="min-height:100dvh;display:flex;flex-direction:column;">
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px 0;">
+    <div class="page nx-auth nx-auth-page">
+      <div class="nx-auth-stack">
         <div class="nx-auth-mark ${isDriver ? "internal" : ""}">${icon(isDriver ? "bike" : "bolt", 26, 2)}</div>
         <h1 class="nx-auth-title">${isDriver ? "Ride with Nova Go" : "Create your account"}</h1>
         <p class="nx-auth-sub">
@@ -358,8 +358,8 @@ function wirePasswordToggle(root) {
  */
 export function renderForgotPassword(root) {
   root.innerHTML = `
-    <div class="page nx-auth" style="min-height:100dvh;display:flex;flex-direction:column;">
-      <div id="forgotCard" style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <div class="page nx-auth nx-auth-page">
+      <div id="forgotCard" class="nx-auth-stack">
         <div class="nx-auth-mark">${icon("bolt", 26, 2)}</div>
         <h1 class="nx-auth-title">Forgot your password?</h1>
         <p class="nx-auth-sub">

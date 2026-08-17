@@ -1,0 +1,42 @@
+/* ==========================================================================
+   BRAND — the single source for Nova Go's colour identity.
+
+   WHY THIS FILE EXISTS
+
+   The marketing site and the apps had two separate colour systems that had
+   never been reconciled. index.html loads landing.css and nothing else; the
+   apps load tokens.css. So "the primary button" was:
+
+       landing   linear-gradient(135deg, #7c3aed, #5b21b6)   saturated
+       app dark  linear-gradient(135deg, #8b5cf6, #a78bfa)   lighter
+
+   Same role, same brand, two different violets — visible the moment anyone
+   moved from the site to the app, which is the one journey every customer
+   makes. Neither was "wrong"; there was simply nowhere for them to agree.
+
+   Both stylesheets now read the ramp from here. Changing the brand violet is
+   one edit in one file, which is the whole point of a token.
+
+   Loaded FIRST, before tokens.css and landing.css, so both can build on it.
+   ========================================================================== */
+:root {
+  /* The ramp. 500 is the brand violet; the rest are its working range. */
+  --brand-100: #ede9fe;
+  --brand-300: #c4b5fd;
+  --brand-400: #a78bfa;
+  --brand-500: #8b5cf6;
+  --brand-600: #7c3aed;
+  --brand-700: #6d28d9;
+  --brand-800: #5b21b6;
+  --brand-900: #4c1d95;
+
+  /* THE primary action, everywhere. A press on the site and a press in the
+     app are the same promise and now they are the same colour.
+
+     It runs 600 -> 800 rather than the app's old 500 -> 400: the darker,
+     more saturated pair is what reads as a button on both the near-black
+     marketing background and the app's lighter surfaces, and it holds its
+     contrast against white text in a way the lavender pair did not. */
+  --brand-gradient: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-800) 100%);
+  --brand-glow: 0 8px 30px rgba(124, 58, 237, 0.32);
+}

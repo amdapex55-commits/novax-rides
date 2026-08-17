@@ -388,7 +388,9 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 40px;
+  /* 44, not 40. This is the Bike / Food / Taxi switch — the control people
+     hit most often on the home screen, and the one they hit while walking. */
+  height: 44px;
   border-radius: var(--r-full);
   font-weight: 700;
   font-size: 13px;
@@ -857,7 +859,14 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 .nx-alert-problem { font-size: 14px; font-weight: 700; color: var(--text-primary); line-height: 1.35; }
 .nx-alert-suggestion { font-size: 13px; font-weight: 500; color: var(--text-secondary); line-height: 1.4; }
 .nx-alert-close {
-  flex: none; width: 28px; height: 28px; margin: -2px -2px 0 0;
+  /* 44px of TARGET, 28px of ink. Measured at 26px on a real screen, which is
+     a miss waiting to happen on the one control whose whole job is getting
+     an unwanted thing off the screen. Negative margin keeps the visual box
+     the same size it was, so the alert does not grow to accommodate it. */
+  flex: none;
+  width: 44px; height: 44px;
+  margin: -8px -8px -8px 0;
+  display: grid; place-items: center;
   background: none; border: 0; border-radius: var(--r-full);
   color: var(--text-muted); font-size: 19px; line-height: 1; cursor: pointer;
 }
@@ -927,3 +936,127 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
    while it spins is claiming to still want a press it has already had. */
 .nx-pulse-cta:disabled, .nx-pulse-cta:active { animation: none; }
 @media (prefers-reduced-motion: reduce) { .nx-pulse-cta { animation: none; } }
+
+/* ---------- A screen that failed to load ----------
+   This is the moment someone decides whether the app is serious. It used to
+   be centred grey text with a raw JS message under it, which reads as a
+   crash rather than a product — and hands the customer a stack trace they
+   cannot act on. */
+.nx-errscreen {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center;
+  min-height: 70vh; gap: 4px;
+}
+.nx-errscreen-ic {
+  display: grid; place-items: center;
+  width: 64px; height: 64px; margin-bottom: 6px;
+  border-radius: var(--r-full);
+  color: var(--warning, #f59e0b);
+  background: rgba(245, 158, 11, 0.12);
+}
+.nx-errscreen-title { font-size: 20px; font-weight: 700; color: var(--text-primary); }
+.nx-errscreen-body {
+  font-size: 14.5px; line-height: 1.55; color: var(--text-secondary);
+  max-width: 34ch; margin-top: 6px;
+}
+.nx-errscreen-actions {
+  display: flex; gap: 10px; margin-top: 22px; width: 100%; max-width: 320px;
+}
+.nx-errscreen-actions .btn { flex: 1; }
+/* Folded away, not deleted: support still needs it, the customer does not. */
+.nx-errscreen-detail { margin-top: 26px; max-width: 90%; }
+.nx-errscreen-detail summary {
+  font-size: 12px; color: var(--text-muted); cursor: pointer; list-style: none;
+}
+.nx-errscreen-detail summary::-webkit-details-marker { display: none; }
+.nx-errscreen-detail code {
+  display: block; margin-top: 10px; padding: 10px 12px;
+  font-size: 11.5px; text-align: start; word-break: break-word;
+  color: var(--text-secondary); background: var(--surface-2);
+  border-radius: var(--r-sm);
+}
+
+/* ---------- Auth screens: sign in, sign up, forgot password ----------
+   All three centred their content in the full viewport height, which left
+   roughly 300px of nothing above the mark and a wide gap between the last
+   field and the button. On a tall phone the form floated in the middle of
+   an empty screen and read as unfinished rather than calm.
+
+   Anchoring the stack nearer the top — with the gap ABOVE it capped, not
+   the gap below — puts the fields where the thumb and the eye already are,
+   and lets the button sit directly under the last input where it belongs.
+   Short screens still centre, because there the space is genuinely tight. */
+.nx-auth-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.nx-auth-stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* Not `center`. The cap does the balancing. */
+  justify-content: flex-start;
+  padding-top: min(12vh, 84px);
+  padding-bottom: 24px;
+  gap: 0;
+}
+/* Enough height that centring is the more elegant answer again. */
+@media (min-height: 900px) {
+  .nx-auth-stack { justify-content: center; padding-top: 0; }
+}
+/* The button belongs to the field above it, not to the bottom of the page. */
+.nx-auth-stack form > .btn-block { margin-top: var(--sp-5); }
+
+/* ---------- Legal documents ----------
+   .legal-body had NO styles at all, so five policies rendered as browser
+   defaults: one undifferentiated wall of text with no hierarchy between a
+   section heading and the sentence under it.
+
+   These pages matter more than they look. A Play reviewer opens the privacy
+   policy URL directly — it is often the first and sometimes the only page of
+   ours they read closely — and a policy nobody can navigate reads as a
+   policy nobody meant. This is also the one place in the app where long-form
+   reading actually happens, so it gets measure, rhythm and anchors. */
+.legal-body {
+  /* ~68 characters. Past roughly 75 the eye loses the line return. */
+  max-width: 68ch;
+  font-size: 15px;
+  line-height: 1.72;
+  color: var(--text-secondary);
+}
+.legal-body h2 {
+  margin: 34px 0 10px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-primary);
+  /* Numbered sections are how anyone cites a policy back at you. */
+  scroll-margin-top: 20px;
+}
+.legal-body h2:first-child { margin-top: 0; }
+.legal-body h3 {
+  margin: 22px 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.legal-body p { margin: 0 0 13px; }
+.legal-body ul, .legal-body ol { margin: 0 0 15px; padding-inline-start: 22px; }
+.legal-body li { margin-bottom: 7px; }
+.legal-body li::marker { color: var(--accent); }
+.legal-body strong { color: var(--text-primary); font-weight: 650; }
+.legal-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+/* A rule between sections gives the eye somewhere to rest in a document
+   that is otherwise thirty screens of prose. */
+.legal-body hr {
+  margin: 30px 0;
+  border: 0;
+  border-top: 1px solid var(--surface-border);
+}
+.legal-body table { width: 100%; border-collapse: collapse; margin: 0 0 18px; font-size: 14px; }
+.legal-body th, .legal-body td {
+  padding: 9px 10px; text-align: start; vertical-align: top;
+  border-bottom: 1px solid var(--surface-border);
+}
+.legal-body th { color: var(--text-primary); font-weight: 700; }

@@ -15,6 +15,7 @@
 // intervals / geolocation watches / socket listeners never leak across
 // navigation.
 import { Token } from "./api.js";
+import { icon } from "./icons.js";
 import { state } from "./state.js";
 import { APP_CONFIG, routeAllowed, isParkedRoute, serviceForRoute } from "./appMode.js";
 import { SERVICES } from "./launch.config.js";
@@ -342,7 +343,38 @@ async function renderRoute(path) {
     currentCleanup = (await render(wrap)) || null;
   } catch (e) {
     console.error("[NovaGo] render error on", path, e);
-    wrap.innerHTML = `<div class="page text-center"><p class="text-secondary">Something broke loading this screen.</p><p class="text-xs text-muted mt-2">${(e && e.message) || e}</p></div>`;
+    /* A failed screen is the moment someone decides whether this app is
+       serious. Plain centred text with a raw JS message under it reads as a
+       crash; it tells the person nothing they can act on and hands them a
+       stack trace they did not ask for.
+
+       So: say what happened in words, give them the two things that actually
+       work (try again, go home), and keep the technical detail available but
+       folded away — support still needs it, the customer does not. */
+    const detail = (e && e.message) || String(e || "");
+    wrap.innerHTML = `
+      <div class="page nx-errscreen">
+        <div class="nx-errscreen-ic">${icon("info", 30)}</div>
+        <h1 class="nx-errscreen-title">This screen didn't load</h1>
+        <p class="nx-errscreen-body">
+          It's not something you did. The rest of the app is still working —
+          try again, or head back and come at it from the home screen.
+        </p>
+        <div class="nx-errscreen-actions">
+          <button class="btn btn-primary" id="errRetry">Try again</button>
+          <button class="btn btn-ghost" id="errHome">Go to home</button>
+        </div>
+        ${detail ? `<details class="nx-errscreen-detail">
+          <summary>Technical detail</summary>
+          <code></code>
+        </details>` : ""}
+      </div>`;
+    // textContent, not interpolation — an error message can contain markup
+    // and this is exactly the path where nothing should be trusted.
+    const codeEl = wrap.querySelector(".nx-errscreen-detail code");
+    if (codeEl) codeEl.textContent = detail;
+    wrap.querySelector("#errRetry")?.addEventListener("click", () => render(path));
+    wrap.querySelector("#errHome")?.addEventListener("click", () => navigate("/home"));
   }
   currentRoute = path;
   window.scrollTo(0, 0);
