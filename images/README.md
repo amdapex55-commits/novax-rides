@@ -26,3 +26,26 @@ Anything with a claim printed into the image — rider counts, city counts,
 uptime percentages. Numbers baked into a JPEG cannot be corrected when they
 change, and cannot be checked by anyone reading the page. Claims belong in
 HTML where they can be edited and where they have to be true.
+
+## iOS launch screens
+
+Android generates its launch splash from the manifest (`background_color` +
+the 512px icon), so it is branded with no extra files. **iOS ignores the
+manifest entirely** and shows a blank screen unless it finds an
+`apple-touch-startup-image` matching the exact device resolution.
+
+That needs real PNGs — one per screen size — which cannot be generated from
+CSS. Until they exist, an iPhone launching from the home screen shows a brief
+blank screen before the in-app splash takes over.
+
+When you generate them, drop them here as `splash-<w>x<h>.png` and each app
+page needs a line like:
+
+```html
+<link rel="apple-touch-startup-image"
+      media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)"
+      href="images/splash-1179x2556.png"/>
+```
+
+The background must be `#5b21b6` to match the manifest and the in-app splash,
+or the launch will flash a different colour than the screen that follows it.
