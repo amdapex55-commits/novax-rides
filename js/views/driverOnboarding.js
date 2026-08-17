@@ -8,6 +8,7 @@
 // shows a live checklist of what's still missing, so nobody submits a
 // half-empty file and then waits three days to be told.
 import { api } from "../api.js";
+import { prepareForUpload } from "../imagePrep.js";
 import { icon } from "../icons.js";
 import { toast, esc, skeletonRows } from "../ui.js";
 import { navigate } from "../router.js";
@@ -155,9 +156,14 @@ export function renderDriverOnboarding(root) {
         badge.textContent = "Uploading…";
         badge.className = "badge badge-warning";
         try {
-          const contentType = file.type || "image/jpeg";
-          const { uploadUrl, publicUrl } = await api.presignUpload("kyc-doc", contentType, file.name || `${key}.jpg`);
-          const put = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": contentType }, body: file });
+          // A phone does not hand you a jpeg. iPhones give image/heic, some
+          // Android cameras give image/jpg, a few pickers give nothing at
+          // all — and the presign endpoint rejects every one of those, which
+          // is what produced "Failed, tap to retry" on a perfectly good
+          // photo. Normalised to JPEG here, and shrunk on the way.
+          const { blob, contentType, fileName } = await prepareForUpload(file);
+          const { uploadUrl, publicUrl } = await api.presignUpload("kyc-doc", contentType, fileName || `${key}.jpg`);
+          const put = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": contentType }, body: blob });
           if (!put.ok) throw new Error("Storage rejected the upload");
           // Persist immediately — a driver who uploads then closes the app
           // must not lose the document.
