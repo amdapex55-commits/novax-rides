@@ -595,3 +595,49 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   .nx-reveal { opacity: 1; transform: none; }
   .nx-ticker-track { animation: none; }
 }
+
+/* ==========================================================================
+   MOBILE PASS
+
+   Measured at 375px rather than guessed at. The page had no horizontal
+   overflow, which is the failure people usually look for — the real problems
+   were things you cannot see in a screenshot: fourteen tap targets under
+   44px, and the primary CTA among them.
+   ========================================================================== */
+@media (max-width: 767px) {
+  /* The nav CTA is the single most-pressed thing on the page and it was
+     39px tall. 44 is the floor both Apple and Google publish, and it is a
+     floor for a reason: below it, thumbs miss. */
+  .nx-nav-cta { min-height: 44px; display: inline-flex; align-items: center; }
+
+  /* The wordmark is a link too — "back to top", and the three-tap ops door.
+     A 30px target for a gesture that has to be hit three times running is
+     the one place a small target actively costs something. */
+  .nx-logo { min-height: 44px; }
+
+  /* Footer links were 20px of tappable height stacked 9px apart — small
+     targets AND close together, which is the combination that produces
+     mis-taps. The text stays the same size; the padding does the work, so
+     nothing looks bigger, it just stops missing. */
+  .nx-footer-col a {
+    padding: 11px 0;
+    margin-bottom: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* 12.5px is fine on a desktop monitor at arm's length and mean on a phone
+     held one-handed on a bus. These are the lines that carry the actual
+     explanation of how the product works, so they are the last place to
+     save vertical space. */
+  .nx-sub { font-size: 16px; }
+  .nx-footer-note { font-size: 13.5px; }
+  .nx-proof-item .l { font-size: 13.5px; }
+  .nx-jstep p { font-size: 13.5px; }
+
+  /* The hero runs to three lines at this width; a touch less tracking keeps
+     "Pay in cash." on one line on a 360px device instead of breaking after
+     "Pay in". */
+  .nx-h1 { letter-spacing: -0.035em; }
+}
