@@ -11,6 +11,7 @@ import { navigate } from "../router.js";
 import { track } from "../analytics.js";
 import { socketManager } from "../socket.js";
 import { resolveRoute } from "../geocode.js";
+import { attachPlaceSuggest } from "../locationInput.js";
 
 // Two cards that differ only in wording read as the same thing twice, and
 // the faster one was not visibly the faster one. Each now carries its own
@@ -127,10 +128,18 @@ export function renderParcelContact(root) {
       <h1 class="text-xl mb-6">Pickup & Receiver</h1>
 
       <label class="field-label">Pickup Address</label>
-      <input id="pickupInput" class="input mb-4" placeholder="Leave blank to use your current location" value="${esc(draft.pickupLabel)}"/>
+      <div class="nx-field-wrap mb-4">
+        <input id="pickupInput" class="input" placeholder="Leave blank to use your current location"
+               value="${esc(draft.pickupLabel)}" autocomplete="off" autocorrect="off" spellcheck="false"/>
+        <div class="nx-suggest" id="pickupSuggest" hidden></div>
+      </div>
 
-      <label class="field-label">Delivery Address</label>
-      <input id="dropoffInput" class="input mb-4" placeholder="e.g. House 12, Street 4, DHA Phase 6" value="${esc(draft.dropoffLabel)}"/>
+      <label class="field-label">Delivery Address <span class="nx-req">Required</span></label>
+      <div class="nx-field-wrap mb-4">
+        <input id="dropoffInput" class="input" placeholder="Area or landmark — e.g. Dolmen Mall, Clifton"
+               value="${esc(draft.dropoffLabel)}" autocomplete="off" autocorrect="off" spellcheck="false"/>
+        <div class="nx-suggest" id="dropoffSuggest" hidden></div>
+      </div>
 
       <label class="field-label">Receiver Name</label>
       <input id="nameInput" class="input mb-4" placeholder="e.g. Sara Khan" value="${esc(draft.recipientName)}"/>
@@ -149,6 +158,25 @@ export function renderParcelContact(root) {
     </div>
   `;
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
+
+  /* Suggestions on both addresses. Same component the ride screen uses, so
+     the two cannot drift apart. Picking a result stores the coordinates, so
+     a chosen address skips the geocode on Confirm and cannot resolve to a
+     different place than the one that was tapped. */
+  const picked = { pickup: null, dropoff: null };
+  const suggesters = [
+    attachPlaceSuggest(root.querySelector("#pickupInput"), root.querySelector("#pickupSuggest"), {
+      onPick: (place) => { picked.pickup = place; },
+    }),
+    attachPlaceSuggest(root.querySelector("#dropoffInput"), root.querySelector("#dropoffSuggest"), {
+      onPick: (place) => { picked.dropoff = place; },
+    }),
+  ];
+  // Typing again invalidates a previously tapped result, or Confirm would
+  // silently book the old coordinates under the new text.
+  root.querySelector("#pickupInput").addEventListener("input", () => { picked.pickup = null; });
+  root.querySelector("#dropoffInput").addEventListener("input", () => { picked.dropoff = null; });
+
   root.querySelector("#confirmBtn").addEventListener("click", async (e) => {
     const name = root.querySelector("#nameInput").value.trim();
     const phoneLocal = root.querySelector("#phoneInput").value.trim();
@@ -178,11 +206,25 @@ export function renderParcelContact(root) {
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span>`;
     try {
-      // Real geocoding of what the sender typed — this flow used to submit
-      // current-GPS + a fixed offset and ignore the addresses entirely.
-      const { pickup, dropoff } = await resolveRoute(pickupLabel, dropoffLabel);
+      // A tapped suggestion already carries its coordinates, so it needs no
+      // lookup and — more importantly — cannot resolve to a different place
+      // than the one that was actually chosen. Only free text still gets
+      // geocoded, and only if it was not picked from the list.
+      let pickup, dropoff;
+      if (picked.pickup && picked.dropoff) {
+        pickup = { ...picked.pickup, resolved: true };
+        dropoff = { ...picked.dropoff, resolved: true };
+      } else {
+        const resolved = await resolveRoute(pickupLabel, dropoffLabel);
+        pickup = picked.pickup ? { ...picked.pickup, resolved: true } : resolved.pickup;
+        dropoff = picked.dropoff ? { ...picked.dropoff, resolved: true } : resolved.dropoff;
+      }
       if (!dropoff.resolved) {
-        toast("Couldn't find that delivery address — try a more specific one", true);
+        alertField(
+          root.querySelector("#dropoffInput"),
+          "We couldn't find that delivery address.",
+          "Pick one from the suggestions, or add the area — e.g. \"Street 4, DHA Phase 6\".",
+        );
         btn.disabled = false;
         btn.innerHTML = `Confirm & Book ${icon("arrow-forward", 18)}`;
         return;

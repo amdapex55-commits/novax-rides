@@ -11,7 +11,7 @@ import { toast, fmtMoney, dockSheet, esc, countUp } from "../ui.js";
 import { navigate } from "../router.js";
 import { createMap } from "../map.js";
 import { resolveRoute, geocode, getPickupFix, createSuggester, reverseGeocode } from "../geocode.js";
-import { getRoute, routeSummary, formatEta } from "../routing.js";
+import { getRoute, routeSummary, formatEta, pickupEtaMinutes} from "../routing.js";
 import { track } from "../analytics.js";
 import { mountPickupNote } from "../pickupNote.js";
 import {
@@ -67,6 +67,8 @@ export function renderRideBooking(root) {
 
   let mapHandle = null;
   let nearbyPoll = 0;
+  // Latest anonymised supply snapshot — the only honest input to a pickup ETA.
+  let nearbyRiders = [];
   let pickup = null;   // { lat, lng, label } — set ONLY when trustworthy
   let dropoff = null;
   let route = null;    // { km, minutes, coordinates, estimated } from routing.js
@@ -79,6 +81,100 @@ export function renderRideBooking(root) {
   let destroyed = false;
   let noteCtl = null;
   let note = { text: "", audioUrl: null };
+
+  /**
+   * What to say about the wait before a rider is assigned.
+   *
+   * Quoted from where the nearest real rider actually is. When nobody is
+   * around we say so rather than inventing a number — a promised "5 min"
+   * with no supply behind it is the single fastest way to lose someone on
+   * their first ride.
+   */
+  function pickupWaitLine() {
+    const mins = pickupEtaMinutes(pickup, nearbyRiders);
+    if (mins == null) {
+      return nearbyRiders.length === 0
+        ? "Bike · we'll tell you the wait once a rider accepts"
+        : "Bike · finding your nearest rider";
+    }
+    return `Bike · arrives in about ${formatEta(mins)}`;
+  }
+
+  /* ------------------------------------------------------------------
+     SET IT ON THE MAP
+
+     A geocoder cannot find "near the Habib bakery, back lane" and a lot of
+     Karachi is addressed exactly like that. So: the sheet gets out of the
+     way, a crosshair sits fixed in the middle of the screen, and the MAP
+     moves under it. Pinning the marker and moving the map — rather than
+     dropping a marker where you tap — is what lets someone place it
+     precisely with one thumb, because the target never sits under the
+     finger doing the moving.
+
+     The address is reverse-geocoded only when the map settles, not on every
+     frame, so a pan costs one request instead of forty.
+     ------------------------------------------------------------------ */
+  let pinPickCleanup = null;
+
+  function startPinPick(input, assign) {
+    if (!mapHandle || pinPickCleanup) return;
+    haptic.light();
+    screen.classList.add("is-pinpicking");
+    sheet.collapse();
+
+    const ui = document.createElement("div");
+    ui.className = "nx-pinpick";
+    ui.innerHTML = `
+      <div class="nx-pinpick-cross" aria-hidden="true">
+        <span class="nx-pinpick-pin"></span>
+        <span class="nx-pinpick-shadow"></span>
+      </div>
+      <div class="nx-pinpick-bar">
+        <p class="nx-pinpick-label" id="pinLabel">Move the map to the spot</p>
+        <div class="flex gap-2">
+          <button type="button" class="btn btn-ghost" id="pinCancel">Cancel</button>
+          <button type="button" class="btn btn-primary" style="flex:1;" id="pinConfirm">Use this spot</button>
+        </div>
+      </div>`;
+    screen.appendChild(ui);
+
+    const labelEl = ui.querySelector("#pinLabel");
+    let current = mapHandle.getCenter();
+    let lookupSeq = 0;
+
+    async function describeCentre() {
+      current = mapHandle.getCenter();
+      const mine = ++lookupSeq;
+      labelEl.textContent = "Finding that place…";
+      const name = await reverseGeocode(current);
+      if (mine !== lookupSeq || !pinPickCleanup) return; // a newer pan won
+      // An empty reverse lookup is not a failure worth blocking on — the
+      // coordinates are what actually get dispatched, and they are exact.
+      labelEl.textContent = name || "Dropped pin";
+    }
+
+    const offMove = mapHandle.onMove(describeCentre, { settled: true });
+    describeCentre();
+
+    function finish(commit) {
+      offMove?.();
+      ui.remove();
+      screen.classList.remove("is-pinpicking");
+      pinPickCleanup = null;
+      sheet.expand();
+      if (!commit) return;
+      const label = labelEl.textContent && labelEl.textContent !== "Finding that place…"
+        ? labelEl.textContent
+        : "Dropped pin";
+      input.value = label;
+      assign({ lat: current.lat, lng: current.lng, label });
+      haptic.light();
+    }
+
+    ui.querySelector("#pinConfirm").addEventListener("click", () => finish(true));
+    ui.querySelector("#pinCancel").addEventListener("click", () => finish(false));
+    pinPickCleanup = () => finish(false);
+  }
 
   // ---------- Step 1: where to ----------
   function stepRoute() {
@@ -175,7 +271,29 @@ export function renderRideBooking(root) {
                 </span>
               </button>`;
             })
-            .join("") + (pending ? `<div class="nx-suggest-row muted"><span>Searching…</span></div>` : "");
+            .join("") +
+          (pending ? `<div class="nx-suggest-row muted"><span>Searching…</span></div>` : "") +
+          // Karachi addresses often are not addresses — "near Habib bakery,
+          // back lane" is a real destination that no geocoder will find. This
+          // is the way out of that, and it is at the BOTTOM because it is the
+          // fallback, not the first thing to reach for.
+          `<button type="button" class="nx-suggest-row nx-suggest-pin" data-pinpick="1">
+             <span class="nx-suggest-ic">${icon("locate", 15)}</span>
+             <span class="nx-suggest-text">
+               <span class="nx-suggest-primary">Set it on the map</span>
+               <span class="nx-suggest-secondary">Drag to the exact spot</span>
+             </span>
+           </button>`;
+
+        const pinRow = listEl.querySelector("[data-pinpick]");
+        if (pinRow) {
+          pinRow.addEventListener("mousedown", (e) => e.preventDefault());
+          pinRow.addEventListener("click", () => {
+            listEl.hidden = true;
+            syncSuggesting();
+            startPinPick(input, assign);
+          });
+        }
 
         listEl.querySelectorAll("[data-lat]").forEach((row) => {
           // mousedown fires before blur — without this the list hides before
@@ -426,7 +544,7 @@ export function renderRideBooking(root) {
           <div class="list-row-icon" style="color:var(--accent);">${icon("bike", 22)}</div>
           <div style="flex:1;">
             <p class="font-bold text-sm">Nova Moto</p>
-            <p class="text-secondary text-xs">Bike · arrives in about ${formatEta(Math.max(3, Math.round(route.minutes * 0.3)))}</p>
+            <p class="text-secondary text-xs">${esc(pickupWaitLine())}</p>
           </div>
         </div>`}
 
@@ -732,6 +850,7 @@ export function renderRideBooking(root) {
           const riders = await api.getNearbyRiders(here.lat, here.lng);
           if (destroyed || !mapHandle) return;
           const points = Array.isArray(riders) ? riders : [];
+          nearbyRiders = points;
           mapHandle.setNearbyRiders(points);
           const label = root.querySelector("#nearbyCount");
           if (label) {
@@ -757,6 +876,9 @@ export function renderRideBooking(root) {
 
   return () => {
     destroyed = true;
+    // Leaving the screen mid-pin must not leave a moveend listener bound to
+    // a map that is about to be destroyed.
+    pinPickCleanup?.();
     clearInterval(nearbyPoll);
     // Releases the microphone if a recording was in progress.
     noteCtl?.destroy();

@@ -325,6 +325,19 @@ export async function createMap(container, opts = {}) {
       map.fitBounds(valid.map((p) => [p.lat, p.lng]), { padding });
     },
 
+    /** Where the viewport is pointing — what a centre-crosshair pin means. */
+    getCenter() {
+      const c = map.getCenter();
+      return { lat: c.lat, lng: c.lng };
+    },
+
+    /** Subscribe to pan/zoom. Returns an unsubscribe. */
+    onMove(handler, { settled = true } = {}) {
+      const evt = settled ? "moveend" : "move";
+      map.on(evt, handler);
+      return () => map.off(evt, handler);
+    },
+
     center(coords, zoom, { animate = false } = {}) {
       if (!coords) return;
       // flyTo GLIDES; setView jumps. On the first fix a jump reads as the map

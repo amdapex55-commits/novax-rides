@@ -2065,3 +2065,63 @@
 @media (prefers-reduced-motion: reduce) {
   .nx-user-dot::after { animation: none; opacity: 0.3; }
 }
+
+/* ---------- Set it on the map ----------
+   The crosshair does NOT move. The map moves under it, which is the only
+   way to place a pin precisely with one thumb — the target is never
+   underneath the finger doing the dragging. */
+.nx-pinpick { position: absolute; inset: 0; z-index: 60; pointer-events: none; }
+.nx-pinpick-cross {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -100%);
+  display: grid; place-items: center;
+}
+.nx-pinpick-pin {
+  display: block; width: 26px; height: 26px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--accent);
+  border: 3px solid #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transform: rotate(-45deg);
+  animation: nx-pin-drop 320ms var(--ease-spring);
+}
+/* A shadow that stays on the ground while the pin lifts sells the height,
+   and the height is what tells you the tip is the point being chosen. */
+.nx-pinpick-shadow {
+  position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
+  width: 12px; height: 4px; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.34);
+  filter: blur(1px);
+}
+@keyframes nx-pin-drop {
+  0%   { transform: rotate(-45deg) translateY(-16px); opacity: 0; }
+  100% { transform: rotate(-45deg) translateY(0);     opacity: 1; }
+}
+.nx-pinpick-bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  pointer-events: auto;
+  padding: 14px 16px calc(16px + var(--safe-bottom));
+  background: var(--bg);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: 0 -10px 40px rgba(14, 29, 22, 0.18);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.nx-pinpick-label {
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  min-height: 20px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* The sheet steps aside while pinning — two stacked panels would fight for
+   the same bottom edge. */
+.map-screen.is-pinpicking .dock-sheet { display: none; }
+@media (prefers-reduced-motion: reduce) { .nx-pinpick-pin { animation: none; } }
+
+/* The fallback row that opens the map picker. Separated from the results
+   above it so it reads as a different KIND of answer — not another place,
+   but a different way of choosing one. */
+.nx-suggest-pin {
+  border-top: 1px solid var(--surface-border) !important;
+  color: var(--accent);
+}
+.nx-suggest-pin .nx-suggest-ic,
+.nx-suggest-pin .nx-suggest-primary { color: var(--accent); }

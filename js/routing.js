@@ -150,3 +150,49 @@ export function routeSummary(route) {
   const prefix = route.estimated ? "~" : "";
   return `${prefix}${route.km} km · ${prefix}${formatEta(route.minutes)}`;
 }
+
+/* --------------------------------------------------------------------------
+   HOW LONG UNTIL A RIDER REACHES YOU
+
+   This was being guessed as 30% of the TRIP duration, which is not a
+   related quantity: how long someone takes to get TO you has nothing to do
+   with how far you are then going. A 2km hop and a 20km cross-city run
+   quoted wildly different pickup waits from the same rider standing on the
+   same corner — and the long trip, where the customer is least patient,
+   quoted the longest wait.
+
+   The honest inputs are where the nearest rider actually is, and how fast a
+   bike moves through this city.
+   -------------------------------------------------------------------------- */
+
+// DETOUR_FACTOR is already defined above and used by the fallback estimate;
+// the same crow-to-road correction applies here, so it is reused rather than
+// given a second, quietly different value.
+// Effective door-to-door speed for a bike in Karachi traffic, not the speed
+// on an open road — it has to absorb lights, turns and the last 100m.
+const BIKE_KMH = 18;
+// Accepting the job, starting up, and finding the gate. Never zero.
+const PICKUP_OVERHEAD_MIN = 1.5;
+
+/**
+ * @param {{lat:number,lng:number}} pickup
+ * @param {Array<{lat:number,lng:number}>} riders  anonymised nearby positions
+ * @returns {number|null} minutes, or null when there is nobody to quote for
+ */
+export function pickupEtaMinutes(pickup, riders) {
+  if (!pickup || !Array.isArray(riders) || !riders.length) return null;
+  let nearestKm = Infinity;
+  for (const r of riders) {
+    if (typeof r?.lat !== "number" || typeof r?.lng !== "number") continue;
+    const km = straightLineKm(pickup, r);
+    if (km < nearestKm) nearestKm = km;
+  }
+  if (!Number.isFinite(nearestKm)) return null;
+
+  // Positions are jittered ~150m server-side to stop individual tracking, so
+  // this is honest to roughly the minute — which is the precision the answer
+  // is quoted at anyway.
+  const minutes = (nearestKm * DETOUR_FACTOR) / BIKE_KMH * 60 + PICKUP_OVERHEAD_MIN;
+  // Floor of 2: "arrives in about 1 min" is never true, and reads as a bug.
+  return Math.max(2, Math.round(minutes));
+}
