@@ -77,66 +77,71 @@ const PROOF_THEME = {
 };
 
 function renderCustomerWelcome(root) {
-  root.innerHTML = `
-    <div class="page nx-welcome nx-stagger" style="min-height:100dvh; display:flex; flex-direction:column; justify-content:center;">
-      <!-- Ambient brand glow. Cheap (two blurred radial gradients, no JS) but
-           it's the difference between "form on white" and "a product". -->
-      <div class="nx-welcome-glow" aria-hidden="true"></div>
+  /* A WELCOME SCREEN IS NOT A LANDING PAGE.
+     The person has already found us, chosen to open the app, and is holding
+     it. Selling them four benefit cards before showing a button treats an
+     opened app like a cold visitor — and pushed the one control that matters
+     off the bottom of a 812px screen.
 
-      <div class="text-center mb-5" style="position:relative;">
-        <div class="nx-welcome-mark">${icon("bike", 30, 2)}</div>
-        <span class="badge badge-accent mb-3">
-          <span class="nx-live-dot" style="width:6px;height:6px;"></span> Live in ${esc(ZONE.name)}
+     So: say what this is, give the number that decides it, get out of the
+     way. Three facts on ONE line instead of four cards, and the CTA sitting
+     where a thumb already rests. */
+  const soon = SERVICES.food && !SERVICES.food.live;
+  const alsoLive = [SERVICES.parcel, SERVICES.errand]
+    .filter((x) => x && x.live)
+    .map((x) => x.label.toLowerCase());
+
+  root.innerHTML = `
+    <div class="page nx-wel">
+      <div class="nx-wel-glow" aria-hidden="true"></div>
+
+      <header class="nx-wel-top">
+        <div class="nx-wel-mark">${icon("bike", 26, 2)}</div>
+        <span class="nx-wel-live">
+          <span class="nx-live-dot"></span> Live in ${esc(ZONE.name)}
         </span>
-        <h1 class="text-xl" style="font-size:34px; line-height:1.1; letter-spacing:-0.035em;">
-          Beat the traffic.<br/>Pay in cash.
+      </header>
+
+      <div class="nx-wel-hero">
+        <h1 class="nx-wel-h1">
+          Beat the traffic.<br/><span class="nx-chrome">Pay in cash.</span>
         </h1>
-        <p class="text-secondary mt-2">
-          Bike rides across ${esc(ZONE.name)} — from Rs. ${PRICING.BIKE.minimum}.
+        <p class="nx-urdu nx-wel-urdu" lang="ur">بس نووا کرو</p>
+        <p class="nx-wel-sub">
+          A bike to your door in ${esc(ZONE.name)}. The fare is fixed before
+          you book, and cash is the only thing you need.
         </p>
       </div>
 
-      <div class="nx-welcome-grid mb-5">
-        ${CUSTOMER_PROOF.map((s) => `
-          <div class="nx-service-tile" style="--tile-color:${PROOF_THEME.color}; --tile-soft:${PROOF_THEME.soft}; --tile-glow:${PROOF_THEME.glow};">
-            <span class="nx-tile-icon">${icon(s.icon, 21)}</span>
-            <span class="nx-tile-title">${s.label}</span>
-            <span class="nx-tile-sub">${s.sub}</span>
-          </div>`).join("")}
+      <!-- Three facts, one row. These are the answers to the only three
+           questions a first-time customer actually has: what does it cost,
+           who turns up, and can I see them coming. -->
+      <ul class="nx-wel-facts">
+        <li><span class="nx-wel-fact-v">Rs ${PRICING.BIKE.minimum}</span><span class="nx-wel-fact-l">minimum fare</span></li>
+        <li><span class="nx-wel-fact-v">CNIC</span><span class="nx-wel-fact-l">rider checked by a person</span></li>
+        <li><span class="nx-wel-fact-v">Live</span><span class="nx-wel-fact-l">track and share the ride</span></li>
+      </ul>
+
+      <div class="nx-wel-actions">
+        <button id="startBtn" class="btn btn-primary btn-block nx-wel-cta">
+          Book a bike ${icon("arrow-forward", 18)}
+        </button>
+        <button id="guestBtn" class="btn btn-ghost btn-block">Look around first</button>
       </div>
 
-      <button id="startBtn" class="btn btn-primary btn-block mb-3" style="height:56px; font-size:16px;">
-        Book a bike ${icon("arrow-forward", 18)}
-      </button>
-      <button id="guestBtn" class="btn btn-ghost btn-block">Look around first</button>
-
-      <!-- What else we do. Derived from SERVICES rather than hardcoded — this
-           line said "food, parcels & errands coming soon" for hours after
-           parcels and errands went live, which is the first screen telling a
-           new customer we do less than we do. -->
-      ${(() => {
-        const live = [SERVICES.parcel, SERVICES.errand].filter((s) => s.live).map((s) => s.label.toLowerCase());
-        const soon = [SERVICES.food].filter((s) => !s.live).map((s) => s.label.toLowerCase());
-        const parts = [];
-        if (live.length) parts.push(`${live.join(" &amp; ")} too`);
-        if (soon.length) parts.push(`${soon.join(" &amp; ")} coming soon`);
-        return parts.length
-          ? `<p class="nx-welcome-next">Bike rides, ${parts.join(" &middot; ")}</p>`
-          : "";
-      })()}
-
-      <p class="text-xs text-muted text-center mt-3">
-        By continuing you agree to our
-        <a href="#/legal/terms" style="color:var(--accent);">Terms</a>,
-        <a href="#/legal/privacy" style="color:var(--accent);">Privacy Policy</a> and
-        <a href="#/legal/safety" style="color:var(--accent);">Safety Policy</a>.
-      </p>
+      <footer class="nx-wel-foot">
+        ${alsoLive.length || soon ? `<p class="nx-wel-next">
+          ${alsoLive.length ? `Bike rides, ${alsoLive.join(" &amp; ")} too` : "Bike rides"}${soon ? " &middot; food coming soon" : ""}
+        </p>` : ""}
+        <p class="nx-wel-legal">
+          By continuing you agree to our
+          <a href="#/legal/terms">Terms</a>,
+          <a href="#/legal/privacy">Privacy Policy</a> and
+          <a href="#/legal/safety">Safety Policy</a>.
+        </p>
+      </footer>
     </div>
   `;
-  // The tiles are reasons to trust us, not navigation — tapping one starts
-  // the same booking flow rather than doing nothing (which reads as broken).
-  root.querySelectorAll(".nx-service-tile").forEach((tile) =>
-    tile.addEventListener("click", () => root.querySelector("#startBtn").click()));
 
   root.querySelector("#startBtn").addEventListener("click", () => {
     track("welcome_role_selected", { role: "RIDER" });
@@ -192,64 +197,68 @@ const PARTNER_COPY = {
 
 function renderPartnerWelcome(root) {
   const c = PARTNER_COPY[APP] || PARTNER_COPY.driver;
-  // Each partner app owns its accent, so a driver and a restaurant owner
-  // aren't looking at the identical green screen with different words.
-  const theme = APP === "merchant"
-    ? { grad: "linear-gradient(135deg,#c07f04,#f0a91b)", color: "var(--accent-2)", soft: "var(--brand-food-soft)" }
-    : APP === "ops"
-      ? { grad: "linear-gradient(135deg,#16324f,#2563eb)", color: "#2563eb", soft: "rgba(37,99,235,0.10)" }
-      : { grad: "var(--accent-gradient)", color: "var(--accent)", soft: "var(--brand-ride-soft)" };
+  // Each partner app owns its accent, so a rider and a restaurant owner are
+  // not looking at the identical screen with different words.
+  const accent = APP === "merchant" ? "food" : APP === "ops" ? "ops" : "ride";
 
-  // The single number that answers "is this worth my time?" — shown before
-  // the feature list, because that's the order people actually decide in.
-  const headline = APP === "driver"
-    ? { value: `${100 - COMMERCIALS.driverCommissionPct}%`, label: "of every fare is yours" }
+  /* THE NUMBER IS THE HEADLINE.
+     It used to sit in a large card BELOW a headline and a paragraph, so the
+     first thing a rider read was "Your bike. Your hours." — which is a
+     slogan — and the thing they actually decide on was third.
+     Someone weighing up whether to sign up is answering one question: what
+     do I keep. That goes first, at the size it deserves. */
+  const share = APP === "driver"
+    ? { value: 100 - COMMERCIALS.driverCommissionPct, label: "of every fare is yours, in cash, the same day" }
     : APP === "merchant"
-      ? { value: `${100 - COMMERCIALS.restaurantCommissionPct}%`, label: "of every order subtotal is yours" }
+      ? { value: 100 - COMMERCIALS.restaurantCommissionPct, label: "of every order subtotal is yours" }
       : null;
 
   root.innerHTML = `
-    <div class="page nx-welcome nx-stagger" style="min-height:100dvh; display:flex; flex-direction:column; justify-content:center;">
-      <div class="nx-welcome-glow" aria-hidden="true" style="--glow-a:${theme.color};"></div>
+    <div class="page nx-wel nx-wel-${accent}">
+      <div class="nx-wel-glow" aria-hidden="true"></div>
 
-      <div class="text-center mb-5" style="position:relative;">
-        <div class="nx-welcome-mark" style="background:${theme.grad};">${icon(c.icon, 30, 2)}</div>
-        <h1 class="text-xl" style="font-size:29px; letter-spacing:-0.03em;">${c.heading}</h1>
-        <p class="text-secondary mt-2">${c.sub}</p>
+      <header class="nx-wel-top">
+        <div class="nx-wel-mark">${icon(c.icon, 26, 2)}</div>
+        <span class="nx-wel-live">${esc(c.heading)}</span>
+      </header>
+
+      <div class="nx-wel-hero">
+        ${share ? `
+          <p class="nx-wel-figure"><span class="nx-chrome">${share.value}%</span></p>
+          <p class="nx-wel-figure-label">${esc(share.label)}</p>
+        ` : `<h1 class="nx-wel-h1">${esc(c.heading)}</h1>`}
+        <p class="nx-wel-sub">${esc(c.sub)}</p>
       </div>
 
-      ${headline ? `
-        <div class="nx-hero-card ${APP === "merchant" ? "food" : ""} mb-4 text-center">
-          <p style="font-size:44px;font-weight:800;font-family:var(--font-display);letter-spacing:-0.04em;line-height:1;">
-            ${headline.value}
-          </p>
-          <p style="font-size:13.5px;opacity:0.9;margin-top:6px;">${headline.label}</p>
-        </div>` : ""}
-
       ${c.points.length ? `
-        <div class="flex-col gap-2 mb-5">
-          ${c.points.map((p) => `
-            <div class="list-row nx-lift" style="background:var(--surface); border-radius:var(--r-md);">
-              <div class="list-row-icon" style="color:${theme.color}; background:${theme.soft};">${icon(p.icon, 20)}</div>
-              <div style="flex:1;">
-                <p class="font-bold text-sm">${p.label}</p>
-                <p class="text-secondary text-xs">${p.sub}</p>
-              </div>
-            </div>`).join("")}
-        </div>` : `<div class="mb-6"></div>`}
+        <ul class="nx-wel-points">
+          ${c.points.map((pt) => `
+            <li>
+              <span class="nx-wel-point-ic">${icon(pt.icon, 18)}</span>
+              <span class="nx-wel-point-text">
+                <strong>${esc(pt.label)}</strong>
+                <span>${esc(pt.sub)}</span>
+              </span>
+            </li>`).join("")}
+        </ul>` : ""}
 
-      <button id="startBtn" class="btn btn-primary btn-block" style="height:56px; font-size:16px;">
-        ${c.cta} ${icon("arrow-forward", 18)}
-      </button>
-      ${c.explainerPath ? `<button id="explainerBtn" class="btn btn-ghost btn-block mt-2">${c.explainerLabel}</button>` : ""}
+      <div class="nx-wel-actions">
+        <button id="startBtn" class="btn btn-primary btn-block nx-wel-cta">
+          ${esc(c.cta)} ${icon("arrow-forward", 18)}
+        </button>
+        ${c.explainerPath ? `<button id="explainerBtn" class="btn btn-ghost btn-block">${esc(c.explainerLabel)}</button>` : ""}
+      </div>
 
       ${c.legalPath ? `
-        <p class="text-xs text-muted text-center mt-6">
-          By continuing you agree to the
-          <a href="#${c.legalPath}" style="color:var(--accent);">${c.legalLabel}</a>.
-        </p>` : ""}
+        <footer class="nx-wel-foot">
+          <p class="nx-wel-legal">
+            By continuing you agree to the
+            <a href="#${c.legalPath}">${esc(c.legalLabel)}</a>.
+          </p>
+        </footer>` : ""}
     </div>
   `;
+
   root.querySelector("#startBtn").addEventListener("click", () => {
     track("welcome_role_selected", { role: APP_CONFIG.signupRole || "ADMIN" });
     navigate("/signin");
