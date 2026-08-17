@@ -35,21 +35,25 @@ function renderShell() {
 /**
  * Dismiss the boot splash (see the inline block in customer.html et al).
  *
- * WHY THIS NUMBER CAME DOWN
+ * WHY THIS NUMBER IS 2000 AND NOT 600
  *
- * The shell is interactive in about 100ms. Holding the splash for 1750ms so
- * the tagline could finish animating meant ~94% of every app open was a delay
- * we were adding on purpose. That is the single biggest reason the app felt
- * slow: not the code, the wait we chose.
+ * It was cut to 600ms on the argument that the shell is interactive in about
+ * 100ms, so anything longer is a delay we add on purpose. That argument is
+ * still true and worth re-reading before anyone changes this again: at 2000ms
+ * roughly 95% of every app open is a wait we chose.
  *
- * 600ms is enough for the mark to read as intentional rather than a flash,
- * and short enough that opening the app feels instant. The tagline animation
- * is retimed to finish inside it.
+ * It is set back to 2000 deliberately. At 600 the animation was being cut off
+ * mid-sequence — the mark had barely been struck and the tagline never landed
+ * at all, so the thing people were meant to remember was the thing that got
+ * clipped. A splash that is interrupted every single time reads as a glitch,
+ * which is worse than either a short one or a long one.
  *
- * A returning user (service worker warm) now sees roughly half a second
- * instead of nearly two.
+ * The animation is timed to finish at ~1.8s, leaving a beat on the completed
+ * lockup before the fade starts. If this number changes again, retime the
+ * keyframes in the inline <style> to match — a splash and its animation have
+ * to agree about how long they last.
  */
-const SPLASH_MIN_MS = 600;
+const SPLASH_MIN_MS = 2000;
 const bootStartedAt = Date.now();
 
 function dismissSplash() {
