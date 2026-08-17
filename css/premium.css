@@ -2292,3 +2292,118 @@
   .nx-wel-pin { animation: none; opacity: 1; transform: translate(262px, 96px); }
 }
 }
+
+/* ==========================================================================
+   OPS CONSOLE — desktop density
+
+   The shell already turned the bottom nav into a left rail at 900px, but
+   nothing constrained the CONTENT inside it. So every view was the phone
+   layout stretched across whatever monitor the dispatcher happened to have:
+   a 108px-minimum document tile became a 700px slab, a full-width "Approve"
+   button became a metre of purple, and a six-row key/value list put its
+   labels and values at opposite ends of the desk.
+
+   A dispatch console is a dense tool used all day by someone who already
+   knows what everything is. It should look closer to a spreadsheet than to
+   an onboarding screen.
+   ========================================================================== */
+@media (min-width: 900px) {
+  /* A measure, so text and controls stop stretching to the monitor. */
+  html[data-app="ops"] .page,
+  html[data-app="merchant"] .page {
+    max-width: 1080px;
+    padding: 26px 30px 40px;
+  }
+
+  /* Headings were sized for a phone held at arm's length. */
+  html[data-app="ops"] .page > h1 { font-size: 22px; }
+  html[data-app="ops"] .page > p.text-secondary { font-size: 13.5px; max-width: 62ch; }
+
+  /* ---- Approval card --------------------------------------------------
+     Two columns: the applicant's details on the left where they are read
+     in order, the documents on the right where they are compared against
+     each other. Actions sit with the details, at the size of the words in
+     them rather than the width of the screen. */
+  html[data-app="ops"] .nx-approval {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+    gap: 26px;
+  }
+  html[data-app="ops"] .nx-doc-review {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  html[data-app="ops"] .nx-doc-cell { min-height: 0; aspect-ratio: 4 / 3; }
+
+  /* Buttons sized to their content. A full-width destructive control next
+     to a full-width primary one is how the wrong one gets pressed. */
+  html[data-app="ops"] .nx-approval-actions {
+    display: flex; gap: 10px; align-items: center;
+  }
+  html[data-app="ops"] .nx-approval-actions .btn { width: auto; min-width: 150px; }
+  html[data-app="ops"] .nx-approval-actions .btn-block { display: inline-flex; }
+
+  /* Stat tiles: a dispatcher scans these, they do not need to be posters. */
+  html[data-app="ops"] .nx-stat-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+}
+
+/* ---- Key/value list ----------------------------------------------------
+   Label and value were pushed to opposite edges by space-between, so on a
+   wide card the eye had to travel the full width to pair them up. A grid
+   with a fixed label column keeps them together at any width. */
+.nx-kv > div {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--surface-border);
+}
+.nx-kv > div:last-child { border-bottom: 0; }
+.nx-kv > div > span:first-child {
+  font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;
+}
+.nx-kv > div > span:last-child {
+  font-size: 13.5px; color: var(--text-primary); text-align: start; word-break: break-word;
+}
+
+/* A missing document should read as a gap in the file, not as an alarm.
+   Four large red-dashed boxes made an ordinary incomplete application look
+   like a system fault. */
+.nx-doc-cell.missing {
+  border-style: dashed;
+  border-color: var(--surface-border);
+  background: var(--surface);
+}
+.nx-doc-cell.missing .nx-doc-cell-label { color: var(--text-secondary); text-shadow: none; }
+.nx-doc-cell.missing .nx-doc-cell-state { color: var(--text-muted); text-shadow: none; }
+
+/* The approval card itself. Named so the layout above can target it without
+   reaching for .card, which every other screen also uses. */
+.nx-approval-card { padding: 18px; }
+@media (min-width: 900px) { .nx-approval-card { padding: 22px 24px; } }
+
+/* The approval layout owns its own display at every width: one column on a
+   phone, two on a desk. Declaring the grid ONLY inside a media query left it
+   with no layout at all whenever that query did not match — which is how it
+   collapsed to a stack of full-width blocks. */
+.nx-approval {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.nx-approval-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.nx-approval-actions .btn { min-width: 140px; }
+
+/* Two columns once there is room. Declared here, last, on the class itself
+   rather than nested under html[data-app] inside another media block — the
+   nested version kept losing to the base rule and left the card in one
+   column on a 1440px desk. A layout this central should not depend on
+   winning a specificity argument. */
+@media (min-width: 900px) {
+  .nx-approval {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.85fr);
+    gap: 26px;
+  }
+  .nx-approval-actions .btn { min-width: 150px; }
+}

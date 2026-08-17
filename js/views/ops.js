@@ -276,7 +276,7 @@ export function renderOpsApprovals(root) {
   function card(d) {
     const p = d.driverProfile || {};
     return `
-      <div class="card mb-3" data-id="${esc(d.id)}">
+      <div class="card mb-3 nx-approval-card" data-id="${esc(d.id)}">
         <div class="flex justify-between items-start mb-2">
           <div style="min-width:0;">
             <p class="font-bold">${esc([d.name, d.lastName].filter(Boolean).join(" ")) || "Unnamed driver"}</p>
@@ -286,6 +286,8 @@ export function renderOpsApprovals(root) {
           <span class="badge badge-warning">Pending</span>
         </div>
 
+        <div class="nx-approval">
+        <div>
         <div class="nx-kv mb-3">
           <div><span>Vehicle</span><span>${esc(p.vehicleType) || "—"} · ${esc(p.vehiclePlate) || "no plate"}</span></div>
           <div><span>CNIC</span><span>${esc(p.cnicNumber) || "—"}</span></div>
@@ -295,20 +297,26 @@ export function renderOpsApprovals(root) {
           <div><span>Applied</span><span>${fmtDate(d.createdAt)}</span></div>
         </div>
 
-        <p class="field-label" style="margin-bottom:8px;">Documents</p>
-        <div class="nx-doc-review mb-3">
-          ${doc("Licence front", p.licenseFrontUrl || p.licenseDocUrl)}
-          ${doc("Licence back", p.licenseBackUrl)}
-          ${doc("CNIC front", p.cnicFrontUrl)}
-          ${doc("CNIC back", p.cnicBackUrl)}
+          <div class="nx-approval-actions">
+            <button class="btn btn-primary approveBtn">
+              ${icon("check-circle", 16)} Approve
+            </button>
+            <button class="btn btn-ghost rejectBtn" style="color:var(--error);">
+              Reject
+            </button>
+          </div>
         </div>
 
-        <button class="btn btn-primary btn-block approveBtn mb-2">
-          ${icon("check-circle", 16)} Approve
-        </button>
-        <button class="btn btn-ghost btn-block rejectBtn" style="color:var(--error);">
-          Reject application
-        </button>
+        <div>
+          <p class="field-label" style="margin-bottom:8px;">Documents</p>
+          <div class="nx-doc-review">
+            ${doc("Licence front", p.licenseFrontUrl || p.licenseDocUrl)}
+            ${doc("Licence back", p.licenseBackUrl)}
+            ${doc("CNIC front", p.cnicFrontUrl)}
+            ${doc("CNIC back", p.cnicBackUrl)}
+          </div>
+        </div>
+        </div>
       </div>`;
   }
 
