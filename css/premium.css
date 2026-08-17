@@ -662,16 +662,54 @@
   overflow: hidden; z-index: 40;
   animation: nx-rise 200ms var(--ease-out) both;
 }
+/* Anchors each dropdown to its own field. */
+.nx-field-wrap { position: relative; }
+/* INSIDE THE BOOKING SHEET the list cannot float.
+   .dock-sheet is overflow-y:auto, and an overflow container clips its
+   absolutely-positioned descendants — so the results were cut off at the
+   sheet edge AND the Continue button, later in the DOM with no z-index of
+   its own, painted straight over them.
+   In the sheet the list joins the flow instead: it pushes the button down,
+   the sheet grows, and the whole thing scrolls like any other content. No
+   z-index race, nothing clipped. */
+.dock-sheet .nx-field-wrap .nx-suggest {
+  position: static;
+  margin-top: 6px;
+  box-shadow: none;
+  animation: none;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+/* The inputs were styled inline with padding-left:0 and background:none,
+   which is why the placeholder sat flush against the dot column and jumped
+   when focused. One class instead, with the padding it actually needs. */
+.nx-loc-input {
+  border: none; background: none;
+  height: 46px; padding: 0 2px;
+  font-size: 15px;
+}
+.nx-loc-input:focus { outline: none; box-shadow: none; }
 .nx-suggest-row {
-  display: flex; align-items: center; gap: 10px; width: 100%;
-  padding: 12px 14px; text-align: start; font-size: 13.5px;
+  display: flex; align-items: flex-start; gap: 10px; width: 100%;
+  padding: 11px 14px; text-align: start; font-size: 13.5px;
   color: var(--text-primary); background: transparent;
   transition: background 160ms;
+}
+.nx-suggest-ic { flex: none; margin-top: 2px; color: var(--text-muted); }
+.nx-suggest-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+/* The recognisable half never gets truncated first. */
+.nx-suggest-primary {
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nx-suggest-secondary {
+  font-size: 12px; color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .nx-suggest-row:hover { background: var(--surface); }
 .nx-suggest-row + .nx-suggest-row { border-top: 1px solid var(--surface); }
 .nx-suggest-row.muted { color: var(--text-muted); font-size: 12px; cursor: default; }
-.nx-suggest-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nx-suggest-row.muted span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---- Menu draft rows ---- */
 
@@ -1987,6 +2025,43 @@
   box-shadow: 0 -14px 18px -6px var(--bg);
 }
 
+/* ...but not while a suggestion list is open. Pinned to the bottom it then
+   floats over the results the person is scrolling, and covers the last two
+   every time. Choosing a place is the action at that moment; Continue is
+   what happens afterwards, so it drops back into the flow below the list. */
+.dock-sheet.is-suggesting #routeNextBtn {
+  position: static;
+  box-shadow: none;
+}
+
 /* Give the scroll a little room past the sticky button so the final element
    isn't flush against it. */
 .dock-sheet .sheet-step { padding-bottom: var(--sp-2); }
+
+/* "You are here" — deliberately not the pickup pin.
+   The pickup pin is a destination for the rider; this is the phone's own
+   belief about where it is. Blue because every map app on earth has taught
+   people that blue dot means you, and a pulse because a static dot cannot
+   distinguish "located" from "last known". */
+.nx-user-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #1d7afc;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+  position: relative;
+}
+.nx-user-dot::after {
+  content: "";
+  position: absolute; inset: -6px;
+  border-radius: 50%;
+  background: rgba(29, 122, 252, 0.28);
+  animation: nx-user-ping 2.4s var(--ease-out) infinite;
+}
+@keyframes nx-user-ping {
+  0%   { transform: scale(0.55); opacity: 0.75; }
+  70%  { opacity: 0; }
+  100% { transform: scale(1.9);  opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nx-user-dot::after { animation: none; opacity: 0.3; }
+}

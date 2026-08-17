@@ -590,7 +590,23 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   max-height: 82%;
   overflow-y: auto;
   transition: transform var(--dur-med) var(--ease-spring);
+  /* The whole sheet is a drag surface now, so the browser must not claim
+     vertical gestures for its own scrolling before our handler sees them.
+     pan-x keeps horizontal map panning working through the sheet edges. */
+  touch-action: pan-x;
+  overscroll-behavior: contain;
 }
+/* While a finger is down the sheet must track it exactly — a transition here
+   would make it lag behind the thumb, which is the single thing that makes a
+   drawer feel broken rather than heavy. */
+.dock-sheet.is-dragging {
+  transition: none;
+  cursor: grabbing;
+  user-select: none;
+}
+/* Once there is real content to scroll, the body takes vertical gestures back
+   so a long fare breakdown still scrolls normally. */
+.dock-sheet.is-expanded { touch-action: pan-y; }
 /* The handle is a real control, so it gets a real touch target: 40x4 is the
    visible bar, but the button around it is 44px tall like everything else. */
 .dock-sheet .sheet-handle {
@@ -888,3 +904,26 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   color: var(--warning, #f59e0b); background: rgba(245, 158, 11, 0.14);
   border-radius: var(--r-full); vertical-align: 1px;
 }
+
+/* ---------- The one button the whole screen exists for ----------
+   Request ride is the commit point: everything before it is browsing. It
+   sat as a plain primary button identical to "Continue" two steps earlier,
+   so nothing marked the moment money and a rider get involved.
+
+   A slow heartbeat — not a flash. Two beats then a rest, at the rhythm of a
+   resting pulse rather than a notification badge, so it reads as alive
+   rather than as something demanding to be dismissed. The glow does the
+   work; the scale is tiny on purpose, because a button that visibly grows
+   under the thumb feels unstable. */
+.nx-pulse-cta { animation: nx-heartbeat 2.6s var(--ease-out) 600ms infinite; }
+@keyframes nx-heartbeat {
+  0%, 100% { transform: scale(1);     box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.45); }
+  8%       { transform: scale(1.014); box-shadow: 0 0 0 7px rgba(124, 58, 237, 0.16); }
+  16%      { transform: scale(1);     box-shadow: 0 0 0 12px rgba(124, 58, 237, 0); }
+  24%      { transform: scale(1.010); box-shadow: 0 0 0 7px rgba(124, 58, 237, 0.13); }
+  34%      { transform: scale(1);     box-shadow: 0 0 0 12px rgba(124, 58, 237, 0); }
+}
+/* It stops the moment it is doing something. A button that keeps beating
+   while it spins is claiming to still want a press it has already had. */
+.nx-pulse-cta:disabled, .nx-pulse-cta:active { animation: none; }
+@media (prefers-reduced-motion: reduce) { .nx-pulse-cta { animation: none; } }

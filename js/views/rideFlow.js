@@ -94,22 +94,26 @@ export function renderRideBooking(root) {
             <div style="width:9px;height:9px;border-radius:2px;background:var(--brand-food);"></div>
           </div>
           <div class="flex-col" style="flex:1; gap:2px;">
-            <input id="pickupInput" class="input" style="border:none;padding-left:0;height:44px;background:none;"
-              placeholder="Current location" value="${esc(state.pickup?.label || "")}"/>
+            <!-- Each field owns its own dropdown. Both lists used to sit at
+                 the bottom of the card with top:100%, so whichever field you
+                 tapped, the suggestions appeared below the WHOLE card —
+                 detached from the input that produced them, and in the same
+                 place as the other field's. -->
+            <div class="nx-field-wrap">
+              <input id="pickupInput" class="input nx-loc-input"
+                placeholder="Current location" value="${esc(state.pickup?.label || "")}"
+                autocomplete="off" autocorrect="off" spellcheck="false"/>
+              <div class="nx-suggest" id="pickupSuggest" hidden></div>
+            </div>
             <div style="height:1px;background:var(--surface-border);"></div>
-            <input id="dropoffInput" class="input" style="border:none;padding-left:0;height:44px;background:none;"
-              placeholder="Shop, mall or landmark" value="${esc(state.dropoff?.label || "")}"
-              autocomplete="off" autocorrect="off" spellcheck="false"/>
+            <div class="nx-field-wrap">
+              <input id="dropoffInput" class="input nx-loc-input"
+                placeholder="Shop, mall or landmark" value="${esc(state.dropoff?.label || "")}"
+                autocomplete="off" autocorrect="off" spellcheck="false"/>
+              <div class="nx-suggest" id="dropoffSuggest" hidden></div>
+            </div>
           </div>
         </div>
-
-        <!-- Typeahead. createSuggester was imported into this file and never
-             called, so the booking screen made people type a full Karachi
-             address blind and only told them whether it resolved when they
-             pressed Continue. Everywhere else in the app has had suggestions
-             the whole time. -->
-        <div class="nx-suggest" id="pickupSuggest" hidden></div>
-        <div class="nx-suggest" id="dropoffSuggest" hidden></div>
       </div>
 
       <button id="routeNextBtn" class="btn btn-primary btn-block">Continue ${icon("arrow-forward", 18)}</button>
@@ -123,18 +127,54 @@ export function renderRideBooking(root) {
        address is both faster and can't resolve to somewhere else. */
     const liveSuggesters = [];
 
+    /* While a list is open the sticky Continue button has to stand down.
+       It is pinned to the bottom of the sheet so it is always reachable —
+       correct when the step is "read this and continue", wrong when the step
+       is "choose one of these", because it then floats on top of the results
+       you are trying to read. Picking a place IS the action here; Continue
+       comes after. */
+    function syncSuggesting() {
+      const open = [...node.querySelectorAll(".nx-suggest")].some((l) => !l.hidden);
+      sheet.el.classList.toggle("is-suggesting", open);
+    }
+
     function wireSuggest(input, listEl, assign) {
       const suggester = createSuggester((results, { pending }) => {
-        if (!results.length && !pending) { listEl.hidden = true; return; }
+        if (!results.length && !pending) { listEl.hidden = true; syncSuggesting(); return; }
         listEl.hidden = false;
+        // Only one list at a time — two open at once is two answers to one
+        // question, and they push each other around the sheet.
+        node.querySelectorAll(".nx-suggest").forEach((other) => {
+          if (other !== listEl) other.hidden = true;
+        });
+        // Give the results somewhere to go, or they open into 40px of sheet.
+        sheet.expand();
+        syncSuggesting();
         listEl.innerHTML =
           results
-            .map(
-              (r) => `
-              <button type="button" class="nx-suggest-row" data-lat="${r.lat}" data-lng="${r.lng}">
-                ${icon("location", 15)}<span>${esc(r.displayName)}</span>
-              </button>`,
-            )
+            .map((r) => {
+              // Nominatim hands back one long comma-separated string. The
+              // first part is the thing people actually recognise — the
+              // landmark or street — and the rest is which of the six
+              // Karachi places with that name it is. On one ellipsised line
+              // the useful half was always the half that got cut.
+              const parts = String(r.displayName).split(",").map((x) => x.trim()).filter(Boolean);
+              const primary = parts[0] || r.displayName;
+              const secondary = parts
+                .slice(1)
+                .filter((x) => !/^(pakistan|sindh|\d{5,})$/i.test(x))
+                .slice(0, 3)
+                .join(", ");
+              return `
+              <button type="button" class="nx-suggest-row" data-lat="${r.lat}" data-lng="${r.lng}"
+                      data-label="${esc(r.displayName)}">
+                <span class="nx-suggest-ic">${icon(r.local ? "star" : "location", 15)}</span>
+                <span class="nx-suggest-text">
+                  <span class="nx-suggest-primary">${esc(primary)}</span>
+                  ${secondary ? `<span class="nx-suggest-secondary">${esc(secondary)}</span>` : ""}
+                </span>
+              </button>`;
+            })
             .join("") + (pending ? `<div class="nx-suggest-row muted"><span>Searching…</span></div>` : "");
 
         listEl.querySelectorAll("[data-lat]").forEach((row) => {
@@ -142,9 +182,10 @@ export function renderRideBooking(root) {
           // the click lands and the tap does nothing.
           row.addEventListener("mousedown", (e) => e.preventDefault());
           row.addEventListener("click", () => {
-            const label = row.textContent.trim();
+            const label = row.dataset.label || row.textContent.trim();
             input.value = label;
             listEl.hidden = true;
+            syncSuggesting();
             assign({ lat: Number(row.dataset.lat), lng: Number(row.dataset.lng), label });
             haptic.light();
           });
@@ -434,7 +475,7 @@ export function renderRideBooking(root) {
       <div id="pickupNote" class="mb-3"></div>
       <div id="farePanel" class="mb-3"></div>
 
-      <button id="confirmRideBtn" class="btn btn-primary btn-block">Request ride ${icon("bolt", 18)}</button>
+      <button id="confirmRideBtn" class="btn btn-primary btn-block nx-pulse-cta">Request ride ${icon("bolt", 18)}</button>
 
       <!-- Safety is not a footnote. These are the reasons someone is willing
            to get on a stranger's motorcycle, so they sit directly under the
@@ -664,8 +705,16 @@ export function renderRideBooking(root) {
         pickupAccuracy = fix.accuracy;
         state.pickup = { ...pickup, accuracy: fix.accuracy, verified: true };
         mapHandle.setPickup(pickup);
+        // Where the phone thinks it is, with a halo for how sure it is —
+        // separate from the pickup pin, which is where a rider will come to.
+        mapHandle.setUserLocation({ lat: fix.lat, lng: fix.lng }, fix.accuracy);
+        // The map opened at zone level because it did not know where you
+        // were. Now it does, so it goes there — gliding rather than
+        // snapping, so it reads as the map finding you.
+        mapHandle.center({ lat: fix.lat, lng: fix.lng }, 16, { animate: true });
       }
-      root.querySelector("#recenterBtn").addEventListener("click", () => mapHandle.center(here, 15));
+      root.querySelector("#recenterBtn").addEventListener("click", () =>
+        mapHandle.center(pickup || here, 16, { animate: true }));
 
       /* LIVE SUPPLY — real riders, not decorative ones.
          Every ride-hailing app in this market draws vehicles on the booking

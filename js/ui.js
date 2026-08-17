@@ -265,20 +265,118 @@ export function dockSheet(container) {
     handle.setAttribute("aria-expanded", String(expanded));
   }
 
-  handle.addEventListener("click", () => setExpanded(!expanded));
+  handle.addEventListener("click", (e) => {
+    // A click that ends a drag is not a tap. Without this every drag also
+    // toggled the sheet, so a careful pull down snapped straight back up.
+    if (el.dataset.dragged === "1") { e.preventDefault(); return; }
+    setExpanded(!expanded);
+  });
 
-  /* Drag. Deliberately vertical-only and threshold-based: a small movement is
-     a tap, and a horizontal one is the map being panned, not the sheet being
-     dragged. */
-  let startY = null;
-  handle.addEventListener("touchstart", (e) => { startY = e.touches[0].clientY; }, { passive: true });
-  handle.addEventListener("touchmove", (e) => {
-    if (startY === null) return;
-    const dy = e.touches[0].clientY - startY;
-    if (dy < -28 && !expanded) { setExpanded(true); startY = null; }
-    else if (dy > 28 && expanded) { setExpanded(false); startY = null; }
-  }, { passive: true });
-  handle.addEventListener("touchend", () => { startY = null; }, { passive: true });
+  /* ------------------------------------------------------------------
+     THE DRAG.
+
+     What was here before only listened on the handle — a 28px strip — and
+     only for touch events, and it did not follow the finger: it waited for
+     28px of movement and then jumped to a state. So on the booking screen
+     the sheet appeared stuck. There was nothing to grab and nothing moved
+     while you pulled.
+
+     Now the whole sheet is draggable, it tracks the pointer one-to-one, and
+     it lets go based on where you release AND how fast you were going — a
+     short fast flick should close it, a long slow drag that ends high should
+     not.
+
+     Two things it deliberately refuses to do:
+
+       - It will not start a downward drag while the body is scrolled, or the
+         gesture that scrolls a long fare breakdown back to the top would
+         throw the sheet off the bottom of the screen instead.
+       - It ignores gestures that are mostly horizontal, because that is the
+         map being panned underneath.
+     ------------------------------------------------------------------ */
+  const CLOSE_AFTER_PX = 110;   // pull past this and it collapses
+  const OPEN_AFTER_PX = 70;     // push up past this and it expands
+  const FLICK_VELOCITY = 0.45;  // px/ms — a decisive throw
+
+  let dragging = false;
+  let startY = 0;
+  let startX = 0;
+  let lastY = 0;
+  let lastT = 0;
+  let velocity = 0;
+  let decided = false;   // committed to a vertical drag
+  let offset = 0;
+
+  const isInteractive = (t) =>
+    t.closest("input, textarea, select, button:not(.sheet-handle), a, [contenteditable]");
+
+  el.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    // Let people use the controls inside the sheet. The handle is the one
+    // button that IS a drag surface.
+    if (isInteractive(e.target) && !e.target.closest(".sheet-handle")) return;
+    dragging = true;
+    decided = false;
+    offset = 0;
+    startY = lastY = e.clientY;
+    startX = e.clientX;
+    lastT = e.timeStamp;
+    velocity = 0;
+    delete el.dataset.dragged;
+  });
+
+  el.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const dy = e.clientY - startY;
+    const dx = e.clientX - startX;
+
+    if (!decided) {
+      if (Math.abs(dy) < 6) return;              // still a tap
+      if (Math.abs(dx) > Math.abs(dy)) {         // panning the map
+        dragging = false;
+        return;
+      }
+      // Pulling down while the content is scrolled belongs to the scroll.
+      if (dy > 0 && el.scrollTop > 0) { dragging = false; return; }
+      decided = true;
+      el.classList.add("is-dragging");
+      el.setPointerCapture?.(e.pointerId);
+    }
+
+    const dt = Math.max(1, e.timeStamp - lastT);
+    velocity = (e.clientY - lastY) / dt;
+    lastY = e.clientY;
+    lastT = e.timeStamp;
+
+    // Resisting upward movement when already expanded stops the sheet being
+    // dragged off the top of its own container.
+    offset = dy < 0 && expanded ? dy * 0.25 : dy;
+    if (offset < 0 && !expanded) offset = dy * 0.6; // opening has a little weight
+    el.style.transform = `translateY(${offset}px)`;
+    el.dataset.dragged = "1";
+  });
+
+  function endDrag() {
+    if (!dragging) return;
+    dragging = false;
+    el.classList.remove("is-dragging");
+    el.style.transform = "";
+
+    if (!decided) return;
+    const flickedDown = velocity > FLICK_VELOCITY;
+    const flickedUp = velocity < -FLICK_VELOCITY;
+
+    if (expanded) {
+      if (flickedDown || offset > CLOSE_AFTER_PX) setExpanded(false);
+    } else if (flickedUp || offset < -OPEN_AFTER_PX) {
+      setExpanded(true);
+    }
+    // The click handler reads this, then the next pointerdown clears it.
+    setTimeout(() => { delete el.dataset.dragged; }, 0);
+  }
+
+  el.addEventListener("pointerup", endDrag);
+  el.addEventListener("pointercancel", endDrag);
 
   return {
     el,

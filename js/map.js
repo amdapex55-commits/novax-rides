@@ -150,6 +150,8 @@ export async function createMap(container, opts = {}) {
   let extraMarkers = [];
   let accuracyRing = null;
   let nearbyMarkers = [];
+  let userMarker = null;
+  let userHalo = null;
 
   function setMarker(existing, coords, icon) {
     if (!coords) {
@@ -323,8 +325,51 @@ export async function createMap(container, opts = {}) {
       map.fitBounds(valid.map((p) => [p.lat, p.lng]), { padding });
     },
 
-    center(coords, zoom) {
-      if (coords) map.setView([coords.lat, coords.lng], zoom ?? map.getZoom());
+    center(coords, zoom, { animate = false } = {}) {
+      if (!coords) return;
+      // flyTo GLIDES; setView jumps. On the first fix a jump reads as the map
+      // being swapped out from under you, while a glide reads as the map
+      // finding you — which is the thing that actually just happened.
+      if (animate && typeof map.flyTo === "function") {
+        map.flyTo([coords.lat, coords.lng], zoom ?? map.getZoom(), { duration: 0.9 });
+      } else {
+        map.setView([coords.lat, coords.lng], zoom ?? map.getZoom());
+      }
+    },
+
+    /**
+     * "You are here" — distinct from the pickup pin on purpose.
+     *
+     * The pickup pin says where the rider will come to; this says where the
+     * phone thinks it is, with an honest halo for how sure it is. Conflating
+     * the two is how someone ends up waiting on the wrong side of a road
+     * because a 300m fix was drawn as a precise point.
+     */
+    setUserLocation(coords, accuracyMeters) {
+      if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
+      if (userHalo) { map.removeLayer(userHalo); userHalo = null; }
+      if (!coords) return;
+
+      // Only drawn when it is big enough to matter — a 12m halo is noise.
+      if (accuracyMeters && accuracyMeters > 40) {
+        userHalo = L.circle([coords.lat, coords.lng], {
+          radius: accuracyMeters,
+          className: "nx-accuracy-ring",
+          interactive: false,
+          stroke: false,
+          fillOpacity: 0.12,
+        }).addTo(map);
+      }
+      userMarker = L.marker([coords.lat, coords.lng], {
+        icon: L.divIcon({
+          className: "nx-pin-wrap",
+          html: `<div class="nx-user-dot"></div>`,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        }),
+        interactive: false,
+        zIndexOffset: -100,
+      }).addTo(map);
     },
 
     /**
@@ -367,6 +412,8 @@ export async function createMap(container, opts = {}) {
     destroy() {
       cancelAnimationFrame(driverAnim);
       nearbyMarkers.forEach((m) => { try { map.removeLayer(m); } catch {} });
+      try { if (userMarker) map.removeLayer(userMarker); } catch {}
+      try { if (userHalo) map.removeLayer(userHalo); } catch {}
       try { map.remove(); } catch { /* already torn down */ }
     },
   };
