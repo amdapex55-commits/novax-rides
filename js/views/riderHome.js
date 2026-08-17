@@ -70,11 +70,14 @@ export function renderHome(root) {
       </div>
 
       ${isGuest ? `
-      <div class="card mb-4 flex items-center gap-3" id="signInCard" style="cursor:pointer;">
-        <div class="list-row-icon" style="background:rgba(255, 182, 72, 0.14); color:var(--accent-2);">${icon("bolt", 18)}</div>
-        <div style="flex:1;"><p class="font-bold text-sm">${esc(t("Sign in"))}</p><p class="text-secondary text-xs" dir="auto">${esc(t("Takes a minute — only needed to book"))}</p></div>
-        ${icon("chevronRight", 18)}
-      </div>` : ""}
+      <button class="nx-signin-card mb-4" id="signInCard">
+        <span class="nx-signin-ic">${icon("bolt", 20)}</span>
+        <span class="nx-signin-copy">
+          <span class="nx-signin-title">${esc(t("Sign in to book"))}</span>
+          <span class="nx-signin-sub" dir="auto">${esc(t("Takes a minute. Browse as long as you like first."))}</span>
+        </span>
+        <span class="nx-signin-go">${icon("arrow-forward", 18)}</span>
+      </button>` : ""}
 
       <!-- Promotions. Empty and hidden until there is something true to say. -->
       <div class="nx-promo-rail bleed-x mb-4" id="promoRail" hidden></div>
@@ -275,19 +278,19 @@ function renderBikeTab(panel, isGuest) {
     <div class="nx-sec"><span class="nx-sec-title">${esc(t("Rides"))}</span></div>
     <div class="nx-tiles mb-4">
       <button class="nx-tile t-ride" data-go="/set-locations" data-vehicle="BIKE">
-        <span class="nx-tile-icon">${icon("bike", 21)}</span>
+        <span class="nx-tile-icon">${icon("bike", 23)}</span>
         <span class="nx-tile-label">${esc(t("Ride"))}</span>
         <span class="nx-tile-sub">From Rs ${PRICING.BIKE.minimum}</span>
       </button>
       <button class="nx-tile t-parcel${soon("parcel") ? " is-soon" : ""}" data-go="/parcel/service">
         ${soon("parcel") ? `<span class="nx-tile-flag">${esc(t("Soon"))}</span>` : `<span class="nx-tile-flag new">${esc(t("New"))}</span>`}
-        <span class="nx-tile-icon">${icon("package", 21)}</span>
+        <span class="nx-tile-icon">${icon("package", 23)}</span>
         <span class="nx-tile-label">${esc(t("Send a Parcel"))}</span>
         <span class="nx-tile-sub">From Rs ${PRICING.PARCEL.minimum}</span>
       </button>
       <button class="nx-tile t-errand${soon("errand") ? " is-soon" : ""}" data-go="/errand/details">
         ${soon("errand") ? `<span class="nx-tile-flag">${esc(t("Soon"))}</span>` : `<span class="nx-tile-flag new">${esc(t("New"))}</span>`}
-        <span class="nx-tile-icon">${icon("basket", 21)}</span>
+        <span class="nx-tile-icon">${icon("basket", 23)}</span>
         <span class="nx-tile-label">${esc(t("Pick & Deliver"))}</span>
         <span class="nx-tile-sub">From Rs ${PRICING.ERRAND.minimum}</span>
       </button>
@@ -303,7 +306,7 @@ function renderBikeTab(panel, isGuest) {
         ${soon("food") ? `
           <button class="nx-tile t-food is-soon" data-tab-go="FOOD">
             <span class="nx-tile-flag">${esc(t("Soon"))}</span>
-            <span class="nx-tile-icon">${icon("utensils", 21)}</span>
+            <span class="nx-tile-icon">${icon("utensils", 23)}</span>
             <span class="nx-tile-label">${esc(t("Food"))}</span>
             <span class="nx-tile-sub">${esc(t("Kitchens signing up"))}</span>
           </button>` : ""}

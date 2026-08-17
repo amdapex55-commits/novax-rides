@@ -67,14 +67,39 @@
 }
 .nx-tile > * { position: relative; }
 
+/* The service chip carries the whole tile's identity, so it has to look
+   made rather than filled. A flat 13% wash behind a 21px line icon reads as
+   a placeholder — the colour is right but there is no object there.
+   A gradient with a light top edge and a shadow in the tile's own colour
+   gives it a surface, and the icon sits ON something instead of in a tint. */
 .nx-tile-icon {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
   color: var(--tile-ink, var(--accent));
-  background: var(--tile-chip, var(--accent-soft));
+  background:
+    linear-gradient(160deg,
+      color-mix(in srgb, var(--tile-ink, var(--accent)) 22%, transparent),
+      color-mix(in srgb, var(--tile-ink, var(--accent)) 9%, transparent));
+  /* Top edge catches light, bottom drops a shadow tinted by the service
+     colour rather than a generic grey. */
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 55%, transparent),
+    0 2px 8px color-mix(in srgb, var(--tile-ink, var(--accent)) 20%, transparent);
+  transition: transform var(--dur-fast) var(--ease-spring),
+              box-shadow var(--dur-fast) ease;
+}
+/* The press belongs on the chip, not the whole card: it reads as the icon
+   being the button, which is what the thumb aimed at. */
+.nx-tile:active .nx-tile-icon { transform: scale(0.93); }
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .nx-tile-icon { background: var(--tile-chip, var(--accent-soft)); box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nx-tile-icon { transition: none; }
+  .nx-tile:active .nx-tile-icon { transform: none; }
 }
 .nx-tile-label {
   font-weight: 700;
@@ -1140,4 +1165,43 @@
 @keyframes nx-help-rise { from { transform: translateY(14px); } to { transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) {
   .nx-help-sheet, .nx-help-panel { animation: none; }
+}
+
+/* ---------- Sign-in prompt ----------
+   It was a plain card in a column of plain cards: same background, same
+   border, a small chip and a chevron — indistinguishable from a list row,
+   and it is the one thing on the screen a guest has to press before they can
+   book anything. It now carries the accent gradient and reads as an action.
+   Still not a full-width solid button: it sits above the service tiles and
+   must not out-shout the thing people came to do. */
+.nx-signin-card {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 13px 14px; text-align: start; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--accent) 15%, transparent),
+      color-mix(in srgb, var(--accent) 5%, transparent));
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 14%, transparent);
+  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) ease;
+}
+.nx-signin-card:active { transform: scale(0.985); }
+.nx-signin-ic {
+  display: grid; place-items: center; flex: none;
+  width: 38px; height: 38px; border-radius: var(--r-full);
+  color: #fff; background: var(--accent-gradient, var(--accent));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.nx-signin-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nx-signin-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.nx-signin-sub { font-size: 12px; color: var(--text-secondary); line-height: 1.35; }
+.nx-signin-go { flex: none; color: var(--accent); display: grid; place-items: center; }
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .nx-signin-card { background: var(--accent-soft); border-color: var(--accent); box-shadow: none; }
+  .nx-signin-ic { background: var(--accent); box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nx-signin-card { transition: none; }
+  .nx-signin-card:active { transform: none; }
 }
