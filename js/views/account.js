@@ -249,8 +249,8 @@ export function renderSignUp(root) {
       if (!docs.licenseFront || !docs.licenseBack) {
         return fail("Upload both sides of your driving licence.");
       }
-      dto.licenseFrontUrl = docs.licenseFront;
-      dto.licenseBackUrl = docs.licenseBack;
+      // The URLs do not exist yet — the files are uploaded after register(),
+      // because that is the first moment there is a token to upload with.
     }
 
     btn.disabled = true;
@@ -260,6 +260,24 @@ export function renderSignUp(root) {
       // api.register stores the tokens and hydrates Token.user.
       await api.register(dto);
       track("signed_up", { role });
+
+      /* Now there is a token, so the documents can go up. A failure here
+         must NOT read as a failed signup — the account exists and they are
+         signed in; only the licence is missing, and onboarding asks for it
+         again. Losing that distinction would send someone back to create a
+         second account they cannot create, because the phone is taken. */
+      if (isDriver) {
+        try {
+          const urls = await uploadHeldDocs(docs);
+          if (Object.keys(urls).length) await api.saveDriverOnboarding(urls);
+        } catch (err) {
+          reportHandled(err, "signup-doc-upload", { role });
+          alertUser("Your account is created, but the licence didn't upload.", {
+            suggestion: "Nothing is lost — you'll be asked for it again on the next screen.",
+            tone: "warn",
+          });
+        }
+      }
       toast(isDriver
         ? "Application received — we'll review your licence shortly"
         : "Welcome to Nova Go");
@@ -286,6 +304,20 @@ function docSlot(id, label) {
 }
 
 function wireDocUploads(root, docs) {
+  /* THE UPLOAD CANNOT HAPPEN ON THIS SCREEN.
+
+     This is the signup form: the account does not exist yet, so there is no
+     access token, and POST /uploads/presign sits behind the JWT guard. Every
+     attempt returned 401 — for every driver, on every device, with every file
+     type, since the day it was written. The submit button then refused to
+     proceed without the uploads it had just made impossible, so a driver
+     could not sign up at all.
+
+     So nothing is uploaded here. The file is decoded, downscaled and held in
+     memory, and the submit handler sends it the moment registration returns a
+     token. That is the only ordering that can work, and it keeps the guard on
+     the endpoint, which should stay: an unauthenticated presign endpoint is
+     an open invitation to fill someone else's bucket. */
   ["licenseFront", "licenseBack"].forEach((key) => {
     const input = root.querySelector(`#${key}Input`);
     const slot = root.querySelector(`#${key}Slot`);
@@ -301,52 +333,57 @@ function wireDocUploads(root, docs) {
         return;
       }
 
-      slot.classList.remove("error");
+      slot.classList.remove("error", "done");
       slot.classList.add("busy");
-      stateEl.textContent = "Uploading…";
+      stateEl.textContent = "Preparing…";
 
       try {
-        /* PURPOSE MUST BE ONE OF THE ENUM. This sent "driver-licence",
-           which has never been a valid UploadPurpose — the values are
-           kyc-doc, proof-of-delivery, profile-photo, restaurant-logo,
-           restaurant-banner, menu-item, pickup-note. So presign returned 400
-           on every device and every file type, and always had. A licence IS
-           a KYC document, which is the purpose it should have used. */
-        const { blob, contentType, fileName } = await prepareForUpload(file);
-        const { uploadUrl, publicUrl } = await api.presignUpload(
-          "kyc-doc",
-          contentType,
-          fileName || `${key}.jpg`,
-        );
-        const res = await fetch(uploadUrl, {
-          method: "PUT",
-          headers: { "Content-Type": contentType },
-          body: blob,
-        });
-        if (!res.ok) {
-          const detail = await res.text().catch(() => "");
-          throw new Error(`Storage refused it (${res.status})${detail ? `: ${detail.slice(0, 140)}` : ""}`);
-        }
-
-        docs[key] = publicUrl;
+        // Normalises HEIC/image-jpg and shrinks a 12MP photo before it ever
+        // has to cross mobile data.
+        const prepared = await prepareForUpload(file);
+        docs[key] = prepared;
         slot.classList.remove("busy");
         slot.classList.add("done");
-        stateEl.textContent = "Uploaded";
+        stateEl.textContent = `Ready · ${Math.round(prepared.blob.size / 1024)}KB`;
       } catch (err) {
         slot.classList.remove("busy");
         slot.classList.add("error");
-        stateEl.textContent = "Failed — tap to retry";
-        /* console.warn was the ONLY record of why. Nobody reads a phone's
-           console, so every cause looked identical on screen and this bug
-           survived for as long as it did. */
-        const msg = String(err?.message || "Upload failed");
-        alertUser("That photo didn't upload.", {
-          suggestion: `${msg} (${file.type || "unknown type"} · ${Math.round(file.size / 1024)}KB)`,
+        stateEl.textContent = "Couldn't read that file";
+        alertUser("That photo couldn't be read.", {
+          suggestion: `Try taking a fresh one with the camera. (${file.type || "unknown type"} · ${Math.round(file.size / 1024)}KB)`,
         });
-        console.warn("[NovaGo] licence upload failed:", msg);
+        console.warn("[NovaGo] licence prepare failed:", err?.message);
       }
     });
   });
+}
+
+/**
+ * Upload the held documents. Called AFTER registration, when a token exists.
+ * @returns {Promise<{licenseFrontUrl?: string, licenseBackUrl?: string}>}
+ */
+async function uploadHeldDocs(docs) {
+  const urls = {};
+  for (const [key, field] of [["licenseFront", "licenseFrontUrl"], ["licenseBack", "licenseBackUrl"]]) {
+    const prepared = docs[key];
+    if (!prepared) continue;
+    const { uploadUrl, publicUrl } = await api.presignUpload(
+      "kyc-doc",
+      prepared.contentType,
+      prepared.fileName || `${key}.jpg`,
+    );
+    const res = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": prepared.contentType },
+      body: prepared.blob,
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new Error(`Storage refused ${key} (${res.status})${detail ? `: ${detail.slice(0, 120)}` : ""}`);
+    }
+    urls[field] = publicUrl;
+  }
+  return urls;
 }
 
 function wirePasswordToggle(root) {
