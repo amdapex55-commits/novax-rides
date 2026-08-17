@@ -802,3 +802,89 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   pointer-events: none;
 }
 .cart-fab.show { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+
+/* ---------- Alerts: what went wrong, and what to do about it ----------
+   Top-anchored. The old toast sat above the bottom nav, which is exactly
+   where the thumb that just pressed the button is resting — so the message
+   explaining the failed tap was covered by the hand that made it.
+   Safe-area inset because on a notched phone the top is not the top. */
+.nx-alert-host {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 400;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 0;
+  pointer-events: none;
+}
+.nx-alert {
+  pointer-events: auto;
+  display: flex; align-items: flex-start; gap: 10px;
+  width: 100%; max-width: 480px; margin: 0 auto;
+  padding: 12px 12px 12px 0;
+  background: var(--surface-3);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  opacity: 0;
+  /* Enters from the top-left, so the eye is pulled to the start of the
+     sentence rather than to the middle of a box that faded in. */
+  transform: translate3d(-14px, -14px, 0) scale(0.97);
+  transition: opacity 200ms var(--ease-spring), transform 200ms var(--ease-spring);
+}
+.nx-alert.show { opacity: 1; transform: none; }
+.nx-alert-bar { width: 4px; align-self: stretch; flex: none; border-radius: 0 3px 3px 0; background: var(--text-muted); }
+.nx-alert.error   .nx-alert-bar { background: var(--error); }
+.nx-alert.warn    .nx-alert-bar { background: var(--warning, #f59e0b); }
+.nx-alert.success .nx-alert-bar { background: var(--success, #10b981); }
+.nx-alert.info    .nx-alert-bar { background: var(--accent); }
+.nx-alert-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+/* 14px, not 13: this is read once, under pressure, often one-handed. */
+.nx-alert-problem { font-size: 14px; font-weight: 700; color: var(--text-primary); line-height: 1.35; }
+.nx-alert-suggestion { font-size: 13px; font-weight: 500; color: var(--text-secondary); line-height: 1.4; }
+.nx-alert-close {
+  flex: none; width: 28px; height: 28px; margin: -2px -2px 0 0;
+  background: none; border: 0; border-radius: var(--r-full);
+  color: var(--text-muted); font-size: 19px; line-height: 1; cursor: pointer;
+}
+.nx-alert-close:hover { color: var(--text-primary); background: var(--surface-2); }
+/* A repeat of the same message nudges instead of stacking, so pressing a
+   dead button three times does not build a wall of identical notices. */
+.nx-alert-nudge { animation: nx-alert-nudge 260ms var(--ease-spring); }
+@keyframes nx-alert-nudge {
+  0% { transform: none; } 35% { transform: translate3d(0, 3px, 0) scale(1.015); } 100% { transform: none; }
+}
+/* The field that caused it. */
+.is-invalid {
+  border-color: var(--error) !important;
+  box-shadow: 0 0 0 3px rgba(255, 84, 112, 0.13) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nx-alert { transition: opacity 140ms linear; transform: none; }
+  .nx-alert-nudge { animation: none; }
+}
+
+/* "Required" marker on a field label. Shown on the fields that actually
+   block submission, so its absence is information too — a label without it
+   can be left blank. */
+.nx-req {
+  margin-left: 6px; padding: 1px 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--error); background: rgba(255, 84, 112, 0.11);
+  border-radius: var(--r-full); vertical-align: 1px;
+}
+
+/* ---------- Parcel service cards ----------
+   Standard and Express were the same card with different words, so the
+   faster option did not look faster. The icon and the accent do that work
+   now; the price difference is the same either way. */
+.nx-svc .nx-svc-ic { transition: background var(--dur-fast) ease, color var(--dur-fast) ease; }
+.nx-svc-ride.selected .nx-svc-ic { background: rgba(124, 58, 237, 0.14); color: var(--accent); }
+.nx-svc-express .nx-svc-ic { color: var(--warning, #f59e0b); }
+.nx-svc-express.selected .nx-svc-ic {
+  background: rgba(245, 158, 11, 0.16); color: var(--warning, #f59e0b);
+}
+.nx-svc-tag {
+  margin-left: 8px; padding: 2px 7px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--warning, #f59e0b); background: rgba(245, 158, 11, 0.14);
+  border-radius: var(--r-full); vertical-align: 1px;
+}

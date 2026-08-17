@@ -1,16 +1,118 @@
 // Nova Go Rides — shared UI helpers used across every view: toast, bottom
 // sheet, confetti burst, count-up numbers, skeleton loaders.
 
-export function toast(msg, isError = false) {
+/* --------------------------------------------------------------------------
+   TELLING SOMEONE SOMETHING WENT WRONG
+
+   The old toast sat at the bottom of the screen, above the nav, said one
+   short line and vanished after three seconds. Three problems with that on a
+   booking flow: it appears where the thumb already is (so it gets covered),
+   it says what failed without saying what to do, and three seconds is not
+   long enough to read a sentence you did not expect.
+
+   alertUser() replaces it. It comes in at the TOP, where nothing is
+   obscuring it, it carries a suggestion as well as a problem, and it holds
+   for longer the more there is to read. Identical messages collapse instead
+   of stacking up — a button pressed three times should not produce three
+   notices.
+
+   It is deliberately synchronous and does no work before painting: an error
+   that arrives 300ms after the tap reads as a second, unrelated failure.
+   -------------------------------------------------------------------------- */
+
+const ALERT_TONES = { error: "error", warn: "warn", success: "success", info: "info" };
+let alertStack = [];
+
+export function alertUser(problem, options = {}) {
+  const { suggestion = "", tone = "error", timeout } = options;
+  const key = `${tone}:${problem}:${suggestion}`;
+
+  // Same message already up: restart its clock rather than stacking a copy.
+  const existing = alertStack.find((a) => a.key === key);
+  if (existing) {
+    clearTimeout(existing.timer);
+    existing.timer = setTimeout(() => dismissAlert(existing), holdFor(problem, suggestion, timeout));
+    existing.el.classList.remove("nx-alert-nudge");
+    void existing.el.offsetWidth; // restart the nudge animation
+    existing.el.classList.add("nx-alert-nudge");
+    return;
+  }
+
+  const host = alertHost();
   const el = document.createElement("div");
-  el.className = "toast" + (isError ? " error" : "");
-  el.textContent = msg;
-  document.body.appendChild(el);
+  el.className = `nx-alert ${ALERT_TONES[tone] || "error"}`;
+  // assertive for errors: a blocked action is worth interrupting a screen
+  // reader for. Everything else waits its turn.
+  el.setAttribute("role", tone === "error" ? "alert" : "status");
+  el.innerHTML = `
+    <span class="nx-alert-bar" aria-hidden="true"></span>
+    <span class="nx-alert-body">
+      <span class="nx-alert-problem"></span>
+      ${suggestion ? '<span class="nx-alert-suggestion"></span>' : ""}
+    </span>
+    <button class="nx-alert-close" aria-label="Dismiss">&times;</button>
+  `;
+  el.querySelector(".nx-alert-problem").textContent = problem;
+  if (suggestion) el.querySelector(".nx-alert-suggestion").textContent = suggestion;
+
+  host.appendChild(el);
+  const entry = { key, el, timer: null };
+  alertStack.push(entry);
+
+  el.querySelector(".nx-alert-close").addEventListener("click", () => dismissAlert(entry));
   requestAnimationFrame(() => el.classList.add("show"));
-  setTimeout(() => {
-    el.classList.remove("show");
-    setTimeout(() => el.remove(), 300);
-  }, 3000);
+  entry.timer = setTimeout(() => dismissAlert(entry), holdFor(problem, suggestion, timeout));
+
+  // More than three on screen is noise, not information.
+  while (alertStack.length > 3) dismissAlert(alertStack[0]);
+}
+
+/** Reading time, floored at 3.5s and capped at 9s. */
+function holdFor(problem, suggestion, override) {
+  if (override) return override;
+  const words = `${problem} ${suggestion}`.trim().split(/\s+/).length;
+  return Math.min(9000, Math.max(3500, words * 320));
+}
+
+function dismissAlert(entry) {
+  if (!entry || !entry.el.isConnected) return;
+  clearTimeout(entry.timer);
+  alertStack = alertStack.filter((a) => a !== entry);
+  entry.el.classList.remove("show");
+  setTimeout(() => entry.el.remove(), 260);
+}
+
+function alertHost() {
+  let host = document.getElementById("nxAlerts");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "nxAlerts";
+    host.className = "nx-alert-host";
+    host.setAttribute("aria-live", "polite");
+    document.body.appendChild(host);
+  }
+  return host;
+}
+
+/**
+ * Marks the offending field, focuses it, and explains what to do.
+ * The focus matters more than it looks: on a phone it scrolls the field into
+ * view and opens the keyboard, so the fix is one tap away instead of a hunt.
+ */
+export function alertField(el, problem, suggestion) {
+  if (el) {
+    el.classList.add("is-invalid");
+    el.focus({ preventScroll: true });
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.addEventListener("input", () => el.classList.remove("is-invalid"), { once: true });
+  }
+  alertUser(problem, { suggestion, tone: "error" });
+}
+
+/* Kept because a lot of screens already call it. Success and neutral notes
+   still read fine at the top, so it simply forwards. */
+export function toast(msg, isError = false) {
+  alertUser(msg, { tone: isError ? "error" : "success" });
 }
 
 export function openSheet(sheetEl, overlayEl) {

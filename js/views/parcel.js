@@ -5,15 +5,27 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, esc } from "../ui.js";
+import { toast, esc, alertField, alertUser } from "../ui.js";
+import { firstProblem, clearInvalid, required, positiveNumber, maxNumber, phone, normalisePkPhone } from "../forms.js";
 import { navigate } from "../router.js";
 import { track } from "../analytics.js";
 import { socketManager } from "../socket.js";
 import { resolveRoute } from "../geocode.js";
 
+// Two cards that differ only in wording read as the same thing twice, and
+// the faster one was not visibly the faster one. Each now carries its own
+// icon and accent, and Express says what you are actually buying — the front
+// of the queue — rather than "priority matching", which is our word, not the
+// customer's.
 const SERVICES = [
-  { key: "standard", name: "Nova Standard", desc: "Next available driver", eta: "25-40 min" },
-  { key: "express", name: "Nova Express", desc: "Priority matching", eta: "15-25 min" },
+  {
+    key: "standard", name: "Nova Standard", ic: "package", accent: "ride",
+    desc: "The next rider free in your area", eta: "25–40 min", tag: "",
+  },
+  {
+    key: "express", name: "Nova Express", ic: "bolt", accent: "express",
+    desc: "Goes to the front of the queue", eta: "15–25 min", tag: "Fastest",
+  },
 ];
 
 export function renderParcelService(root) {
@@ -25,13 +37,13 @@ export function renderParcelService(root) {
       <div class="flex-col gap-3 mb-6">
         ${SERVICES.map(
           (s, i) => `
-          <button class="option-card${i === 0 ? " selected" : ""}" data-key="${s.key}">
-            <div class="list-row-icon">${icon("package", 20)}</div>
-            <div class="flex-col" style="flex:1;">
-              <p class="font-bold">${s.name}</p>
-              <p class="text-secondary text-sm">${s.desc}</p>
+          <button class="option-card nx-svc nx-svc-${s.accent}${i === 0 ? " selected" : ""}" data-key="${s.key}">
+            <div class="list-row-icon nx-svc-ic">${icon(s.ic, 20)}</div>
+            <div class="flex-col" style="flex:1;min-width:0;">
+              <p class="font-bold">${esc(s.name)}${s.tag ? `<span class="nx-svc-tag">${esc(s.tag)}</span>` : ""}</p>
+              <p class="text-secondary text-sm">${esc(s.desc)}</p>
             </div>
-            <p class="text-xs text-muted">${s.eta}</p>
+            <p class="text-xs text-muted">${esc(s.eta)}</p>
           </button>`
         ).join("")}
       </div>
@@ -58,17 +70,45 @@ export function renderParcelDetails(root) {
     <div class="page nx-stagger">
       <button id="backBtn" class="btn-icon mb-6">${icon("arrow-back", 20)}</button>
       <h1 class="text-xl mb-6">Package Details</h1>
-      <label class="field-label">Weight (kg)</label>
-      <input id="weightInput" class="input mb-4" type="number" placeholder="0.5" value="${draft.weight || ""}"/>
-      <label class="field-label">What's inside?</label>
+      <label class="field-label">Weight (kg) <span class="nx-req">Required</span></label>
+      <input id="weightInput" class="input mb-4" type="number" inputmode="decimal" placeholder="0.5" value="${draft.weight || ""}"/>
+
+      <label class="field-label">What's inside? <span class="nx-req">Required</span></label>
       <textarea id="descInput" class="input mb-4" placeholder="e.g. iPhone 15 Pro, sealed box">${draft.note || ""}</textarea>
-      <label class="field-label">Cash to collect on delivery (optional)</label>
-      <input id="codInput" class="input mb-6" type="number" placeholder="e.g. 1500" value="${draft.codAmount || ""}"/>
+
+      <!-- Cash to collect is required as a NUMBER, and 0 is a valid answer.
+           "Optional" was the wrong word: a blank meant the rider found out at
+           the door whether they were collecting money, which is the one thing
+           they must know before they set off. -->
+      <label class="field-label">Cash to collect on delivery <span class="nx-req">Required</span></label>
+      <input id="codInput" class="input mb-2" type="number" inputmode="numeric" placeholder="0 if nothing to collect" value="${draft.codAmount ?? ""}"/>
+      <p class="text-xs text-muted mb-6">Enter 0 if the rider isn't collecting anything.</p>
       <button id="continueBtn" class="btn btn-primary btn-block">Continue ${icon("arrow-forward", 18)}</button>
     </div>
   `;
   root.querySelector("#backBtn").addEventListener("click", () => history.back());
   root.querySelector("#continueBtn").addEventListener("click", () => {
+    clearInvalid(root);
+    // Stops at the first problem on purpose — five errors at once reads as a
+    // broken form, and only one of them can be fixed first anyway.
+    const bad = firstProblem([
+      { el: root.querySelector("#weightInput"), rules: [
+          positiveNumber("Weight"),
+          maxNumber("Weight", 30, "Over 30kg won't go on a bike. Split it, or book a larger vehicle."),
+        ] },
+      { el: root.querySelector("#descInput"), rules: [
+          required("Contents", "Tell us what's inside — the rider has to know what they're carrying, and it's what we go on if it's lost."),
+        ] },
+      { el: root.querySelector("#codInput"), rules: [
+          (v) => String(v ?? "").trim() === ""
+            ? "Enter how much cash to collect, or 0 if none."
+            : (Number.isFinite(Number(v)) && Number(v) >= 0 ? null : "Cash to collect has to be 0 or more."),
+        ] },
+    ]);
+    if (bad) {
+      alertField(bad.el, bad.problem, "Fill this in to carry on.");
+      return;
+    }
     state.parcelDraft = {
       ...draft,
       weight: root.querySelector("#weightInput").value,
@@ -114,9 +154,19 @@ export function renderParcelContact(root) {
     const phoneLocal = root.querySelector("#phoneInput").value.trim();
     const pickupLabel = root.querySelector("#pickupInput").value.trim();
     const dropoffLabel = root.querySelector("#dropoffInput").value.trim();
-    const digits = phoneLocal.replace(/\D/g, "").replace(/^0+/, "");
-    if (!name || digits.length < 9) { toast("Enter a valid receiver name and phone", true); return; }
-    if (!dropoffLabel) { toast("Enter the delivery address", true); return; }
+    clearInvalid(root);
+    const bad = firstProblem([
+      { el: root.querySelector("#dropoffInput"), rules: [
+          required("Delivery address", "Where is it going? A street and area is enough — we'll pin it on the map next."),
+        ] },
+      { el: root.querySelector("#nameInput"), rules: [
+          required("Receiver name", "The rider asks for this person by name at the door."),
+        ] },
+      { el: root.querySelector("#phoneInput"), rules: [phone()] },
+    ]);
+    if (bad) { alertField(bad.el, bad.problem, "Fill this in to book."); return; }
+    // 0321 7654321 and 321 7654321 both arrive here as +923217654321.
+    const phoneParsed = normalisePkPhone(phoneLocal);
     if (!Token.access) {
       // Save what they've typed so it's still here after they log in.
       state.parcelDraft = { ...draft, recipientName: name, recipientPhoneLocal: phoneLocal, pickupLabel, dropoffLabel };
@@ -143,10 +193,13 @@ export function renderParcelContact(root) {
         dropoffLat: dropoff.lat,
         dropoffLng: dropoff.lng,
         recipientName: name,
-        recipientPhone: "+92" + digits,
+        recipientPhone: phoneParsed.e164,
         parcelNote: draft.note || undefined,
       };
-      if (draft.codAmount) dto.codAmount = Number(draft.codAmount);
+      // 0 is a real answer here, so this cannot be a truthiness check — a
+      // deliberate "collect nothing" would be dropped and the rider would be
+      // back to finding out at the door.
+      if (String(draft.codAmount ?? "").trim() !== "") dto.codAmount = Number(draft.codAmount);
       track("parcel_requested");
       const delivery = await api.createDelivery(dto);
       state.activeDeliveryId = delivery.id;
