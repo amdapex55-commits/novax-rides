@@ -119,6 +119,31 @@ for (const f of JS_FILES) {
   }
 }
 
+/* ----------------------------------------------------------------- 2c --- */
+/* An upload purpose the API does not have. presignUpload's first argument is
+   validated server-side with @IsEnum, so a value outside the enum is a 400 on
+   every device, for every file, forever — and the screen that had one
+   ("driver-licence") showed only "Failed — tap to retry", which is
+   indistinguishable from a network problem.
+
+   Kept in sync by hand with UploadPurpose in the backend's
+   presign-upload.dto.ts. That is a real cost, but the alternative is a
+   silent, permanent, device-independent failure that looks exactly like a
+   flaky connection.                                                        */
+{
+  const PURPOSES = new Set([
+    "kyc-doc", "proof-of-delivery", "profile-photo",
+    "restaurant-logo", "restaurant-banner", "menu-item", "pickup-note",
+  ]);
+  for (const f of JS_FILES) {
+    for (const m of read(f).matchAll(/presignUpload\(\s*["'`]([^"'`]+)["'`]/g)) {
+      if (!PURPOSES.has(m[1])) {
+        fail("bad-upload-purpose", `${f} presigns with "${m[1]}", which the API will reject`);
+      }
+    }
+  }
+}
+
 /* ------------------------------------------------------------------ 3 --- */
 /* A route registered in the router but missing from every app's allowlist is
    unreachable: routeAllowed() rejects it and the router bounces to home. The
@@ -244,7 +269,7 @@ for (const f of JS_FILES.filter((p) => p.includes("/views/") && !/ops/i.test(p))
 /* ---------------------------------------------------------------- out --- */
 const byCheck = findings.reduce((a, f) => ((a[f.check] ??= []).push(f.detail), a), {});
 const CHECKS = [
-  "undefined-symbol", "dead-nav-target", "orphan-nav-tab", "unreachable-route", "dead-cta",
+  "undefined-symbol", "dead-nav-target", "orphan-nav-tab", "bad-upload-purpose", "unreachable-route", "dead-cta",
   "missing-endpoint", "undeclared-state", "undefined-css-class", "ships-internal",
 ];
 console.log("\n  Nova Go audit\n");

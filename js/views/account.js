@@ -21,9 +21,10 @@
 //   original document. That gate is not a formality: they carry a passenger.
 
 import { api } from "../api.js";
+import { prepareForUpload } from "../imagePrep.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, esc } from "../ui.js";
+import { toast, esc, alertUser} from "../ui.js";
 import { navigate } from "../router.js";
 import { APP_CONFIG } from "../appMode.js";
 import { track } from "../analytics.js";
@@ -305,19 +306,27 @@ function wireDocUploads(root, docs) {
       stateEl.textContent = "Uploading…";
 
       try {
-        // Same presigned-R2 path every other upload uses. The file goes
-        // straight to storage and never passes through our backend.
+        /* PURPOSE MUST BE ONE OF THE ENUM. This sent "driver-licence",
+           which has never been a valid UploadPurpose — the values are
+           kyc-doc, proof-of-delivery, profile-photo, restaurant-logo,
+           restaurant-banner, menu-item, pickup-note. So presign returned 400
+           on every device and every file type, and always had. A licence IS
+           a KYC document, which is the purpose it should have used. */
+        const { blob, contentType, fileName } = await prepareForUpload(file);
         const { uploadUrl, publicUrl } = await api.presignUpload(
-          "driver-licence",
-          file.type || "image/jpeg",
-          file.name || `${key}.jpg`,
+          "kyc-doc",
+          contentType,
+          fileName || `${key}.jpg`,
         );
         const res = await fetch(uploadUrl, {
           method: "PUT",
-          headers: { "Content-Type": file.type || "image/jpeg" },
-          body: file,
+          headers: { "Content-Type": contentType },
+          body: blob,
         });
-        if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+        if (!res.ok) {
+          const detail = await res.text().catch(() => "");
+          throw new Error(`Storage refused it (${res.status})${detail ? `: ${detail.slice(0, 140)}` : ""}`);
+        }
 
         docs[key] = publicUrl;
         slot.classList.remove("busy");
@@ -327,7 +336,14 @@ function wireDocUploads(root, docs) {
         slot.classList.remove("busy");
         slot.classList.add("error");
         stateEl.textContent = "Failed — tap to retry";
-        console.warn("[NovaGo] licence upload failed:", err?.message);
+        /* console.warn was the ONLY record of why. Nobody reads a phone's
+           console, so every cause looked identical on screen and this bug
+           survived for as long as it did. */
+        const msg = String(err?.message || "Upload failed");
+        alertUser("That photo didn't upload.", {
+          suggestion: `${msg} (${file.type || "unknown type"} · ${Math.round(file.size / 1024)}KB)`,
+        });
+        console.warn("[NovaGo] licence upload failed:", msg);
       }
     });
   });
