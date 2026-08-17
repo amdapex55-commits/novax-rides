@@ -164,7 +164,13 @@ export function renderDriverOnboarding(root) {
           const { blob, contentType, fileName } = await prepareForUpload(file);
           const { uploadUrl, publicUrl } = await api.presignUpload("kyc-doc", contentType, fileName || `${key}.jpg`);
           const put = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": contentType }, body: blob });
-          if (!put.ok) throw new Error("Storage rejected the upload");
+          if (!put.ok) {
+            // R2's own body explains refusals (signature mismatch, expired
+            // URL, content-type disagreement). Losing it and saying "Storage
+            // rejected the upload" is how an hour disappears.
+            const detail = await put.text().catch(() => "");
+            throw new Error(`Storage refused it (${put.status})${detail ? `: ${detail.slice(0, 160)}` : ""}`);
+          }
           // Persist immediately — a driver who uploads then closes the app
           // must not lose the document.
           await api.saveDriverOnboarding({ [key]: publicUrl });
@@ -179,20 +185,31 @@ export function renderDriverOnboarding(root) {
              same red badge to a rider, and neither is their fault. Say which
              it is: one is worth retrying, the other is worth telling us
              about, and "Failed" tells them to do neither. */
-          const msg = String(err?.message || "");
-          if (/not configured|R2/i.test(msg)) {
+          /* SAY WHAT ACTUALLY WENT WRONG.
+             This used to be a red "Failed" badge for every possible cause,
+             which is unhelpful to the rider and useless to whoever has to
+             fix it. The real message is now shown, including the file's own
+             type and size, because the failures seen in production all
+             depended on exactly those two things. */
+          const msg = String(err?.message || "Upload failed");
+          const detail = `${file.type || "unknown type"} · ${Math.round(file.size / 1024)}KB`;
+
+          if (/not configured|R2 is not/i.test(msg)) {
             alertUser("Uploads aren't switched on yet.", {
               suggestion: "This is on our side, not yours — finish the rest of the form and we'll ask for documents once it's fixed.",
               tone: "warn",
             });
-            return;
+          } else if (/contentType must be one of/i.test(msg)) {
+            alertUser("That file type isn't supported.", {
+              suggestion: `Try taking a fresh photo with the camera instead of picking from the library. (${detail})`,
+            });
+          } else if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) {
+            alertUser("The upload couldn't reach our storage.", {
+              suggestion: "Check your connection and try again — nothing was lost.",
+            });
+          } else {
+            alertUser("That photo didn't upload.", { suggestion: `${msg} (${detail})` });
           }
-          toast(
-            /R2|configur|storage/i.test(err.message || "")
-              ? "File storage isn't configured on the server yet — this is an infra gap, not a bug in this screen."
-              : err.message || "Upload failed",
-            true,
-          );
         }
       });
     });

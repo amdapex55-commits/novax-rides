@@ -61,15 +61,51 @@ export async function prepareForUpload(file) {
 
     return { blob, contentType: "image/jpeg", fileName: renameToJpg(file.name) };
   } catch {
-    // Decoding can fail — a HEIC on a browser with no HEIC codec is the usual
-    // case. Send the original and let the server decide; a clear 400 with a
-    // real message beats a silent failure here.
+    /* Decoding failed. Android Chrome cannot decode HEIC AT ALL, which is
+       precisely the case that needs converting — so this path is not an edge
+       case, it is a whole platform.
+
+       The first version of this fallback handed back file.type unchanged,
+       which meant it returned "image/heic" and the presign call rejected it
+       exactly as before. The fix converted nothing and changed nothing on
+       Android.
+
+       The bytes are fine and the server now accepts these types, so the only
+       job here is to never send a label the server will refuse: no empty
+       string, no invented mime type. */
     return {
       blob: file,
-      contentType: file.type || "image/jpeg",
+      contentType: safeContentType(file),
       fileName: file.name || "upload.jpg",
     };
   }
+}
+
+/** A content type the presign endpoint is known to accept, every time. */
+const BY_EXTENSION = {
+  jpg: "image/jpeg", jpeg: "image/jpeg", jpe: "image/jpeg",
+  png: "image/png", webp: "image/webp", pdf: "application/pdf",
+  heic: "image/heic", heif: "image/heif",
+};
+const ACCEPTED = new Set([
+  "image/jpeg", "image/png", "image/webp", "application/pdf",
+  "image/heic", "image/heif", "image/jpg", "image/pjpeg",
+]);
+
+export function safeContentType(file) {
+  const declared = String(file?.type || "").toLowerCase().trim();
+  if (ACCEPTED.has(declared)) return declared;
+
+  // The type is missing or something the server will not take. The filename
+  // is the next best evidence, and phones name their files honestly even
+  // when they label them badly.
+  const ext = String(file?.name || "").toLowerCase().split(".").pop();
+  if (BY_EXTENSION[ext]) return BY_EXTENSION[ext];
+
+  // Nothing to go on. JPEG is the overwhelmingly likely truth for a file
+  // chosen through accept="image/*", and a wrong-but-accepted label that
+  // stores the bytes beats a correct label that loses them.
+  return "image/jpeg";
 }
 
 /** createImageBitmap handles EXIF orientation; the <img> fallback does not,
