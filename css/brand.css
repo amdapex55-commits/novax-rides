@@ -39,4 +39,82 @@
      contrast against white text in a way the lavender pair did not. */
   --brand-gradient: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-800) 100%);
   --brand-glow: 0 8px 30px rgba(124, 58, 237, 0.32);
+
+  /* Chrome/truck ramp. Lives here because .nx-chrome lives here — a custom
+     property used by a class must ship in the same stylesheet as the class,
+     or the declaration silently dies wherever the class is used. */
+  --brand-gold: #f5a524;
+  --nx-chrome-1: #fff8e1;
+  --nx-chrome-2: #f5a524;
+  --nx-chrome-3: #b45309;
 }
+
+/* ==========================================================================
+   Shared brand type treatments.
+
+   These lived in landing.css, which ONLY index.html loads — so when the
+   welcome screens started using .nx-chrome, "Pay in cash." rendered as plain
+   white text in the app while looking correct on the marketing site. A class
+   used by five pages cannot live in the stylesheet of one.
+   ========================================================================== */
+/* ---- Chrome lettering ---------------------------------------------------
+   Truck lettering is metal: a hard light band across the middle, dark
+   below, a hairline outline holding it together. This is that in a
+   background-clip, which stays crisp at any size and costs nothing. */
+.nx-chrome {
+  /* A visible colour FIRST. color:transparent only pays off if the clipped
+     background actually paints; when it does not — and on the dark app
+     background it did not — the text vanishes and leaves nothing but the
+     stroke. Gold is the fallback, and the gradient is an upgrade on top of
+     it, not a prerequisite for seeing the word at all. */
+  color: var(--brand-gold, #f5a524);
+  /* NO mid-band highlight. Two attempts at a bright stripe across the
+     middle both read as a strikethrough through the word — at heading
+     weight a light horizontal line inside a letterform is a line through
+     it, whatever it was meant to be.
+     Real chrome lettering does not have a stripe: it has a HORIZON, where
+     the polished surface stops reflecting sky and starts reflecting
+     ground. So the gradient flips once, high, and the contrast across that
+     flip does all the work. */
+  background: linear-gradient(180deg,
+    #fffdf5 0%,
+    #ffe9a8 44%,
+    #d98f0d 56%,
+    var(--nx-chrome-3) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  /* Paint-order keeps the stroke behind the fill so the letterform stays
+     readable instead of being eaten by its own outline. */
+  /* A hard 2px black offset under a light band is what completed the
+     strikethrough illusion. A soft shadow gives the same lift without
+     drawing an edge across the letterforms. */
+  -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.28);
+  paint-order: stroke fill;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+}
+
+/* ---- Urdu ---------------------------------------------------------------
+   Deliberately NO webfont. A Nastaliq file is 100KB+ and this project made
+   a considered decision not to ship an Urdu font; one decorative line is
+   not a reason to reverse it. Android and iOS both render Urdu from a
+   system face, so the script is correct even where the calligraphy is not.
+   If real Nastaliq is wanted later it should be a subset of exactly these
+   glyphs, measured before it ships. */
+.nx-urdu {
+  font-family: "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Urdu Typesetting", serif;
+  direction: rtl;
+  unicode-bidi: isolate;
+  line-height: 2.1;
+}
+
+/* The gradient fill, applied only where it can actually render. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .nx-chrome { color: transparent; }
+}
+
+/* Urdu as a standalone line.
+   .nx-urdu sets direction:rtl, which is correct for the script — but on a
+   full-width block it also drove the line to the right-hand edge, away from
+   the English it sits under. The script stays RTL; the BLOCK aligns with
+   everything else. */
+.nx-urdu { text-align: left; }

@@ -705,50 +705,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .nx-truck-rule.flip { transform: rotate(180deg); }
 
-/* ---- Chrome lettering ---------------------------------------------------
-   Truck lettering is metal: a hard light band across the middle, dark
-   below, a hairline outline holding it together. This is that in a
-   background-clip, which stays crisp at any size and costs nothing. */
-.nx-chrome {
-  /* NO mid-band highlight. Two attempts at a bright stripe across the
-     middle both read as a strikethrough through the word — at heading
-     weight a light horizontal line inside a letterform is a line through
-     it, whatever it was meant to be.
-     Real chrome lettering does not have a stripe: it has a HORIZON, where
-     the polished surface stops reflecting sky and starts reflecting
-     ground. So the gradient flips once, high, and the contrast across that
-     flip does all the work. */
-  background: linear-gradient(180deg,
-    #fffdf5 0%,
-    #ffe9a8 44%,
-    #d98f0d 56%,
-    var(--nx-chrome-3) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  /* Paint-order keeps the stroke behind the fill so the letterform stays
-     readable instead of being eaten by its own outline. */
-  /* A hard 2px black offset under a light band is what completed the
-     strikethrough illusion. A soft shadow gives the same lift without
-     drawing an edge across the letterforms. */
-  -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.28);
-  paint-order: stroke fill;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
-}
+/* .nx-chrome moved to brand.css — the apps use it too. */
 
-/* ---- Urdu ---------------------------------------------------------------
-   Deliberately NO webfont. A Nastaliq file is 100KB+ and this project made
-   a considered decision not to ship an Urdu font; one decorative line is
-   not a reason to reverse it. Android and iOS both render Urdu from a
-   system face, so the script is correct even where the calligraphy is not.
-   If real Nastaliq is wanted later it should be a subset of exactly these
-   glyphs, measured before it ships. */
-.nx-urdu {
-  font-family: "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Urdu Typesetting", serif;
-  direction: rtl;
-  unicode-bidi: isolate;
-  line-height: 2.1;
-}
+/* .nx-urdu moved to brand.css — the apps use it too. */
 
 /* ---- The tagline lockup ---- */
 .nx-tagline-lockup {

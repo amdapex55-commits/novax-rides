@@ -77,15 +77,6 @@ const PROOF_THEME = {
 };
 
 function renderCustomerWelcome(root) {
-  /* A WELCOME SCREEN IS NOT A LANDING PAGE.
-     The person has already found us, chosen to open the app, and is holding
-     it. Selling them four benefit cards before showing a button treats an
-     opened app like a cold visitor — and pushed the one control that matters
-     off the bottom of a 812px screen.
-
-     So: say what this is, give the number that decides it, get out of the
-     way. Three facts on ONE line instead of four cards, and the CTA sitting
-     where a thumb already rests. */
   const soon = SERVICES.food && !SERVICES.food.live;
   const alsoLive = [SERVICES.parcel, SERVICES.errand]
     .filter((x) => x && x.live)
@@ -93,53 +84,74 @@ function renderCustomerWelcome(root) {
 
   root.innerHTML = `
     <div class="page nx-wel">
-      <div class="nx-wel-glow" aria-hidden="true"></div>
-
-      <header class="nx-wel-top">
-        <div class="nx-wel-mark">${icon("bike", 26, 2)}</div>
-        <span class="nx-wel-live">
-          <span class="nx-live-dot"></span> Live in ${esc(ZONE.name)}
-        </span>
-      </header>
-
-      <div class="nx-wel-hero">
-        <h1 class="nx-wel-h1">
-          Beat the traffic.<br/><span class="nx-chrome">Pay in cash.</span>
-        </h1>
-        <p class="nx-urdu nx-wel-urdu" lang="ur">بس نووا کرو</p>
-        <p class="nx-wel-sub">
-          A bike to your door in ${esc(ZONE.name)}. The fare is fixed before
-          you book, and cash is the only thing you need.
-        </p>
+      <!-- The screen is a COMPOSITION, not a form with a button at the
+           bottom. The previous version anchored content to the top and
+           pushed the CTA to the floor with margin-top:auto, which on a tall
+           screen produced exactly the void it was meant to prevent.
+           Now: a scene fills the upper half and a solid sheet carries the
+           words. Nothing stretches, so nothing can leave a hole. -->
+      <div class="nx-wel-scene" aria-hidden="true">
+        <svg viewBox="0 0 375 300" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="wroute" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--brand-400)"/>
+              <stop offset="100%" stop-color="var(--brand-600)"/>
+            </linearGradient>
+            <radialGradient id="wglow" cx="50%" cy="45%">
+              <stop offset="0%" stop-color="var(--brand-500)" stop-opacity=".55"/>
+              <stop offset="100%" stop-color="var(--brand-900)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect width="375" height="300" fill="url(#wglow)"/>
+          <!-- Streets. Not a real map: a suggestion of one, at an angle so
+               it reads as a city rather than graph paper. -->
+          <g stroke="currentColor" stroke-width="1" opacity=".16" class="nx-wel-grid">
+            <path d="M-40 70 H420 M-40 130 H420 M-40 190 H420 M-40 250 H420"/>
+            <path d="M60 -20 V320 M150 -20 V320 M240 -20 V320 M320 -20 V320"/>
+          </g>
+          <!-- The route, drawing itself once. -->
+          <path class="nx-wel-route" d="M72 232 C 118 232 122 168 158 168 S 232 150 258 104"
+                fill="none" stroke="url(#wroute)" stroke-width="4.5"
+                stroke-linecap="round"/>
+          <circle class="nx-wel-dot-a" cx="72" cy="232" r="7"/>
+          <g class="nx-wel-pin" transform="translate(258 104)">
+            <path d="M0 10 C -9 -2 -13 -7 -13 -13 A 13 13 0 0 1 13 -13 C 13 -7 9 -2 0 10 Z"/>
+            <circle cx="0" cy="-13" r="4.6" class="nx-wel-pin-eye"/>
+          </g>
+        </svg>
       </div>
 
-      <!-- Three facts, one row. These are the answers to the only three
-           questions a first-time customer actually has: what does it cost,
-           who turns up, and can I see them coming. -->
-      <ul class="nx-wel-facts">
-        <li><span class="nx-wel-fact-v">Rs ${PRICING.BIKE.minimum}</span><span class="nx-wel-fact-l">minimum fare</span></li>
-        <li><span class="nx-wel-fact-v">CNIC</span><span class="nx-wel-fact-l">rider checked by a person</span></li>
-        <li><span class="nx-wel-fact-v">Live</span><span class="nx-wel-fact-l">track and share the ride</span></li>
-      </ul>
+      <section class="nx-wel-sheet">
+        <header class="nx-wel-brandline">
+          <span class="nx-wel-mark">${icon("bike", 20, 2)}</span>
+          <span class="nx-wel-live"><span class="nx-live-dot"></span> Live in ${esc(ZONE.name)}</span>
+        </header>
 
-      <div class="nx-wel-actions">
+        <h1 class="nx-wel-h1">Beat the traffic.<br/><span class="nx-chrome">Pay in cash.</span></h1>
+        <p class="nx-urdu nx-wel-urdu" lang="ur">بس نووا کرو</p>
+        <p class="nx-wel-sub">Fixed fare before you book. Cash when you arrive.</p>
+
+        <!-- Three facts, equal columns, each one line. The previous version
+             let one label wrap to two lines and the row went ragged. -->
+        <ul class="nx-wel-facts">
+          <li><b>Rs ${PRICING.BIKE.minimum}</b><span>minimum</span></li>
+          <li><b>CNIC</b><span>rider checked</span></li>
+          <li><b>Live</b><span>track &amp; share</span></li>
+        </ul>
+
         <button id="startBtn" class="btn btn-primary btn-block nx-wel-cta">
           Book a bike ${icon("arrow-forward", 18)}
         </button>
-        <button id="guestBtn" class="btn btn-ghost btn-block">Look around first</button>
-      </div>
+        <button id="guestBtn" class="nx-wel-secondary">Look around first</button>
 
-      <footer class="nx-wel-foot">
         ${alsoLive.length || soon ? `<p class="nx-wel-next">
-          ${alsoLive.length ? `Bike rides, ${alsoLive.join(" &amp; ")} too` : "Bike rides"}${soon ? " &middot; food coming soon" : ""}
+          ${alsoLive.length ? `Also ${alsoLive.join(" &amp; ")}` : ""}${alsoLive.length && soon ? " &middot; " : ""}${soon ? "food coming soon" : ""}
         </p>` : ""}
         <p class="nx-wel-legal">
-          By continuing you agree to our
-          <a href="#/legal/terms">Terms</a>,
-          <a href="#/legal/privacy">Privacy Policy</a> and
-          <a href="#/legal/safety">Safety Policy</a>.
+          By continuing you agree to our <a href="#/legal/terms">Terms</a>,
+          <a href="#/legal/privacy">Privacy</a> and <a href="#/legal/safety">Safety</a> policies.
         </p>
-      </footer>
+      </section>
     </div>
   `;
 
@@ -197,65 +209,95 @@ const PARTNER_COPY = {
 
 function renderPartnerWelcome(root) {
   const c = PARTNER_COPY[APP] || PARTNER_COPY.driver;
-  // Each partner app owns its accent, so a rider and a restaurant owner are
-  // not looking at the identical screen with different words.
   const accent = APP === "merchant" ? "food" : APP === "ops" ? "ops" : "ride";
 
-  /* THE NUMBER IS THE HEADLINE.
-     It used to sit in a large card BELOW a headline and a paragraph, so the
-     first thing a rider read was "Your bike. Your hours." — which is a
-     slogan — and the thing they actually decide on was third.
-     Someone weighing up whether to sign up is answering one question: what
-     do I keep. That goes first, at the size it deserves. */
+  // What you keep. The one number the decision turns on, so it leads.
   const share = APP === "driver"
-    ? { value: 100 - COMMERCIALS.driverCommissionPct, label: "of every fare is yours, in cash, the same day" }
+    ? {
+        value: 100 - COMMERCIALS.driverCommissionPct,
+        label: "of every fare, in cash, the same day",
+        // Adds to the number rather than repeating it — c.sub already says
+        // the share and the terms, so pasting it here said it all twice.
+        tail: "Work the hours you choose, on the bike you already own.",
+      }
     : APP === "merchant"
-      ? { value: 100 - COMMERCIALS.restaurantCommissionPct, label: "of every order subtotal is yours" }
+      ? {
+          value: 100 - COMMERCIALS.restaurantCommissionPct,
+          label: "of every order subtotal",
+          tail: "You set the menu, the prices and the hours.",
+        }
       : null;
 
   root.innerHTML = `
     <div class="page nx-wel nx-wel-${accent}">
-      <div class="nx-wel-glow" aria-hidden="true"></div>
-
-      <header class="nx-wel-top">
-        <div class="nx-wel-mark">${icon(c.icon, 26, 2)}</div>
-        <span class="nx-wel-live">${esc(c.heading)}</span>
-      </header>
-
-      <div class="nx-wel-hero">
-        ${share ? `
-          <p class="nx-wel-figure"><span class="nx-chrome">${share.value}%</span></p>
-          <p class="nx-wel-figure-label">${esc(share.label)}</p>
-        ` : `<h1 class="nx-wel-h1">${esc(c.heading)}</h1>`}
-        <p class="nx-wel-sub">${esc(c.sub)}</p>
+      <!-- The screen is a COMPOSITION, not a form with a button at the
+           bottom. The previous version anchored content to the top and
+           pushed the CTA to the floor with margin-top:auto, which on a tall
+           screen produced exactly the void it was meant to prevent.
+           Now: a scene fills the upper half and a solid sheet carries the
+           words. Nothing stretches, so nothing can leave a hole. -->
+      <div class="nx-wel-scene" aria-hidden="true">
+        <svg viewBox="0 0 375 300" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="wroute" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--brand-400)"/>
+              <stop offset="100%" stop-color="var(--brand-600)"/>
+            </linearGradient>
+            <radialGradient id="wglow" cx="50%" cy="45%">
+              <stop offset="0%" stop-color="var(--brand-500)" stop-opacity=".55"/>
+              <stop offset="100%" stop-color="var(--brand-900)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect width="375" height="300" fill="url(#wglow)"/>
+          <!-- Streets. Not a real map: a suggestion of one, at an angle so
+               it reads as a city rather than graph paper. -->
+          <g stroke="currentColor" stroke-width="1" opacity=".16" class="nx-wel-grid">
+            <path d="M-40 70 H420 M-40 130 H420 M-40 190 H420 M-40 250 H420"/>
+            <path d="M60 -20 V320 M150 -20 V320 M240 -20 V320 M320 -20 V320"/>
+          </g>
+          <!-- The route, drawing itself once. -->
+          <path class="nx-wel-route" d="M72 232 C 118 232 122 168 158 168 S 232 150 258 104"
+                fill="none" stroke="url(#wroute)" stroke-width="4.5"
+                stroke-linecap="round"/>
+          <circle class="nx-wel-dot-a" cx="72" cy="232" r="7"/>
+          <g class="nx-wel-pin" transform="translate(258 104)">
+            <path d="M0 10 C -9 -2 -13 -7 -13 -13 A 13 13 0 0 1 13 -13 C 13 -7 9 -2 0 10 Z"/>
+            <circle cx="0" cy="-13" r="4.6" class="nx-wel-pin-eye"/>
+          </g>
+        </svg>
       </div>
 
-      ${c.points.length ? `
-        <ul class="nx-wel-points">
-          ${c.points.map((pt) => `
-            <li>
-              <span class="nx-wel-point-ic">${icon(pt.icon, 18)}</span>
-              <span class="nx-wel-point-text">
-                <strong>${esc(pt.label)}</strong>
-                <span>${esc(pt.sub)}</span>
-              </span>
-            </li>`).join("")}
-        </ul>` : ""}
+      <section class="nx-wel-sheet">
+        <header class="nx-wel-brandline">
+          <span class="nx-wel-mark">${icon(c.icon, 20, 2)}</span>
+          <span class="nx-wel-live">${esc(c.heading)}</span>
+        </header>
 
-      <div class="nx-wel-actions">
+        ${share ? `
+          <h1 class="nx-wel-h1 nx-wel-figure">
+            <span class="nx-chrome">${share.value}%</span> yours
+          </h1>
+          <p class="nx-wel-sub">${esc(share.label)}. ${esc(share.tail)}</p>
+        ` : `
+          <h1 class="nx-wel-h1">${esc(c.heading)}</h1>
+          <p class="nx-wel-sub">${esc(c.sub)}</p>
+        `}
+
+        ${c.points.length ? `
+          <ul class="nx-wel-facts">
+            ${c.points.slice(0, 3).map((pt) => `
+              <li><b>${esc(pt.label.split(" ")[0])}</b><span>${esc(shortPoint(pt.label))}</span></li>`).join("")}
+          </ul>` : ""}
+
         <button id="startBtn" class="btn btn-primary btn-block nx-wel-cta">
           ${esc(c.cta)} ${icon("arrow-forward", 18)}
         </button>
-        ${c.explainerPath ? `<button id="explainerBtn" class="btn btn-ghost btn-block">${esc(c.explainerLabel)}</button>` : ""}
-      </div>
+        ${c.explainerPath ? `<button id="explainerBtn" class="nx-wel-secondary">${esc(c.explainerLabel)}</button>` : ""}
 
-      ${c.legalPath ? `
-        <footer class="nx-wel-foot">
-          <p class="nx-wel-legal">
-            By continuing you agree to the
-            <a href="#${c.legalPath}">${esc(c.legalLabel)}</a>.
-          </p>
-        </footer>` : ""}
+        ${c.legalPath ? `<p class="nx-wel-legal">
+          By continuing you agree to the <a href="#${c.legalPath}">${esc(c.legalLabel)}</a>.
+        </p>` : ""}
+      </section>
     </div>
   `;
 
@@ -264,6 +306,14 @@ function renderPartnerWelcome(root) {
     navigate("/signin");
   });
   root.querySelector("#explainerBtn")?.addEventListener("click", () => navigate(c.explainerPath));
+}
+
+/* The fact row needs a short second line, and the points were written as
+   full sentences. Rather than duplicate the copy, drop the first word (which
+   is already the bold label) and keep it to a few words. */
+function shortPoint(label) {
+  const rest = label.split(" ").slice(1).join(" ");
+  return rest || label;
 }
 
 export function renderWelcome(root) {
