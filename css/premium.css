@@ -2151,34 +2151,62 @@
 }
 
 /* ---- The scene ---------------------------------------------------------
-   No photograph exists yet, so this is built from the product's own
-   vocabulary: a route drawn between two points across a suggestion of a
-   street grid. It fills the space with something that means something,
-   which is the whole difference between composition and emptiness. */
+   No photograph exists yet, so this is built: a rider already on the way,
+   on a street layout, at night. The point is that it is a MOMENT from the
+   product rather than an ornament — which is why the route has a travelled
+   half, the bike sits on the join, and the pin is still waiting. */
 .nx-wel-scene {
   position: relative;
   flex: 0 0 auto;
-  height: clamp(200px, 38vh, 320px);
-  color: #fff;
+  height: clamp(210px, 40vh, 330px);
   overflow: hidden;
+  background: #0b0713;
 }
 .nx-wel-scene svg { width: 100%; height: 100%; display: block; }
-.nx-wel-grid path { stroke-dasharray: 2 6; }
-/* Drawn once on arrival. A looping route says "loading"; this says "here is
-   a trip". */
-.nx-wel-route {
-  stroke-dasharray: 320;
-  stroke-dashoffset: 320;
-  animation: nx-wel-draw 1.15s cubic-bezier(.22,.68,.28,1) .12s forwards;
+
+/* Blocks first, so the roads read as gaps between them. */
+.nx-wel-blocks rect { fill: #fff; opacity: .035; }
+.nx-wel-roads path { stroke: #fff; stroke-width: 1; opacity: .11; }
+
+.nx-wel-route-bed {
+  fill: none; stroke: #fff; stroke-width: 4; opacity: .13;
+  stroke-linecap: round;
 }
-@keyframes nx-wel-draw { to { stroke-dashoffset: 0; } }
-.nx-wel-dot-a { fill: #fff; opacity: 0; animation: nx-wel-pop .3s ease-out .18s forwards; }
-.nx-wel-pin { fill: var(--brand-400); opacity: 0; transform-box: fill-box; transform-origin: 50% 100%;
-  animation: nx-wel-drop .42s cubic-bezier(.2,1.5,.35,1) 1.1s forwards; }
-.nx-wel-pin-eye { fill: #1b1030; }
-@keyframes nx-wel-pop  { to { opacity: 1; } }
-@keyframes nx-wel-drop { from { opacity: 0; transform: translateY(-14px) scale(.8); }
-                         to   { opacity: 1; transform: none; } }
+.nx-wel-route {
+  fill: none; stroke: url(#wtravelled); stroke-width: 4.5; stroke-linecap: round;
+  stroke-dasharray: 300; stroke-dashoffset: 300;
+  animation: nx-wel-draw 1.5s cubic-bezier(.3,.7,.3,1) .15s forwards;
+}
+@keyframes nx-wel-draw { to { stroke-dashoffset: 96; } } /* stops short: the trip is still running */
+
+.nx-wel-halo { fill: var(--brand-400); opacity: 0; animation: nx-wel-halo 2.6s ease-out .5s infinite; }
+@keyframes nx-wel-halo {
+  0% { opacity: .5; transform: scale(.6); transform-origin: 64px 246px; }
+  70% { opacity: 0; transform: scale(1.9); transform-origin: 64px 246px; }
+  100% { opacity: 0; }
+}
+.nx-wel-dot-a { fill: #fff; opacity: 0; animation: nx-wel-pop .3s ease-out .2s forwards; }
+@keyframes nx-wel-pop { to { opacity: 1; } }
+
+/* The rider rides the same curve the route draws along. */
+.nx-wel-bike { opacity: 0; animation: nx-wel-ride 1.5s cubic-bezier(.3,.7,.3,1) .15s forwards; }
+.nx-wel-bike > circle:first-child { fill: var(--brand-500); }
+.nx-wel-bike-g { stroke: #fff; }
+@keyframes nx-wel-ride {
+  0%   { opacity: 0; transform: translate(64px, 246px); }
+  12%  { opacity: 1; }
+  100% { opacity: 1; transform: translate(214px, 143px); }
+}
+
+.nx-wel-pin {
+  fill: var(--brand-400); opacity: 0;
+  animation: nx-wel-drop .5s cubic-bezier(.2,1.45,.35,1) 1.5s forwards;
+}
+.nx-wel-pin-eye { fill: #0b0713; }
+@keyframes nx-wel-drop {
+  from { opacity: 0; transform: translate(262px, 78px) scale(.7); }
+  to   { opacity: 1; transform: translate(262px, 96px) scale(1); }
+}
 
 /* ---- The sheet --------------------------------------------------------- */
 .nx-wel-sheet {
@@ -2257,7 +2285,10 @@
   .nx-wel-sheet { gap: 9px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nx-wel-route { animation: none; stroke-dashoffset: 0; }
-  .nx-wel-dot-a, .nx-wel-pin { animation: none; opacity: 1; transform: none; }
+  .nx-wel-route { animation: none; stroke-dashoffset: 96; }
+  .nx-wel-halo { animation: none; opacity: 0; }
+  .nx-wel-dot-a { animation: none; opacity: 1; }
+  .nx-wel-bike { animation: none; opacity: 1; transform: translate(214px, 143px); }
+  .nx-wel-pin { animation: none; opacity: 1; transform: translate(262px, 96px); }
 }
 }
