@@ -169,6 +169,18 @@ export function renderDriverOnboarding(root) {
         } catch (err) {
           badge.textContent = "Failed";
           badge.className = "badge badge-error";
+          /* Storage being unconfigured and a photo being too large are the
+             same red badge to a rider, and neither is their fault. Say which
+             it is: one is worth retrying, the other is worth telling us
+             about, and "Failed" tells them to do neither. */
+          const msg = String(err?.message || "");
+          if (/not configured|R2/i.test(msg)) {
+            alertUser("Uploads aren't switched on yet.", {
+              suggestion: "This is on our side, not yours — finish the rest of the form and we'll ask for documents once it's fixed.",
+              tone: "warn",
+            });
+            return;
+          }
           toast(
             /R2|configur|storage/i.test(err.message || "")
               ? "File storage isn't configured on the server yet — this is an infra gap, not a bug in this screen."

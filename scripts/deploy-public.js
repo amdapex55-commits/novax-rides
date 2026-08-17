@@ -136,6 +136,12 @@ const CSP_SOURCES = {
     "https://nominatim.openstreetmap.org",
     "https://photon.komoot.io",
     "https://router.project-osrm.org",
+    /* CLOUDFLARE R2. Driver documents are uploaded straight from the phone
+       to a presigned R2 URL — the file never passes through our backend, so
+       the browser needs to be allowed to reach the bucket host directly.
+       Without this the PUT is blocked by the CSP itself and the failure
+       looks like a broken upload button rather than a policy decision. */
+    "https://*.r2.cloudflarestorage.com",
     "https://*.ingest.sentry.io",
     "https://*.ingest.de.sentry.io",
     "https://*.ingest.us.sentry.io",
@@ -146,7 +152,10 @@ const CSP_SOURCES = {
      An injected stylesheet is a far weaker primitive than an injected script,
      and script-src is where the real control is. */
   style: ["'self'", "https://unpkg.com", "'unsafe-inline'"],
-  img: ["'self'", "data:", "blob:", "https://api.mapbox.com", "https://*.basemaps.cartocdn.com", "https://*.tile.openstreetmap.org"],
+  /* r2.dev and the bucket host are where KYC documents are SERVED from —
+     the ops approvals screen renders them as <img>, so blocking them here
+     would mean a dispatcher approving a licence they cannot see. */
+  img: ["'self'", "data:", "blob:", "https://api.mapbox.com", "https://*.basemaps.cartocdn.com", "https://*.tile.openstreetmap.org", "https://*.r2.dev", "https://*.r2.cloudflarestorage.com"],
   font: ["'self'", "data:"],
   media: ["'self'", "blob:", "https://novax-backend-production-68af.up.railway.app"],
 };
