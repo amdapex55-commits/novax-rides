@@ -50,6 +50,14 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   position: fixed; top: 0; left: 0; right: 0; z-index: 200;
   padding: 16px 0;
   transition: background 400ms var(--nx-ease), backdrop-filter 400ms, padding 400ms;
+  /* A floor of legibility that does NOT depend on JavaScript.
+     .scrolled (added by landing.js) is what gives the nav its solid bar, so
+     when that script failed the nav went fully transparent and the fixed
+     wordmark sat straight on top of the hero headline — unreadable, and it
+     looked like a layout bug rather than a dead script. A gradient scrim
+     costs nothing over the dark hero and keeps the nav readable no matter
+     what happens further down the page. */
+  background: linear-gradient(to bottom, rgba(5, 7, 10, 0.72), rgba(5, 7, 10, 0));
 }
 .nx-nav.scrolled {
   padding: 11px 0;

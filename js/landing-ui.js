@@ -80,7 +80,7 @@ const RIDE_SEQUENCE = [
     sheet: `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <span class="nx-chip ride">Rider on the way</span>
-        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#98a5ad;letter-spacing:0.05em;">#A78BFA</span>
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#98a5ad;letter-spacing:0.05em;">#NX4417</span>
       </div>
       <div class="nx-row" style="margin-top:15px;padding-bottom:14px;border-bottom:1px solid #eef2f0;">
         <div class="nx-av">B</div>
@@ -364,7 +364,7 @@ const SERVICE_SCREENS = {
     sheet: `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <span class="nx-chip ride">2 min away</span>
-        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#98a5ad;">#A78BFA</span>
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#98a5ad;">#NX4417</span>
       </div>
       <div class="nx-row" style="margin-top:15px;padding-bottom:13px;border-bottom:1px solid #eef2f0;">
         <div class="nx-av">B</div>
