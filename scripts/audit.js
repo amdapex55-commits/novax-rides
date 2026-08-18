@@ -266,11 +266,42 @@ for (const f of JS_FILES.filter((p) => p.includes("/views/") && !/ops/i.test(p))
   }
 }
 
+/* ----------------------------------------------------------------- 2f --- */
+/* A Leaflet content sink handed a STRING.
+
+   bindTooltip, bindPopup, setTooltipContent and setPopupContent all parse a
+   string argument as HTML. The live-fleet marker label is built from a
+   driver's own name and phone number, so a driver who set their name to an
+   <img onerror> payload had it execute inside the ops console — the one
+   session that approves drivers, suspends accounts and moves money. It is
+   invisible in review because the sink does not look like innerHTML.
+
+   Passing a DOM node instead makes Leaflet append it rather than parse it,
+   which is why the fix is `document.createElement` plus `textContent`. This
+   rule keeps it that way: any of these calls whose first argument is not a
+   plain identifier (i.e. a variable holding an element) is refused.          */
+{
+  const SINKS = /\.(bindTooltip|bindPopup|setTooltipContent|setPopupContent)\(\s*([^,)]+)/g;
+  for (const f of JS_FILES) {
+    const body = read(f);
+    for (const [, sink, arg] of body.matchAll(SINKS)) {
+      const a = arg.trim();
+      // A bare identifier is a variable — assumed to hold a DOM node, which
+      // is the shape the fix uses. A template literal, a string, a call or a
+      // concatenation is content being built, and content built here is HTML.
+      const isPlainIdentifier = /^[A-Za-z_$][\w$]*$/.test(a);
+      if (!isPlainIdentifier) {
+        fail("leaflet-html-sink", `${f} passes a built value to ${sink}() — build a node and set textContent instead`);
+      }
+    }
+  }
+}
+
 /* ---------------------------------------------------------------- out --- */
 const byCheck = findings.reduce((a, f) => ((a[f.check] ??= []).push(f.detail), a), {});
 const CHECKS = [
   "undefined-symbol", "dead-nav-target", "orphan-nav-tab", "bad-upload-purpose", "unreachable-route", "dead-cta",
-  "missing-endpoint", "undeclared-state", "undefined-css-class", "ships-internal",
+  "missing-endpoint", "undeclared-state", "undefined-css-class", "leaflet-html-sink", "ships-internal",
 ];
 console.log("\n  Nova Go audit\n");
 for (const c of CHECKS) {
