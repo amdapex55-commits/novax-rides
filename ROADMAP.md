@@ -3,7 +3,8 @@
 Numbered so we can say "do 14" and both know what that means.
 Status: **[DONE]** · **[YOU]** needs you (account, money, ID, a Mac) · **[TODO]** buildable.
 
-Last updated 2026-08-14.
+Last updated 2026-08-18. See **Session log** at the foot of this file
+for everything that changed between 08-14 and 08-18.
 
 ---
 
@@ -49,9 +50,13 @@ APNs key, no device-token storage, no send path. This is a real build (item
    bank. Without it a blocked driver is told they owe money and not how to pay.
 5. **[YOU] Buy `novago.pk`** and point it at Pages. The app already references
    it; every store listing needs a real domain.
-6. **[TODO] Run one complete trip end to end.** Request → match → accept →
-   arrive → start → complete → rate. This has never happened. Everything below
-   assumes the product works; this is the test that says whether it does.
+6. **[DONE 2026-08-17] Run one complete trip end to end.** Request → match →
+   accept → arrive → start → complete → rate. **This has now happened**, driven
+   in two browsers side by side with the two screens correlated at every
+   transition. Fare Rs 215, commission Rs 32.25, net Rs 182.75, and each number
+   checked against what the app showed rather than what the API returned.
+   The whole roadmap below assumed the product works; that is now tested
+   instead of hoped. See the Session log for the eleven bugs this flushed out.
 
 ## Stage 1 — Web becomes the trust + acquisition layer
 
@@ -113,10 +118,18 @@ APNs key, no device-token storage, no send path. This is a real build (item
     **[YOU] What remains:** create a Firebase project, upload an APNs key to
     it, and set `PUSH_PROVIDER=fcm` + `FCM_SERVICE_ACCOUNT_JSON` in Railway.
     Until then it runs in console mode and delivers nothing.
-22. **[TODO] Background location for the driver app only.** `BACKGROUND-GPS.md`
-    documents the gap: browser geolocation stops when the app backgrounds, so a
-    driver believes they are online while sending nothing. Needs a real
-    foreground service. **The single biggest technical risk in the whole list.**
+22. **[DONE, needs a real handset] Background location for the driver app
+    only.** Built, not stale-TODO as this file said until 08-18.
+    `@capacitor-community/background-geolocation` is installed,
+    `js/driverLocation.js` wraps it (falling back to browser geolocation on the
+    web build), `js/views/driverHome.js` drives it, and `scripts/select-app.js`
+    writes `ACCESS_BACKGROUND_LOCATION` + `FOREGROUND_SERVICE` +
+    `FOREGROUND_SERVICE_LOCATION` into `AndroidManifest.xml` **for the driver
+    build only** — the customer build ships neither.
+    **What remains is verification, not construction:** this has never run on a
+    physical Android phone. It stays the biggest technical risk in the list
+    until it survives item 39's device matrix, because the failure mode is a
+    driver who believes they are online and is sending nothing.
 23. **[TODO] Deferred location permission on the customer app.** Ask at "Where
     are you going?", not on launch, with the purpose string. Apple requires
     relevance; asking early is a common rejection.
@@ -206,3 +219,176 @@ APNs key, no device-token storage, no send path. This is a real build (item
 - "Instant approval" framing — no such thing exists for either store.
 - The `track.novago.pk` / `api.novago.pk` subdomain split — real, but it is
   infrastructure polish and nothing here is blocked on it.
+
+---
+
+# Session log — 2026-08-14 → 2026-08-18
+
+**Read this first if you are a new session picking Nova Go up cold.** The
+numbered list above is the plan; this is the state of the ground. Everything
+here is committed and pushed — both repos were clean at the time of writing.
+
+## Orientation in ninety seconds
+
+Two repos, both under `~/Documents/GitHub/`:
+
+- **`novax-rides`** — the frontend. Vanilla ES modules, **no bundler, no build
+  step**. Four apps (customer / driver / merchant / ops) served from ONE
+  codebase; `window.NOVAGO_APP` is set by the entry HTML and `js/appMode.js`
+  gates routes off it. Deployed to GitHub Pages by `.github/workflows/deploy.yml`.
+- **`novax-backend`** — NestJS + Prisma + Postgres + Redis, hosted on Railway.
+  Socket.IO on the `/location` namespace. 115 tests across 12 suites.
+
+Because there is no bundler, **you edit the file that ships**. There is also no
+type checker, so three zero-dependency scripts stand in for one — run them
+before every push:
+
+```
+npm run check      # check-syntax.js + audit.js — parses all 69 modules
+npm run verify     # verify-build.js
+```
+
+`scripts/audit.js` holds project-specific rules that have each caught a real
+bug (e.g. refusing a built value in a Leaflet content sink). Add to it when you
+find a new class of mistake; that is what it is for.
+
+## The invariants — do not break these
+
+**1. Two riders can never take the same job.** One customer booking is offered
+to `BROADCAST_TO = 3` drivers simultaneously. Safety comes from the database,
+not from the app, in `trips.service.ts`:
+
+```ts
+const claimed = await this.prisma.trip.updateMany({
+  where: { id: tripId, status: "MATCHING", driverId: null },
+  data: { status: "MATCHED", driverId, matchedAt: new Date() },
+});
+if (claimed.count === 0) throw new ConflictException("Another rider took this one first.");
+```
+
+The guard lives in the WHERE clause, so the loser's update matches zero rows.
+The frontend (`js/offerStack.js`) treats a 409 as normal and says "Another
+rider took that one." **Never turn this into read-then-write.**
+
+**2. Cash trips create a debt.** `ledger.service.ts` writes two entries on
+completion: `TRIP_PAYOUT +182.75` (earnings) and `TRIP_CASH_COLLECTED -215.00`
+(the fare the driver physically holds). Balance sums everything, earnings sum
+only `PAYOUT_TYPES`. Net effect: the driver owes Nova Go Rs 32.25. Before this,
+wallets could never go negative and settlement never triggered.
+
+**3. Sessions are app-scoped.** `js/api.js` keys storage as
+`novago_${window.NOVAGO_APP}_`. All four apps share one origin, so a single key
+meant signing into the driver app silently destroyed the customer session —
+this was the cause of the "signed out again and again" complaint, which is a
+safety issue on a motorbike, not an annoyance. `migrateLegacyKeys()` adopts an
+old session only when its role matches the build.
+
+**4. The JWT is not the authority; the database is.** `jwt.strategy.ts` reloads
+the user on every request so suspending an account takes effect immediately
+rather than whenever the token happens to expire.
+
+## What shipped in this window
+
+**Frontend — 62 commits, `b8a2540` … `386c2f4`.** Highlights:
+
+- **Live tracking rebuilt** (`js/views/rideTracking.js`). Moving rider pin,
+  inline route polyline, live ETA, 6s poll that is idempotent via a
+  `lastSignature` so re-renders don't flash the drawer. Route refresh throttled
+  to 250m/20s to stay off the public OSRM demo server.
+- **The live pill** (`js/liveActivity.js`, `css/premium.css`) — an iOS Live
+  Activity-style widget pinned over the home screen, tap to expand to the full
+  map. Two moods: a bike traversing the bar en route, a breathing card on
+  ARRIVED. Home screen only; `suppressed()` enforces that.
+- **Offer stack** (`js/offerStack.js`) — jobs arrive as stacked cards instead of
+  a full-screen takeover that blacked out the rider's phone.
+- **Driver signup is ONE form.** CNIC, licence, vehicle photo, plus address and
+  password, all at signup. Vehicle registration dropped entirely. The old second
+  onboarding screen is now a status/repair screen that only asks for what is
+  genuinely missing.
+- **Chat** — unread badges, push to the other party, WhatsApp-style sent /
+  delivered / read ticks.
+- **Call** — shows the registered number and asks phone or WhatsApp.
+- **Driver reviews screen** (`js/views/driverAccount.js`) with the star
+  distribution, not just an average.
+- **Ops console** — auto-refreshing rather than hard-reload-only, desk-width
+  layout, and it now NAMES online drivers it cannot place on the map instead of
+  silently dropping them.
+
+**Backend — 19 commits, `9432973` … `38ee8a2`.** Highlights: the broadcast +
+atomic claim; the cash-debt ledger fix; a ratings controller (ratings could be
+written and never read — there was no controller at all); parcel dispatch
+actually reaching drivers; ops-mediated password recovery; security headers;
+session revocation on delete/suspend; round-the-clock bookings.
+
+**Security.** Two external audits were worked through. Closed: stored XSS via
+Leaflet `bindTooltip`; KYC documents served from public URLs (now private R2
+objects behind 120-second signed GETs — verified 200 then 403 after 135s);
+sensitive actions now fail CLOSED when Redis is unavailable; test/review fleet
+segregated in both directions so a reviewer's ride can never reach a real rider.
+
+## Traps that have already cost hours
+
+- **`position: fixed` resolves against the viewport, not the 480px `#app-root`
+  column.** At 375px wide these are the same thing and every bug hides. **Check
+  layout at 375px AND ~900px**, always. A pill that looked centred sat at
+  `left: -175` on a desktop window.
+- **The service worker cache is keyed by git SHA, and `cache.add()` still goes
+  through the HTTP cache.** Use `new Request(url, { cache: "reload" })`. Stale
+  SW caches produced several false readings — if the browser seems to disagree
+  with the source, suspect this before suspecting the code.
+- **Prisma schema comments must be `//`, never `/* */`** — the latter fails
+  migration with P1012.
+- **This is NestJS 10.** Nest 11 wildcard route syntax (`@Get("view/*key")`)
+  parses fine and 404s at runtime. `audit.js` catches it now.
+- **Verify in the real UI.** `curl` proves a route exists, not that the feature
+  works. Drive the deployed app and confirm the browser actually loaded the new
+  code.
+- **Watch the timing window when testing dispatch.** The offer expires in 15
+  seconds; arm your observer on the driver tab BEFORE booking, or you will miss
+  it and wrongly conclude nothing was sent.
+
+## Open work, most valuable first
+
+1. **Bundle IDs — decide before the first AAB.** Configs say `com.novago.*`
+   (`capacitor.config.json`, the four files in `capacitor/`, and
+   `android/app/build.gradle`); item 15 says `pk.novago.*`. **Unfixable after
+   the first upload.** A one-line edit today, a new listing later.
+2. **Share ride is broken** — parked at Aisha's explicit request, must be
+   rebuilt before launch. She knows; do not re-raise it as a discovery.
+3. **Navigate handoff unverified** — the `geo:` URI is inert in a desktop
+   browser, so this needs a real handset.
+4. **Customer app doesn't fully sync to every trip state change** (task #9).
+5. **The completed 08-17 trip predates the cash-debt fix** and was not
+   retro-corrected — that one driver shows +182.75 with no matching debt. New
+   trips are correct. A corrective ledger entry would fix it if the number
+   matters.
+
+## Infrastructure chores, none of them blocking
+
+Rotate the R2 API token; change the `admin@novago.com` password (Aisha chose to
+leave it); delete the `@novatest.dev` accounts from production; drop
+`http://localhost:5620` from the R2 CORS allowlist before launch; add the CI
+gate line to `deploy.yml` **by hand** (the PAT lacks `workflow` scope, so a push
+containing it will be rejected); `SENTRY_DSN` unset; the Mapbox token is not
+URL-restricted; routing still runs on the public OSRM demo server, which has no
+uptime guarantee and must be replaced before real traffic.
+
+Not yet done from the audits: ledger idempotency keys; offer expiry uses
+`setTimeout` and does not survive a restart; CNIC and payout details are not
+encrypted at rest; tokens live in `localStorage` rather than the Keychain
+(item 24); real FCM credentials (item 21).
+
+## Admin access
+
+Ops credentials live at `~/.novago/ops.env` (chmod 600, deliberately **outside
+both repos**) with `ops-token.sh` beside it. It is a dedicated `ops-bot@novago.pk`
+admin account, not Aisha's. Note that ops-bot is not a trip participant, so
+admin-level trip cancellation silently no-ops — cancel as the customer with a
+valid enum reason (e.g. `LONG_WAIT`) instead.
+
+## How Aisha wants to work
+
+Fast, no narration, and **never make her repeat a task across sessions** — that
+is the thing that actually annoys her. Verify before reporting; she has been
+burned by claims that turned out to be untested. When she asks to be walked
+through something step by step, stop after each step and wait for "ok".
