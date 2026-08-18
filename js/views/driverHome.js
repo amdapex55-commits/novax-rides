@@ -729,32 +729,7 @@ export function renderTripProgress(root) {
           navigate("/driver/earnings");
           return;
         }
-        /* Distance and ETA to whichever end of the job is next, recomputed as the
-     driver actually moves. A number that never changes is worse than no
-     number: it teaches the rider to ignore the one place we tell them how
-     they're doing. */
-  async function paintMetrics(step) {
-    if (!step?.target) return;
-    const to = step.target === "dropoff" ? state.dropoff : state.pickup;
-    if (!to?.lat) return;
-    try {
-      const from = await getCurrentCoords();
-      if (destroyed) return;
-      const etaEl = root.querySelector("#jobEta");
-      const distEl = root.querySelector("#jobDist");
-      if (!etaEl || !distEl) return;
-      const route = await getRoute(from, to).catch(() => null);
-      if (destroyed) return;
-      const km = route?.km ?? straightLineKm(from, to);
-      // No route host? Fall back to straight-line at a Karachi bike's real
-      // average, and never dress the estimate up as a routed one.
-      const mins = route?.minutes ?? Math.max(1, Math.round((km / 18) * 60));
-      etaEl.textContent = formatEta(mins);
-      distEl.textContent = `${km.toFixed(1)} km`;
-    } catch { /* metrics are a nicety; the job works without them */ }
-  }
-
-  draw();
+        draw();
       } catch (err) {
         toast(err.message || "Action failed", true);
         btn.disabled = false;
@@ -799,6 +774,31 @@ export function renderTripProgress(root) {
       if (destroyed) mapHandle.destroy();
     } catch { /* optional */ }
   })();
+
+  /* Distance and ETA to whichever end of the job is next, recomputed as the
+     driver actually moves. A number that never changes is worse than no
+     number: it teaches the rider to ignore the one place we tell them how
+     they're doing. */
+  async function paintMetrics(step) {
+    if (!step?.target) return;
+    const to = step.target === "dropoff" ? state.dropoff : state.pickup;
+    if (!to?.lat) return;
+    try {
+      const from = await getCurrentCoords();
+      if (destroyed) return;
+      const etaEl = root.querySelector("#jobEta");
+      const distEl = root.querySelector("#jobDist");
+      if (!etaEl || !distEl) return;
+      const route = await getRoute(from, to).catch(() => null);
+      if (destroyed) return;
+      const km = route?.km ?? straightLineKm(from, to);
+      // No route host? Fall back to straight-line at a Karachi bike's real
+      // average, and never dress the estimate up as a routed one.
+      const mins = route?.minutes ?? Math.max(1, Math.round((km / 18) * 60));
+      etaEl.textContent = formatEta(mins);
+      distEl.textContent = `${km.toFixed(1)} km`;
+    } catch { /* metrics are a nicety; the job works without them */ }
+  }
 
   draw();
 
