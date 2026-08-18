@@ -12,6 +12,7 @@ import { t } from "../i18n.js";
 import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
 import { createMap } from "../map.js";
+import { getRoute, straightLineKm, formatEta } from "../routing.js";
 import { track } from "../analytics.js";
 import { renderTripStatus } from "../tripCopy.js";
 import { haptic } from "../haptics.js";
@@ -81,6 +82,11 @@ export function renderRideTracking(root) {
         <div>
           <span class="badge ${matched ? "badge-accent" : "badge-warning"}">${esc(s.label)}</span>
           <p class="text-lg font-bold mt-2">${esc(s.copy)}</p>
+          ${liveEtaMinutes != null && ["MATCHED", "IN_PROGRESS"].includes(currentStatus) ? `
+            <p class="nx-track-eta">
+              <span class="nx-track-eta-num">${esc(formatEta(liveEtaMinutes))}</span>
+              <span class="nx-track-eta-label">${currentStatus === "IN_PROGRESS" ? "to your destination" : "away from you"}</span>
+            </p>` : ""}
         </div>
         <span class="ref-id">#${esc((tripId || "").slice(0, 8).toUpperCase())}</span>
       </div>
@@ -507,12 +513,23 @@ export function renderRideTracking(root) {
       const d = { lat: t.dropoffLat, lng: t.dropoffLng };
       mapHandle.setPickup(p);
       mapHandle.setDropoff(d);
-      mapHandle.setRoute([p, d]);
-      // Fit once. Repeating it fights the customer every time they pan.
-      if (!framedOnce) { mapHandle.fit([p, d], [70, 300]); framedOnce = true; }
+      /* Only draw the whole booking while nobody is coming yet. The moment a
+         rider is attached, the live leg takes over — showing the piece of the
+         journey that is actually happening is the entire difference between
+         this and a static picture of a booking. */
+      if (!t.driverLocation?.lat) {
+        mapHandle.setRoute([p, d]);
+        if (!framedOnce) { mapHandle.fit([p, d], [70, 300]); framedOnce = true; }
+      }
       // The driver's own position, whenever the server knows it — this is
       // what the poll contributes when a socket ping goes missing.
-      if (t.driverLocation?.lat != null) mapHandle.setDriver(t.driverLocation);
+      if (t.driverLocation?.lat != null) {
+        mapHandle.setDriver(t.driverLocation);
+        // The poll is also what recovers the map when socket pings go
+        // missing — same reason it recovers the status.
+        refreshLiveRoute(t.driverLocation);
+        if (!framedOnce) { mapHandle.frameLeg(t.driverLocation, legTarget()); framedOnce = true; }
+      }
     }
   }
 
@@ -579,9 +596,67 @@ export function renderRideTracking(root) {
     try { const t = await api.getTrip(tripId); if (!destroyed) applyTrip(t); } catch { setStatus("MATCHED"); }
   };
   const onArrived = () => setStatus("ARRIVED");
-  const onStarted = () => { track("ride_started", { tripId }); setStatus("IN_PROGRESS"); };
+  const onStarted = () => {
+    track("ride_started", { tripId });
+    setStatus("IN_PROGRESS");
+    // The leg just flipped from "coming to get you" to "taking you there".
+    // Force a re-route and re-frame rather than waiting for the throttle.
+    lastRouteAt = 0;
+    const d = trip?.driverLocation;
+    if (d?.lat != null) { refreshLiveRoute(d); mapHandle?.frameLeg(d, legTarget()); }
+  };
+  /* THE LIVE LEG.
+
+     Bykea and Foodpanda both show you the same thing: not the whole booking,
+     but the piece of it that is happening now — the rider's real road route
+     to wherever they are headed next, shortening as they ride, with the
+     camera framed on that leg and an ETA counting down.
+
+     Before pickup the leg is driver -> you. Once you are on the bike it flips
+     to driver -> destination. Drawing the static pickup-to-dropoff line for
+     the whole trip, which is what this used to do, tells the customer nothing
+     about where their rider actually is.
+
+     Re-routing is throttled: a routing call per GPS ping would be a request
+     every four seconds per trip. It refires when the rider has moved 250m or
+     20s have passed, and interpolates smoothly in between. */
+  let lastRouteAt = 0;
+  let lastRouteFrom = null;
+  let liveEtaMinutes = null;
+
+  function legTarget() {
+    if (!trip) return null;
+    return currentStatus === "IN_PROGRESS"
+      ? { lat: trip.dropoffLat, lng: trip.dropoffLng }
+      : { lat: trip.pickupLat, lng: trip.pickupLng };
+  }
+
+  async function refreshLiveRoute(from) {
+    const to = legTarget();
+    if (!from || !to || destroyed) return;
+    const now = Date.now();
+    const movedKm = lastRouteFrom ? straightLineKm(lastRouteFrom, from) : Infinity;
+    if (now - lastRouteAt < 20000 && movedKm < 0.25) return;
+    lastRouteAt = now;
+    lastRouteFrom = from;
+    try {
+      const route = await getRoute(from, to);
+      if (destroyed || !mapHandle) return;
+      // The road path the rider is actually taking, not a straight line.
+      mapHandle.setRoute(route?.coordinates?.length ? route.coordinates : [from, to]);
+      liveEtaMinutes = route?.minutes ?? null;
+      drawSheet();
+    } catch {
+      if (!destroyed && mapHandle) mapHandle.setRoute([from, to]);
+    }
+  }
+
   const onLocation = (payload) => {
-    if (mapHandle && payload?.lat) mapHandle.setDriver({ lat: payload.lat, lng: payload.lng });
+    if (!mapHandle || !payload?.lat) return;
+    const at = { lat: payload.lat, lng: payload.lng };
+    mapHandle.setDriver(at);      // glides, and points along its heading
+    mapHandle.follow(at);         // camera only moves if they leave the frame
+    refreshLiveRoute(at);
   };
   const onCompleted = () => {
     track("ride_completed", { tripId });

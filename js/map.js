@@ -147,6 +147,7 @@ export async function createMap(container, opts = {}) {
   let routeLine = null;
   let routeCasing = null;
   let driverAnim = 0;
+  let lastFixAt = 0;
   let extraMarkers = [];
   let accuracyRing = null;
   let nearbyMarkers = [];
@@ -250,7 +251,13 @@ export async function createMap(container, opts = {}) {
       if (el) el.style.setProperty("--bearing", `${bearing}deg`);
 
       const t0 = performance.now();
-      const dur = 900;
+      /* Glide for as long as the gap between pings, so the marker is still
+         moving when the next one lands. A fixed 900ms against a 4s cadence
+         means the bike sprints, freezes for three seconds, sprints again —
+         which reads as a broken feed rather than a moving vehicle. */
+      const gap = lastFixAt ? Math.min(6000, Math.max(700, performance.now() - lastFixAt)) : 900;
+      lastFixAt = performance.now();
+      const dur = gap;
       cancelAnimationFrame(driverAnim);
       const tick = (now) => {
         const p = Math.min((now - t0) / dur, 1);
@@ -315,6 +322,38 @@ export async function createMap(container, opts = {}) {
           color: accent, weight: 4, opacity: 0.7, dashArray: "1 8", lineCap: "round",
         }).addTo(map);
       }
+    },
+
+    /* KEEP THE DRIVER ON SCREEN WITHOUT FIGHTING THE CUSTOMER.
+
+       Re-fitting on every position ping snaps the camera back while someone
+       is pinching around the map — which is why the old screen felt like it
+       was wrestling you. This only moves the camera when the driver actually
+       drifts out of a comfortable inner box, and it glides rather than jumps.
+       Pan the map yourself and it leaves you alone until the rider genuinely
+       leaves the frame. */
+    follow(coords, { padRatio = 0.22 } = {}) {
+      if (!coords) return;
+      const p = map.latLngToContainerPoint([coords.lat, coords.lng]);
+      const size = map.getSize();
+      const padX = size.x * padRatio;
+      const padY = size.y * padRatio;
+      const outside =
+        p.x < padX || p.x > size.x - padX ||
+        p.y < padY || p.y > size.y - padY * 1.9; // sheet covers the bottom
+      if (outside) map.panTo([coords.lat, coords.lng], { animate: true, duration: 0.9 });
+    },
+
+    /** Frame exactly two points — the live leg — leaving room for the sheet. */
+    frameLeg(a, b, { bottomPad = 300 } = {}) {
+      if (!a || !b) return;
+      map.fitBounds([[a.lat, a.lng], [b.lat, b.lng]], {
+        paddingTopLeft: [50, 70],
+        paddingBottomRight: [50, bottomPad],
+        animate: true,
+        duration: 0.8,
+        maxZoom: 16,
+      });
     },
 
     /** Fit everything currently on the map, with room for the bottom sheet. */

@@ -1982,6 +1982,12 @@
   .nx-live, .nx-live-fill { transition: none; }
 }
 
+/* The number the customer is actually waiting for. Big, because on this
+   screen it is the whole point; the label stays quiet beside it. */
+.nx-track-eta { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; }
+.nx-track-eta-num { font-size: 26px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+.nx-track-eta-label { font-size: 13px; color: var(--text-secondary); }
+
 .nx-link { color: var(--accent); }
 .nx-link-strong { color: var(--accent); font-weight: 800; }
 
