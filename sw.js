@@ -63,8 +63,20 @@ self.addEventListener("install", (event) => {
       // addAll() is all-or-nothing — one missing file and the whole install
       // fails. Add individually so a renamed asset degrades instead of
       // disabling offline support entirely.
+      /* `cache: "reload"` IS LOAD-BEARING, NOT A TUNING KNOB.
+
+         A plain cache.add() goes through the browser's HTTP cache. GitHub
+         Pages serves these assets with a max-age, so a service worker
+         installing seconds after a deploy would happily precache the PREVIOUS
+         version of every file — and then serve it, from a cache named after
+         the NEW version, until the next deploy.
+
+         That is the "I deployed and it looks the same" problem, and worse
+         than looking the same: the shell is fetched fresh on navigation while
+         the modules come from cache, so users ran a mix of old and new files.
+         Reload forces each one past the HTTP cache to the origin. */
       await Promise.all(
-        SHELL.map((url) => cache.add(url).catch(() => {
+        SHELL.map((url) => cache.add(new Request(url, { cache: "reload" })).catch(() => {
           console.warn("[NovaGo SW] could not cache", url);
         })),
       );
@@ -136,7 +148,11 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         const cached = await caches.match(request);
-        const network = fetch(request)
+        // Same reason as install: a cache MISS here happens exactly once per
+        // asset per deploy, which is precisely when the HTTP cache is most
+        // likely to still be holding the previous file. Going to the origin
+        // costs one revalidation and buys correctness.
+        const network = fetch(cached ? request : new Request(request.url, { cache: "reload" }))
           .then((res) => {
             if (res && res.status === 200) {
               caches.open(SHELL_CACHE).then((c) => c.put(request, res.clone()));
