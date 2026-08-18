@@ -237,7 +237,11 @@ export const GPS = {
    --------------------------------------------------------------------------- */
 
 export const HOURS = {
-  enabled: true,
+  // Switched OFF: Nova Go takes bookings around the clock. The window is kept
+  // rather than deleted because it is the right control to have — flip this
+  // back to true and the banner, the booking guard and the legal copy all
+  // come with it.
+  enabled: false,
   open: "08:00",
   close: "22:00",
   closedMessage: "Nova Go Bike runs 8am–10pm while we're in pilot. We'll be back in the morning.",

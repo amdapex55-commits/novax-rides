@@ -329,8 +329,9 @@ export const renderCancellation = page("Cancellation &amp; Refund Policy", `
   overcharges is removed.</p>
 
   <h3>7. How to raise a problem</h3>
-  <p>In the app: Help → Message the Nova Go team. Or ${EMAIL} / ${PHONE} during
-  ${HOURS.open}–${HOURS.close}. We aim to resolve within two working days.</p>
+  <p>In the app: Help → Message the Nova Go team. Or ${EMAIL} / ${PHONE}${
+    HOURS.enabled ? ` during ${HOURS.open}–${HOURS.close}` : ""
+  }. We aim to resolve within two working days.</p>
 `);
 
 /* ==========================================================================
@@ -385,10 +386,15 @@ export const renderSafety = page("Safety Policy", `
   question asked about why.</p>
 
   <h3>6. Our operations desk</h3>
+  ${HOURS.enabled ? `
   <p>A human is on duty for every hour we run rides
   (${HOURS.open}–${HOURS.close}). They can see every active trip, call either
   party, and cancel or escalate. Outside those hours we do not accept
   bookings, because a ride nobody is watching is a ride we can't help with.</p>
+  ` : `
+  <p>Our operations desk can see every active trip, call either party, and
+  cancel or escalate. Bookings are accepted around the clock.</p>
+  `}
 
   <h3>7. Conduct that removes a rider immediately</h3>
   <ul>
