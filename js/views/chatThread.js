@@ -40,12 +40,24 @@ export function renderChatThread(root) {
   const sendBtn = root.querySelector("#sendBtn");
   const myId = Token.user?.id;
 
+  /* Ticks, on your own messages only — the state of someone else's message is
+     not your business and not your problem. One tick left our server, two
+     ticks reached them, two blue ticks means they actually opened it. Anyone
+     who has used WhatsApp reads this without being taught, which is the whole
+     reason for borrowing the convention. */
+  function ticks(m) {
+    if (m.readAt) return `<span class="nx-tick read" title="Read">${icon("check", 11)}${icon("check", 11)}</span>`;
+    if (m.deliveredAt) return `<span class="nx-tick" title="Delivered">${icon("check", 11)}${icon("check", 11)}</span>`;
+    return `<span class="nx-tick" title="Sent">${icon("check", 11)}</span>`;
+  }
+
   function bubble(m) {
     const mine = m.senderId === myId;
     return `
-      <div class="flex" style="justify-content:${mine ? "flex-end" : "flex-start"};">
+      <div class="flex" data-msg="${esc(m.id || "")}" style="justify-content:${mine ? "flex-end" : "flex-start"};">
         <div style="max-width:78%; padding:10px 14px; border-radius:${mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px"}; background:${mine ? "var(--accent-gradient)" : "var(--surface-2)"}; color:${mine ? "var(--on-accent)" : "var(--text-primary)"};">
           <p class="text-sm">${esc(m.body)}</p>
+          ${mine ? `<span class="nx-msg-meta">${ticks(m)}</span>` : ""}
         </div>
       </div>
     `;
@@ -58,8 +70,15 @@ export function renderChatThread(root) {
     listEl.scrollTop = listEl.scrollHeight;
   }
 
+  /* Opening the thread IS reading it. Marking on open is what turns the other
+     person's ticks blue, and what clears the badge on the button that brought
+     us here. */
+  function markRead() {
+    api.markChatRead(ctx.contextType, ctx.contextId).catch(() => { /* retried on the next message */ });
+  }
+
   api.listChatMessages(ctx.contextType, ctx.contextId)
-    .then(drawMessages)
+    .then((msgs) => { drawMessages(msgs); markRead(); })
     .catch(() => { listEl.innerHTML = `<div class="empty-state"><p class="text-sm">Couldn't load messages.</p></div>`; });
 
   socketManager.connect();
@@ -68,9 +87,15 @@ export function renderChatThread(root) {
     const bubbleEl = document.createElement("div");
     bubbleEl.innerHTML = bubble(payload.message);
     listEl.appendChild(bubbleEl.firstElementChild);
+    markRead();
     listEl.scrollTop = listEl.scrollHeight;
   };
+  /* Their ticks turn without either side polling. */
+  function onRead() {
+    listEl.querySelectorAll(".nx-tick").forEach((t) => t.classList.add("read"));
+  }
   socketManager.on("chat:message", onIncoming);
+  socketManager.on("chat:read", onRead);
 
   async function send() {
     const body = inputEl.value.trim();
@@ -95,6 +120,7 @@ export function renderChatThread(root) {
   inputEl.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
 
   return () => socketManager.off("chat:message", onIncoming);
+    socketManager.off("chat:read", onRead);
 }
 
 const CONTEXT_LABEL = {

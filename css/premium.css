@@ -2029,11 +2029,16 @@
   max-height: 78dvh; overflow-y: auto;
 }
 #nxOffers.has-offers { pointer-events: auto; }
+#nxOffers { gap: 8px; }
 
+/* Sized down after seeing it on a real screen: at the original padding and
+   type scale a single card was most of the sheet, and two would have buried
+   the map the stack exists to keep visible. Everything a rider decides on is
+   still here — the fare, the areas, the length, the clock — just tighter. */
 .nx-offer-card {
   position: relative;
-  padding: 14px 15px 13px;
-  border-radius: 18px;
+  padding: 10px 13px 11px;
+  border-radius: 15px;
   background: var(--surface);
   border: 1px solid var(--surface-border);
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.4);
@@ -2061,22 +2066,24 @@
   font-size: 10.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--text-muted);
 }
-.nx-offer-card-earn { font-size: 23px; font-weight: 800; letter-spacing: -0.02em; }
+.nx-offer-card-earn { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
 
 .nx-offer-card-route {
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  margin: 6px 0 2px; font-size: 13.5px; font-weight: 700;
+  display: flex; align-items: center; gap: 5px; flex-wrap: nowrap;
+  margin: 3px 0 1px; font-size: 12.5px; font-weight: 700;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
+.nx-offer-card-route > span { overflow: hidden; text-overflow: ellipsis; }
 .nx-offer-card-arrow { display: inline-flex; color: var(--text-muted); }
-.nx-offer-card-meta { font-size: 12px; color: var(--text-muted); }
+.nx-offer-card-meta { font-size: 11px; color: var(--text-muted); }
 .nx-offer-card-dot { margin: 0 6px; }
 .nx-offer-card-meta em { font-style: normal; font-weight: 700; color: var(--text-secondary); }
 
-.nx-offer-card-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8px; margin-top: 12px; }
+.nx-offer-card-actions { display: grid; grid-template-columns: 1fr 1.7fr; gap: 7px; margin-top: 9px; }
 .nx-offer-card-decline,
 .nx-offer-card-accept {
-  height: 46px; border-radius: var(--r-md);
-  font: inherit; font-size: 15px; font-weight: 800; cursor: pointer;
+  height: 42px; border-radius: var(--r-md);
+  font: inherit; font-size: 14px; font-weight: 800; cursor: pointer;
 }
 .nx-offer-card-decline {
   border: 1px solid var(--surface-border); background: none; color: var(--text-secondary);
@@ -2121,6 +2128,21 @@
 }
 .nx-contact-copy { color: var(--accent); }
 .nx-contact-close { color: var(--text-muted); }
+
+/* Message receipts. One tick sent, two delivered, two blue read — borrowed
+   deliberately, because it is the one convention nobody has to be taught. */
+.nx-msg-meta { display: flex; justify-content: flex-end; margin-top: 3px; }
+.nx-tick { display: inline-flex; opacity: 0.7; }
+.nx-tick svg:last-child { margin-left: -6px; }
+.nx-tick.read { opacity: 1; color: #5ec2ff; }
+
+/* Unread count on whatever opens the thread. */
+.nx-unread {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px;
+  border-radius: 99px; background: var(--error); color: #fff;
+  font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
 
 .nx-link { color: var(--accent); }
 .nx-link-strong { color: var(--accent); font-weight: 800; }

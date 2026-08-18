@@ -168,12 +168,12 @@ export function renderRideTracking(root) {
                target="_blank" rel="noopener noreferrer">
               ${icon("chat", 18)} ${esc(t("WhatsApp"))}
             </a>` : `
-            <button id="chatBtn" class="btn btn-secondary" style="flex:1;">${icon("chat", 18)} ${esc(t("Message"))}</button>`}
+            <button id="chatBtn" class="btn btn-secondary" style="flex:1;">${icon("chat", 18)} ${esc(t("Message"))}<span id="chatUnread"></span></button>`}
           <button id="shareBtn" class="btn btn-secondary" style="flex:1;">${icon("send", 18)} ${esc(t("Share ride"))}</button>
         </div>
         ${trip?.driver?.phone ? `
           <button id="chatBtn" class="btn btn-ghost btn-block mb-3" style="font-size:13px;">
-            ${icon("chat", 15)} Or message in the app
+            ${icon("chat", 15)} Or message in the app<span id="chatUnread"></span>
           </button>` : `<div class="mb-3"></div>`}
       ` : `
         <!-- MATCHING IS THE MOMENT PEOPLE ABANDON.
@@ -222,6 +222,21 @@ export function renderRideTracking(root) {
       haptic.medium();
       track("customer_called_driver", { tripId });
     });
+    /* The badge is what is still there when the customer looks back at the
+       screen; a notification arrives once and is gone. Polled so it survives a
+       reconnect or a backgrounded tab. */
+    (async function pollUnread() {
+      if (destroyed) return;
+      try {
+        const { count } = await api.chatUnreadCount("TRIP", tripId);
+        const el = node.querySelector("#chatUnread");
+        if (el) el.outerHTML = count > 0
+          ? `<span id="chatUnread" class="nx-unread">${count > 9 ? "9+" : count}</span>`
+          : `<span id="chatUnread"></span>`;
+      } catch { /* transient */ }
+      if (!destroyed) setTimeout(pollUnread, 10000);
+    })();
+
     node.querySelector("#chatBtn")?.addEventListener("click", () => {
       state.chatContext = { contextType: "TRIP", contextId: tripId, otherPartyLabel: trip?.driver?.name || "Your driver" };
       navigate("/chat-thread");

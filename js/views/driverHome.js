@@ -736,7 +736,7 @@ export function renderTripProgress(root) {
           ${icon("phone", 18)} Call ${esc((trip.rider.name || "passenger").split(" ")[0])}
         </a>` : ""}
       <div class="flex gap-2 mb-3">
-        <button id="chatBtn" class="btn btn-secondary" style="flex:1;">${icon("chat", 18)} Message</button>
+        <button id="chatBtn" class="btn btn-secondary" style="flex:1;">${icon("chat", 18)} Message<span id="chatUnread"></span></button>
         <button id="supportBtn" class="btn btn-secondary" style="flex:1;">${icon("bolt", 18)} Support</button>
       </div>
       <button id="actionBtn" class="btn btn-primary btn-block" style="height:56px;">${step.btn}</button>
@@ -773,6 +773,23 @@ export function renderTripProgress(root) {
       navigate("/chat-thread");
     });
     body.querySelector("#supportBtn").addEventListener("click", () => navigate("/support"));
+
+    /* THE BADGE IS THE POINT.
+       A notification arrives once and is gone; the badge is what is still
+       there when the rider next glances at the screen. Polled rather than
+       pushed so it is right after a reconnect, a backgrounded tab, or any of
+       the other ways a socket quietly stops being the truth. */
+    (async function pollUnread() {
+      if (destroyed) return;
+      try {
+        const { count } = await api.chatUnreadCount("TRIP", tripId);
+        const el = body.querySelector("#chatUnread");
+        if (el) el.outerHTML = count > 0
+          ? `<span id="chatUnread" class="nx-unread">${count > 9 ? "9+" : count}</span>`
+          : `<span id="chatUnread"></span>`;
+      } catch { /* transient */ }
+      if (!destroyed) setTimeout(pollUnread, 10000);
+    })();
 
     body.querySelector("#actionBtn").addEventListener("click", async (e) => {
       const btn = e.currentTarget;

@@ -338,6 +338,11 @@ export const api = {
   viewPrivateDoc: (keyOrUrl) =>
     request("/uploads/view", { method: "POST", body: { key: String(keyOrUrl) } }),
 
+  markChatRead: (contextType, contextId) =>
+    request(`/chat/${contextType}/${contextId}/read`, { method: "POST" }),
+  chatUnreadCount: (contextType, contextId) =>
+    request(`/chat/${contextType}/${contextId}/unread`),
+
   presignUpload: (purpose, contentType, fileName) =>
     request("/uploads/presign", { method: "POST", body: { purpose, contentType, fileName } }),
 
