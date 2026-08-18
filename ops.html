@@ -264,12 +264,29 @@
 
   /* Vestibular safety: the finished frame, immediately, with nothing
      travelling or scaling. */
+  /* REDUCED MOTION IS NOT NO MOTION.
+
+     This used to set every animated layer to opacity:0 and freeze the rest,
+     which left a flat purple field with a static bolt sitting there for two
+     full seconds. On a desktop, where the setting is usually off, the splash
+     looked designed; on an iPhone with Reduce Motion on — which is a very
+     common setting — it looked broken. Same build, two different products.
+
+     What actually triggers vestibular symptoms is travel, scale and spin, not
+     a change in opacity: WCAG 2.3.3 is about motion, and a cross-fade is
+     explicitly the safe substitute. So the streak, the expanding shockwaves
+     and the drifting grid stay off, and everything else fades up in the same
+     order the full sequence uses. It still reads as an entrance, and nothing
+     moves across the screen. */
   @media (prefers-reduced-motion:reduce){
-    #nxSplash .nxs-grid,#nxSplash .nxs-trail,
-    #nxSplash .nxs-bloom,#nxSplash .nxs-ring{animation:none;opacity:0}
-    #nxSplash svg{animation:none;opacity:1;transform:none}
-    #nxSplash .nxs-mark{animation:none;opacity:1;letter-spacing:.24em}
-    #nxSplash .nxs-tag{animation:none;opacity:1;transform:none}
+    #nxSplash .nxs-grid,#nxSplash .nxs-trail,#nxSplash .nxs-ring{animation:none;opacity:0}
+    /* Opacity only — no scale. The flash still happens, it just doesn't grow. */
+    #nxSplash .nxs-bloom{animation:nxs-rm-flash .9s ease-out .1s forwards;transform:scale(1.1)}
+    #nxSplash svg{animation:nxs-rm-in .5s ease-out .25s both;transform:none}
+    #nxSplash .nxs-mark{animation:nxs-rm-in .5s ease-out .6s both;letter-spacing:.24em}
+    #nxSplash .nxs-tag{animation:nxs-rm-in .5s ease-out .95s both;transform:none}
+    @keyframes nxs-rm-in{from{opacity:0}to{opacity:1}}
+    @keyframes nxs-rm-flash{0%{opacity:0}35%{opacity:.55}100%{opacity:0}}
   }
 </style>
 <div id="nxSplash" role="status" aria-label="Nova Go is starting">

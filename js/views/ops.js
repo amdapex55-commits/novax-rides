@@ -5,14 +5,19 @@ import { api } from "../api.js";
 import { icon } from "../icons.js";
 import { toast, fmtDate, skeletonRows, esc, countUp } from "../ui.js";
 import { createMap, mapSkeleton, KARACHI } from "../map.js";
+import { navigate } from "../router.js";
 
+/* Every number here is a question someone is about to ask, so every number is
+   a way in. They used to be inert text: a dispatcher read "23 pending KYC",
+   then went hunting through the sidebar for the screen that lists them. Each
+   card now carries where it goes, and the whole tile is the target. */
 const STAT_CARDS = [
-  ["statActiveTrips", "Active trips", "activeTrips", "var(--accent)"],
-  ["statOnlineDrivers", "Drivers online", "onlineDrivers", "var(--accent)"],
-  ["statPendingKyc", "Pending KYC", "pendingKyc", "var(--warning)"],
-  ["statActiveDeliveries", "Active deliveries", "activeDeliveries", "var(--accent-2)"],
-  ["statTotalDrivers", "Total drivers", "totalDrivers", "var(--text-primary)"],
-  ["statTotalUsers", "Total users", "totalUsers", "var(--text-primary)"],
+  ["statActiveTrips", "Active trips", "activeTrips", "var(--accent)", "/ops/live"],
+  ["statOnlineDrivers", "Drivers online", "onlineDrivers", "var(--accent)", "/ops/live"],
+  ["statPendingKyc", "Pending KYC", "pendingKyc", "var(--warning)", "/ops/approvals"],
+  ["statActiveDeliveries", "Active deliveries", "activeDeliveries", "var(--accent-2)", "/ops/live"],
+  ["statTotalDrivers", "Total drivers", "totalDrivers", "var(--text-primary)", "/ops/users"],
+  ["statTotalUsers", "Total users", "totalUsers", "var(--text-primary)", "/ops/users"],
 ];
 
 /**
@@ -44,11 +49,12 @@ export function renderOpsDashboard(root) {
       <div id="actionQueue" class="mb-5">${skeletonRows(3)}</div>
 
       <div class="nx-desk-grid nx-stat-grid mb-5" id="statGrid">
-        ${STAT_CARDS.map(([id, label, , color]) => `
-          <div class="card nx-lift" style="padding:16px 18px;">
-            <p class="text-xs text-secondary mb-1">${label}</p>
-            <p class="font-bold nx-stat-num" id="${id}" style="color:${color};">—</p>
-          </div>`).join("")}
+        ${STAT_CARDS.map(([id, label, , color, to]) => `
+          <button class="card nx-lift nx-stat-card" data-to="${to}" aria-label="${label} — open">
+            <span class="text-xs text-secondary">${label}</span>
+            <span class="font-bold nx-stat-num" id="${id}" style="color:${color};">—</span>
+            <span class="nx-stat-note" id="${id}Note"></span>
+          </button>`).join("")}
       </div>
 
       <div class="card nx-desk-wide" style="padding:0; overflow:hidden;">
@@ -167,7 +173,13 @@ export function renderOpsDashboard(root) {
   /* ----------------------------------------------------- counters ------ */
 
   api.getAdminStats()
-    .then((s) => STAT_CARDS.forEach(([id, , key]) => countUp(root.querySelector(`#${id}`), Number(s?.[key] ?? 0))))
+    .then((s) => {
+      STAT_CARDS.forEach(([id, , key]) => countUp(root.querySelector(`#${id}`), Number(s?.[key] ?? 0)));
+      // Held so refreshFleet can compare what the database believes against
+      // what the map can actually plot.
+      onlineFromDb = Number(s?.onlineDrivers ?? 0);
+      paintOnlineNote();
+    })
     .catch(() => toast("Couldn't load stats", true));
 
   /* ------------------------------------------------------- map -------- */
@@ -193,6 +205,37 @@ export function renderOpsDashboard(root) {
     const STALE_AFTER_SECONDS = 120;
     const describeAge = (s) => (s == null ? "no GPS fix yet" : s < 60 ? `${s}s ago` : `${Math.round(s / 60)}m ago`);
 
+    /* ONLINE AND UNDISPATCHABLE ARE DIFFERENT THINGS.
+
+       "Drivers online" counts driverProfile.isOnline; the fleet map plots the
+       positions Redis holds. A driver whose app is backgrounded — or whose
+       GPS never started — is online in the database and absent from the map,
+       and ops was left reading "1 driver online" above an empty map with no
+       way to tell which of the two was lying.
+
+       Neither is: the gap between them IS the signal, and it is the one that
+       matters most. A driver in that state believes they are working and will
+       never be offered a job. So the card says so, in the place someone is
+       already looking. */
+    let onlineFromDb = null;
+    let plottedNow = null;
+
+    function paintOnlineNote() {
+      const note = root.querySelector("#statOnlineDriversNote");
+      if (!note || onlineFromDb == null || plottedNow == null) return;
+      const missing = Math.max(0, onlineFromDb - plottedNow);
+      if (missing === 0) {
+        note.textContent = onlineFromDb ? "all on the map" : "";
+        note.className = "nx-stat-note";
+        return;
+      }
+      note.textContent = `${missing} sending no GPS`;
+      note.className = "nx-stat-note warn";
+    }
+
+    root.querySelectorAll("[data-to]").forEach((el) =>
+      el.addEventListener("click", () => navigate(el.dataset.to)));
+
     async function refreshFleet() {
       try {
         const drivers = await api.getLiveDrivers();
@@ -214,9 +257,18 @@ export function renderOpsDashboard(root) {
 
         const stale = points.filter((p) => p.status === "stale").length;
         const available = points.filter((p) => p.status === "idle").length;
+        plottedNow = points.length;
+        paintOnlineNote();
+
+        // Say which number this is. "No drivers online right now" under a card
+        // reading 1 is a contradiction; "0 of 1 online drivers are sending a
+        // position" is a fault report.
+        const dbCount = onlineFromDb ?? points.length;
         root.querySelector("#fleetCount").textContent = points.length
-          ? `${points.length} online · ${available} available now` + (stale ? ` · ${stale} stale (no recent GPS)` : "")
-          : "No drivers online right now";
+          ? `${points.length} on the map · ${available} available now` + (stale ? ` · ${stale} stale (no recent GPS)` : "")
+          : dbCount > 0
+            ? `${dbCount} marked online, none sending a position — they can't be dispatched`
+            : "No drivers online right now";
       } catch {
         root.querySelector("#fleetCount").textContent = "Driver positions unavailable";
       }

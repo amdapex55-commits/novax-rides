@@ -1760,6 +1760,82 @@
 .nx-job-metric { font-size: 20px; font-weight: 800; color: var(--text-primary); }
 .nx-job-metric.muted { font-size: 14px; font-weight: 600; color: var(--text-muted); }
 
+/* Ops dashboard tiles. The whole tile is the target — a dispatcher reading a
+   number on a phone should not have to find a link inside it. */
+.nx-stat-card {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 16px 18px; width: 100%;
+  text-align: left; cursor: pointer;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font: inherit; color: inherit;
+  transition: border-color 160ms var(--ease-out), transform 120ms var(--ease-out);
+}
+.nx-stat-card:hover { border-color: var(--accent); }
+.nx-stat-card:active { transform: scale(0.99); }
+.nx-stat-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Context under a number, e.g. how many "online" drivers the map cannot
+   actually place. Reserves its line so the grid does not jump when it fills. */
+.nx-stat-note { min-height: 15px; font-size: 11.5px; color: var(--text-muted); }
+.nx-stat-note.warn { color: var(--warning); font-weight: 700; }
+
+/* ---------------------------------------------------------------------------
+   Approved.
+
+   The one screen a rider will remember. It gets room: a single centred badge,
+   the name, and then what happens next in the order it happens — because
+   "you're approved" on its own does not tell someone how to start earning.
+   --------------------------------------------------------------------------- */
+.nx-welcome-approved {
+  display: flex; flex-direction: column;
+  min-height: 100dvh;
+  justify-content: center;
+  padding: 32px 22px calc(32px + var(--safe-bottom, 0px));
+}
+.nx-approved-badge {
+  width: 84px; height: 84px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  align-self: center; margin-bottom: 22px;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  animation: nx-approved-pop 520ms var(--ease-spring) both;
+}
+@keyframes nx-approved-pop {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.nx-approved-eyebrow {
+  text-align: center; font-size: 11.5px; font-weight: 800;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--success);
+}
+.nx-approved-title {
+  margin: 8px 0 10px; text-align: center; text-wrap: balance;
+  font-size: clamp(26px, 7vw, 34px); font-weight: 800; letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.nx-approved-sub {
+  text-align: center; color: var(--text-secondary); font-size: 15px;
+  margin: 0 auto 26px; max-width: 34ch;
+}
+.nx-approved-steps {
+  list-style: none; padding: 0; margin: 0 0 26px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.nx-approved-steps li { display: flex; gap: 14px; align-items: flex-start; }
+.nx-approved-steps li > span {
+  flex: none; width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.nx-approved-steps b { font-size: 15px; display: block; }
+.nx-approved-steps p { margin: 2px 0 0; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+@media (prefers-reduced-motion: reduce) { .nx-approved-badge { animation: none; } }
+
 .nx-link { color: var(--accent); }
 .nx-link-strong { color: var(--accent); font-weight: 800; }
 

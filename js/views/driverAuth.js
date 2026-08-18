@@ -3,7 +3,9 @@
 // succeeds once R2 credentials are configured on the backend — see README).
 import { api, Token } from "../api.js";
 import { icon } from "../icons.js";
-import { toast } from "../ui.js";
+import { toast, esc } from "../ui.js";
+import { haptic } from "../haptics.js";
+import { COMMISSION_PCT } from "../launch.config.js";
 import { navigate } from "../router.js";
 
 export function renderPendingApproval(root) {
@@ -54,8 +56,20 @@ export function renderPendingApproval(root) {
     try {
       const user = await api.getMe();
       if (user.kycStatus === "APPROVED") {
-        toast("You're approved! 🎉");
-        setTimeout(() => navigate("/driver/home"), 800);
+        /* THE BIGGEST MOMENT IN A DRIVER'S RELATIONSHIP WITH US, ANNOUNCED BY
+           A TOAST THAT VANISHED IN THREE SECONDS.
+
+           Someone photographed their CNIC and licence, waited a day or two for
+           a stranger to judge them, and opened the app to check. Being told
+           "You're approved 🎉" by the same grey strip that says "Couldn't
+           save" is a waste of the one moment they will remember. It also
+           taught them nothing: approved to do what, starting how?
+
+           So the screen becomes the announcement, and it says what happens
+           next in the order it happens. */
+        clearInterval(poll);
+        showWelcome(root, user);
+        return;
       } else if (showToastIfPending) {
         toast("Still under review — check back soon");
       }
@@ -64,6 +78,51 @@ export function renderPendingApproval(root) {
   checkBtn.addEventListener("click", () => check(true));
   const poll = setInterval(() => check(false), 15000);
   return () => clearInterval(poll);
+}
+
+/**
+ * Approved. Replaces the waiting screen outright rather than layering a
+ * message over it — there is nothing left to wait for, and leaving "Check
+ * status" on screen invites a tap that does nothing.
+ */
+function showWelcome(root, user) {
+  const firstName = String(user?.name || "").trim().split(" ")[0] || "rider";
+  root.innerHTML = `
+    <div class="page nx-welcome-approved">
+      <div class="nx-approved-badge">${icon("check-circle", 44)}</div>
+      <p class="nx-approved-eyebrow">Verified rider</p>
+      <h1 class="nx-approved-title">Welcome to Nova Go, ${esc(firstName)}.</h1>
+      <p class="nx-approved-sub">
+        Your documents checked out. You're cleared to carry passengers and parcels
+        across Karachi.
+      </p>
+
+      <ol class="nx-approved-steps">
+        <li><span>1</span><div>
+          <b>Go online</b>
+          <p>The big button on your home screen. Jobs only reach you while it's on.</p>
+        </div></li>
+        <li><span>2</span><div>
+          <b>Accept a job</b>
+          <p>You get fifteen seconds and the fare up front. Nothing is hidden until after.</p>
+        </div></li>
+        <li><span>3</span><div>
+          <b>Keep the cash</b>
+          <p>Passengers pay you directly. Nova Go's ${esc(String(COMMISSION_PCT))}% commission is
+          settled later from Earnings — never taken from your pocket at the kerb.</p>
+        </div></li>
+      </ol>
+
+      <button id="startBtn" class="btn btn-primary btn-block" style="height:56px;font-size:16px;">
+        Start earning ${icon("arrow-forward", 18)}
+      </button>
+      <p class="text-xs text-muted text-center mt-3">
+        Your safety kit — SOS, share ride, support — is on every job screen.
+      </p>
+    </div>
+  `;
+  haptic.medium();
+  root.querySelector("#startBtn").addEventListener("click", () => navigate("/driver/home"));
 }
 
 const DOC_TYPES = [
