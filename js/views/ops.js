@@ -175,6 +175,8 @@ export function renderOpsDashboard(root) {
   api.getAdminStats()
     .then((s) => {
       STAT_CARDS.forEach(([id, , key]) => countUp(root.querySelector(`#${id}`), Number(s?.[key] ?? 0)));
+      // Second and later passes must not re-run the count-up animation, or
+      // every number on the desk visibly rolls every fifteen seconds.
       // Held so refreshFleet can compare what the database believes against
       // what the map can actually plot.
       onlineFromDb = Number(s?.onlineDrivers ?? 0);
@@ -186,6 +188,7 @@ export function renderOpsDashboard(root) {
 
   let mapHandle = null;
   let poll = 0;
+  let deskPoll = 0;
 
   (async () => {
     const container = root.querySelector("#fleetMap");
@@ -236,6 +239,30 @@ export function renderOpsDashboard(root) {
     root.querySelectorAll("[data-to]").forEach((el) =>
       el.addEventListener("click", () => navigate(el.dataset.to)));
 
+    /* THE DESK WAS A SNAPSHOT.
+
+       The fleet map polled, but the six counters and the approvals queue were
+       fetched once at render and never again — so a dispatcher watching this
+       screen saw numbers frozen at whenever they happened to open it, and had
+       to reload the page to learn that a driver had come online or a ride had
+       started. An operations console that needs a manual refresh is not
+       telling you what is happening; it is telling you what happened.
+
+       Fifteen seconds, matching the fleet map, and the count-up animation
+       only runs the first time — otherwise every number on the desk rolls
+       over on a timer, which reads as activity that is not there. */
+    deskPoll = setInterval(async () => {
+      try {
+        const s = await api.getAdminStats();
+        STAT_CARDS.forEach(([id, , key]) => {
+          const el = root.querySelector(`#${id}`);
+          if (el) el.textContent = String(Number(s?.[key] ?? 0));
+        });
+        onlineFromDb = Number(s?.onlineDrivers ?? 0);
+        paintOnlineNote();
+      } catch { /* transient — the next tick retries */ }
+    }, 15000);
+
     async function refreshFleet() {
       try {
         const drivers = await api.getLiveDrivers();
@@ -283,7 +310,7 @@ export function renderOpsDashboard(root) {
   // itself — a dispatcher shouldn't have to remember to reload.
   const queuePoll = setInterval(loadActionQueue, 30000);
 
-  return () => { clearInterval(poll); clearInterval(queuePoll); mapHandle?.destroy(); };
+  return () => { clearInterval(poll); clearInterval(queuePoll); clearInterval(deskPoll); mapHandle?.destroy(); };
 }
 
 export function renderOpsApprovals(root) {
