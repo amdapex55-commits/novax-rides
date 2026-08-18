@@ -5,7 +5,52 @@
 import { CONFIG } from "./config.js";
 
 const BASE = CONFIG.API_BASE_URL;
-const LS = "novago_";
+
+/* ONE ORIGIN, FOUR APPS, ONE SET OF KEYS — WHICH MEANT ONE SESSION.
+
+   customer.html, driver.html, merchant.html and ops.html all ship from the
+   same origin and all read `novago_access`. So signing into any one of them
+   overwrote the session of the other three. Proven live: a driver sitting on
+   the dashboard, online and waiting, was handed a real job offer — and the
+   moment a customer signed in on the same device the driver's own screen
+   said "Wrong app: this number is registered as a rider account", mid-offer.
+
+   That is not only a testing nuisance. It is anyone running the customer and
+   driver apps on one phone, every operator with the ops console open beside
+   the customer app, and every support person reproducing a rider's problem.
+   Each app now keeps its own keys, so four sessions coexist and none of them
+   can evict another.
+
+   The old unscoped keys are migrated on first read rather than dropped,
+   because otherwise this change signs out every existing user exactly once —
+   which is the thing we have just spent a session trying to stop doing. */
+const APP_KEY = (typeof window !== "undefined" && window.NOVAGO_APP) || "customer";
+const LS = `novago_${APP_KEY}_`;
+const LEGACY_LS = "novago_";
+
+/** Move a pre-scoping session into this app's namespace, once. */
+function migrateLegacyKeys() {
+  try {
+    if (localStorage.getItem(LS + "access")) return;      // already scoped
+    const legacyRole = localStorage.getItem(LEGACY_LS + "user");
+    if (!localStorage.getItem(LEGACY_LS + "access")) return;
+    // Only adopt it if the stored role actually belongs to this build —
+    // otherwise the driver app would inherit a customer session and land
+    // straight on the "wrong app" screen it used to.
+    const role = legacyRole ? (JSON.parse(legacyRole).role || "") : "";
+    const belongs =
+      (APP_KEY === "customer" && role === "RIDER") ||
+      (APP_KEY === "driver" && role === "DRIVER") ||
+      (APP_KEY === "ops" && role === "ADMIN") ||
+      (APP_KEY === "merchant" && role === "RESTAURANT");
+    if (!belongs) return;
+    for (const k of ["access", "refresh", "phone", "user"]) {
+      const v = localStorage.getItem(LEGACY_LS + k);
+      if (v != null) localStorage.setItem(LS + k, v);
+    }
+  } catch { /* storage blocked — a fresh sign-in is the fallback */ }
+}
+migrateLegacyKeys();
 
 export const Token = {
   get access() { return localStorage.getItem(LS + "access"); },

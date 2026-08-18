@@ -605,9 +605,24 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   box-shadow: 0 -10px 40px rgba(14, 29, 22, 0.16);
   padding: var(--sp-3) var(--sp-5) calc(var(--sp-5) + var(--safe-bottom));
-  max-height: 82%;
+  /* PEEK HEIGHT, AND IT HAS TO BE A REAL BOUND.
+
+     This was 82%, which is not a collapsed sheet — it is a sheet that fills
+     the screen the moment a step has a lot in it, without anyone having
+     expanded anything. That is why the fare step swallowed the map: nothing
+     was holding it down. 46dvh is a peek: enough for a heading, the fields
+     and the primary action, with the map clearly still there behind it. */
+  max-height: 46dvh;
   overflow-y: auto;
-  transition: transform var(--dur-med) var(--ease-spring);
+  /* MAX-HEIGHT WAS NOT IN THE TRANSITION, so every expand and collapse was an
+     instant jump between two sizes. The drag felt fine — that rides on
+     transform — but the moment the sheet resized itself it snapped, which is
+     the whole 'it is not smooth, it just takes over' complaint. Both
+     properties are animated now, on the same curve, so a resize reads as the
+     same object changing shape rather than two different sheets swapping. */
+  transition:
+    transform var(--dur-med) var(--ease-spring),
+    max-height var(--dur-med) var(--ease-spring);
   /* The whole sheet is a drag surface now, so the browser must not claim
      vertical gestures for its own scrolling before our handler sees them.
      pan-x keeps horizontal map panning working through the sheet edges. */
@@ -624,6 +639,13 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 }
 /* Once there is real content to scroll, the body takes vertical gestures back
    so a long fare breakdown still scrolls normally. */
+/* Vertical gestures belong to the sheet's own scrolling whenever there is
+   something to scroll — not only once expanded. At peek height a tall step
+   overflows immediately, and pan-x meant the content simply would not move
+   under a finger: the rider saw a cut-off panel that refused to scroll and
+   no way to reach the button below the fold. The drag handle keeps
+   touch-action: none, so pulling the sheet itself still works. */
+.dock-sheet { touch-action: pan-y; }
 .dock-sheet.is-expanded { touch-action: pan-y; }
 /* The handle is a real control, so it gets a real touch target: 40x4 is the
    visible bar, but the button around it is 44px tall like everything else. */
@@ -658,12 +680,20 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
    72dvh keeps roughly a quarter of the map alive at every step, which is
    enough to see the pin move and the route draw. Long content scrolls
    inside, which is what the sheet body is for. */
+/* EXPANDED MUST BE BIGGER THAN COLLAPSED.
+
+   My previous pass set this to 72dvh while the base was still 82%, so on a
+   tall phone "expanding" the sheet made it SHRINK. Peek is 46dvh and
+   expanded is 76dvh, which is a real gesture in the right direction and
+   still leaves about a quarter of the map alive — enough to watch the pin
+   move and the route draw. */
 .dock-sheet.is-expanded {
-  max-height: 72dvh;
+  max-height: 76dvh;
 }
 /* Short phones need the room more than they need the map. */
 @media (max-height: 700px) {
-  .dock-sheet.is-expanded { max-height: 82dvh; }
+  .dock-sheet { max-height: 52dvh; }
+  .dock-sheet.is-expanded { max-height: 86dvh; }
 }
 /* Content swap inside a docked sheet gets its own small enter animation, so
    advancing a step reads as progress rather than a flicker. */
