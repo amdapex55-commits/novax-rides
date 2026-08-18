@@ -11,6 +11,7 @@ import { initPush } from "./push.js";
 import { initInstall } from "./install.js";
 import { flush, queueSize } from "./offlineQueue.js";
 import { api } from "./api.js";
+import { alertUser } from "./ui.js";
 
 // The nav comes from the BUILD, not the logged-in role. Each app ships with
 // exactly one nav bar — the customer app has no concept of an "Earnings" tab
@@ -85,10 +86,46 @@ function boot() {
   initInstall();
   renderShell();
   renderBottomNav();
+  watchForSuspension();
   initRouter();
   // After initRouter(), so the first view is already painted underneath and
   // the splash fades to real content rather than to an empty container.
   dismissSplash();
+}
+
+/* OPS SUSPENDS AN ACCOUNT AND THE APP NEVER FINDS OUT.
+
+   admin.service.ts emits "account:suspended" to the user the moment ops
+   suspends them, and nothing anywhere listened for it. The suspension does
+   take effect — the token is revoked and their driver profile is flipped
+   offline — but the app kept behaving as though nothing had happened until
+   the next API call failed with a generic error. A driver mid-shift saw
+   "something went wrong" and reasonably concluded the app was broken, not
+   that ops had stopped them.
+
+   Handled here rather than on any one screen, because a suspension applies to
+   whoever is signed in, wherever they are: driver, customer or restaurant.
+
+   The session is cleared before showing the message. Ops has already revoked
+   the token, so leaving a signed-in shell on screen only invites a series of
+   failing requests. */
+async function watchForSuspension() {
+  if (!Token.access) return;
+  try {
+    const { socketManager } = await import("./socket.js");
+    socketManager.on("account:suspended", (payload) => {
+      Token.clear();
+      window.__novagoRefreshNav?.();
+      alertUser("Your account has been suspended.", {
+        suggestion: payload?.message || "Contact support if you think this is a mistake.",
+        tone: "warn",
+      });
+      navigate("/signin");
+    });
+  } catch {
+    /* No socket (offline, or the CDN is blocked). The token is revoked
+       server-side regardless, so the next request still fails closed. */
+  }
 }
 
 document.addEventListener("DOMContentLoaded", boot);
