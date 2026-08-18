@@ -198,12 +198,27 @@ export function renderDriverHome(root) {
       // Two different failures, two different messages — telling a driver
       // "session expired" when the real problem is a blocked CDN sends them
       // to re-login pointlessly and they still won't get jobs.
-      if (socketManager.degraded) {
-        toast("Can't reach the live network right now — check your connection", true);
-      } else {
-        toast("Session expired — log in again", true);
-        navigate("/signin");
-      }
+      /* NEVER BOUNCE A DRIVER TO THE LOGIN SCREEN FROM HERE.
+
+         connect() returns null when the realtime library could not load or
+         when there is no token in memory at that instant — neither of which
+         proves the session is over, and both of which happen on a moving
+         bike. Sending someone to /signin mid-shift, possibly mid-trip, is
+         the worst thing this screen can do: they lose the job, the passenger
+         waits, and the app has taught them it cannot be relied on.
+
+         So: say it plainly, leave them signed in, and let them tap Go Online
+         again. If the token really is dead the next API call returns 401 and
+         the central handler deals with it once, properly. */
+      toast(
+        socketManager.degraded
+          ? "Can't reach the live network right now — check your connection and try again."
+          : "Couldn't start listening for jobs. Tap Go Online to retry.",
+        true,
+      );
+      online = false;
+      state.isDriverOnline = false;
+      paintOnline();
       return;
     }
     socketManager.on("trip:offer", onTripOffer);

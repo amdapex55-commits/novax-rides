@@ -7,7 +7,7 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, fmtMoney, dockSheet, esc, countUp } from "../ui.js";
+import { toast, fmtMoney, dockSheet, esc, countUp, alertUser } from "../ui.js";
 import { navigate } from "../router.js";
 import { createMap } from "../map.js";
 import { resolveRoute, geocode, getPickupFix, createSuggester, reverseGeocode } from "../geocode.js";
@@ -455,6 +455,13 @@ export function renderRideBooking(root) {
   // ---------- Step 2: vehicle + fare ----------
   function stepVehicle() {
     track("ride_fare_viewed", { distanceKm: route.km, routed: !route.estimated });
+    /* Open the sheet on arrival. The fare step is the tallest content in the
+       flow — vehicle, breakdown, tip, pickup note, safety line, confirm — and
+       at the collapsed height the Request ride button sat below the fold.
+       That is what made the primary action feel like it came and went. The
+       sheet is capped at 72dvh in CSS, so this opens it without swallowing
+       the map. */
+    sheet.expand();
 
     const quoted = previewFare(selectedVehicle, route.km, route.minutes);
 
@@ -729,7 +736,29 @@ export function renderRideBooking(root) {
       // Re-check the things that can change while someone deliberates.
       if (!isOpenNow()) { toast(HOURS.closedMessage, true); return; }
       if (!pickup || pickup.lat == null) {
-        toast("We still don't have your pickup — set it above", true);
+        /* THE SILENT TAP.
+
+           This is the single most likely reason a rider taps Request ride and
+           watches nothing happen: location was denied or has not resolved
+           yet, so the request never leaves. It used to answer with a toast —
+           which rendered behind the sheet and was invisible, so the rider
+           tapped again, and again.
+
+           The toast now sits above the sheet, and this uses alertUser so the
+           message is dismissible and cannot be missed, and it puts the cursor
+           in the field that needs filling. */
+        alertUser("We still don't know where to pick you up.", {
+          suggestion: "Allow location, or type your pickup address at the top of this sheet.",
+          tone: "warn",
+        });
+        sheet.expand();
+        const pickupField = node.querySelector("#pickupInput")
+          || document.querySelector("#pickupInput");
+        if (pickupField) {
+          pickupField.classList.add("invalid");
+          pickupField.scrollIntoView({ behavior: "smooth", block: "center" });
+          pickupField.focus({ preventScroll: true });
+        }
         return;
       }
 

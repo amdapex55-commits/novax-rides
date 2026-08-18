@@ -2290,6 +2290,48 @@
    isn't flush against it. */
 .dock-sheet .sheet-step { padding-bottom: var(--sp-2); }
 
+/* THE ONE BUTTON THAT MUST NEVER GO MISSING.
+
+   Request ride was sticky inside a scrolling sheet, so whenever the sheet sat
+   collapsed the fare content overflowed and the button fell below the fold.
+   It appeared and disappeared depending on how far the sheet happened to be
+   open, which reads as the app losing its own primary action — and is why it
+   felt like tapping did nothing: quite often there was nothing under the
+   thumb.
+
+   A solid backdrop and its own layer keep it legible over whatever scrolls
+   behind it, and rideFlow.js now expands the sheet on entering the fare step
+   so there is always room for it. */
+.dock-sheet #confirmRideBtn {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  background-clip: padding-box;
+}
+
+/* A heartbeat, not a throb. Two quick beats then a rest, at the cadence of an
+   actual pulse — it says "this is the thing to press" without the constant
+   nagging pulse that makes an interface feel anxious. Transform only, so it
+   stays on the compositor. */
+@keyframes nx-cta-heartbeat {
+  0%, 62%, 100% { transform: scale(1); }
+  8%  { transform: scale(1.035); }
+  16% { transform: scale(1); }
+  24% { transform: scale(1.022); }
+  32% { transform: scale(1); }
+}
+.dock-sheet #confirmRideBtn:not(:disabled) {
+  animation: nx-cta-heartbeat 2.6s var(--ease-out) 0.8s infinite;
+}
+/* Stop the moment it is pressed — a button animating while it works looks
+   like it did not register the tap. */
+.dock-sheet #confirmRideBtn:disabled,
+.dock-sheet #confirmRideBtn:active { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-sheet #confirmRideBtn:not(:disabled) { animation: none; }
+}
+
 /* "You are here" — deliberately not the pickup pin.
    The pickup pin is a destination for the rider; this is the phone's own
    belief about where it is. Blue because every map app on earth has taught

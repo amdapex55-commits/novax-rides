@@ -323,8 +323,23 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 }
 
 /* ---------- Toast ---------- */
+/* ABOVE THE SHEET, AND OUT FROM UNDER IT.
+
+   The toast sat at z-index 200 and 96px from the bottom. The docked sheet is
+   z-index 900 and owns the bottom half of the screen, so every message raised
+   while a sheet was open rendered UNDERNEATH it and was never seen.
+
+   That is not a cosmetic bug: tapping "Request ride" without a resolved
+   pickup answers with a toast, so the rider tapped, saw absolutely nothing
+   happen, and tapped again. The app looked dead at the exact moment it was
+   trying to explain itself.
+
+   It now sits above the sheet and near the top of the screen, which is also
+   the half a bottom sheet never covers. */
 .toast {
-  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(20px);
+  position: fixed; left: 50%; top: calc(var(--safe-top) + 14px);
+  transform: translateX(-50%) translateY(-14px);
+  max-width: min(92vw, 460px); text-align: center;
   background: var(--surface-3);
   border: 1px solid var(--surface-border);
   color: var(--text-primary);
@@ -332,8 +347,9 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   border-radius: var(--r-full);
   font-size: 13px;
   font-weight: 600;
-  box-shadow: var(--shadow-md);
-  z-index: 200;
+  box-shadow: var(--shadow-lg);
+  /* Above --z-sheet (900) and every docked drawer. */
+  z-index: 1200;
   opacity: 0;
   transition: all var(--dur-med) var(--ease-spring);
   max-width: 90%;
@@ -631,8 +647,23 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 
 /* Expanded: the sheet takes the screen so a long step (fare breakdown, tips,
    pickup note, safety card, confirm) is reachable without a hidden scroll. */
+/* Expanded, but never the whole screen.
+
+   At `100% - 24px` the sheet swallowed the map: typing a destination left
+   100px of Karachi visible, and the fare step covered everything. A bottom
+   sheet that fills the screen is not a sheet, it is a page that arrived
+   sideways — and it costs the rider the one thing that tells them the app
+   understood where they are going.
+
+   72dvh keeps roughly a quarter of the map alive at every step, which is
+   enough to see the pin move and the route draw. Long content scrolls
+   inside, which is what the sheet body is for. */
 .dock-sheet.is-expanded {
-  max-height: calc(100% - 24px);
+  max-height: 72dvh;
+}
+/* Short phones need the room more than they need the map. */
+@media (max-height: 700px) {
+  .dock-sheet.is-expanded { max-height: 82dvh; }
 }
 /* Content swap inside a docked sheet gets its own small enter animation, so
    advancing a step reads as progress rather than a flicker. */

@@ -14,7 +14,8 @@
 // The previous view's cleanup() still runs before the next renders, so
 // intervals / geolocation watches / socket listeners never leak across
 // navigation.
-import { Token } from "./api.js";
+import { Token, api } from "./api.js";
+import { showNetBanner } from "./net.js";
 import { icon } from "./icons.js";
 import { state } from "./state.js";
 import { APP_CONFIG, routeAllowed, isParkedRoute, serviceForRoute } from "./appMode.js";
@@ -235,6 +236,29 @@ function renderWrongApp(container, userRole) {
   });
 }
 
+/**
+ * Recover a session whose cached profile went missing, instead of ending it.
+ * getMe() is the authority; a 401 there is the only thing that proves the
+ * token is actually dead, and that is the one case that signs someone out.
+ */
+async function hydrateThenRender(path) {
+  try {
+    const me = await api.getMe();
+    Token.user = me;
+    state.postAuthRedirect = null;
+    renderRoute(path);
+  } catch (err) {
+    if (err?.status === 401 || err?.status === 403) {
+      Token.clear();
+      navigate("/signin");
+      return;
+    }
+    // Offline or server trouble — keep them signed in and say so.
+    showNetBanner?.("Can't reach Nova Go right now. Your session is still active.");
+    renderRoute("/home");
+  }
+}
+
 export function navigate(path) {
   if (location.hash.slice(1) === path) { renderRoute(path); return; }
   location.hash = path;
@@ -322,7 +346,20 @@ async function renderRoute(path) {
     if (Token.access && user && user.role !== "RIDER") { navigate(roleHome(user.role)); return; }
   } else if (route.auth !== "none") {
     const user = Token.user;
-    if (!Token.access || !user) { state.postAuthRedirect = path; navigate("/signin"); return; }
+    /* A MISSING PROFILE IS NOT A MISSING SESSION.
+
+       This bounced to the login screen whenever Token.user was absent, even
+       with a perfectly good access token sitting next to it. Token.user is
+       just a cached copy of the profile, written at login — a cleared
+       storage quota, a partial write, or any path that refreshes tokens
+       without re-fetching the profile leaves the token valid and the cache
+       empty. The rider gets signed out for no reason, which on a bike is a
+       real problem.
+
+       Only the absence of a TOKEN ends a session. If the token is there and
+       the profile is not, fetch it. */
+    if (!Token.access) { state.postAuthRedirect = path; navigate("/signin"); return; }
+    if (!user) { state.postAuthRedirect = path; hydrateThenRender(path); return; }
     if (route.auth !== "any" && route.auth !== user.role) { navigate(roleHome(user.role)); return; }
   }
 

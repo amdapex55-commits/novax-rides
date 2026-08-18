@@ -41,8 +41,15 @@ function doRefresh() {
     body: JSON.stringify({ refreshToken: Token.refresh }),
   })
     .then((res) => {
+      // Status carried through so the caller can tell a dead token from a
+      // dead network — see the note at the 401 branch in request().
       if (!res.ok) throw new ApiError("Refresh failed", res.status);
       return res.json();
+    })
+    .catch((err) => {
+      // fetch() rejects on transport failure with a TypeError and no status.
+      if (err instanceof ApiError) throw err;
+      throw new ApiError("Network unreachable during refresh", 0, { retryable: true });
     })
     .then((data) => {
       Token.access = data.accessToken;
@@ -64,7 +71,26 @@ async function request(path, opts = {}, isRetry = false) {
   });
 
   if (res.status === 401 && !isRetry && Token.refresh) {
-    await doRefresh();
+    /* A 401 IS NOT AUTOMATICALLY A SIGN-OUT.
+
+       Refreshing can fail for two completely different reasons and only one
+       of them means the session is over:
+
+         the server answered 4xx  -> the refresh token really is dead
+         the request never landed -> a tunnel, a lift, a dropped cell
+
+       Treating the second as the first is what threw riders back to the
+       login screen mid-shift. On a bike in Karachi the network drops
+       constantly, and a driver who has to re-authenticate at a junction is a
+       driver who stops using the app. So a transport failure re-throws the
+       ORIGINAL 401 as retryable and leaves the tokens exactly where they
+       are; the next request, seconds later, usually just works. */
+    try {
+      await doRefresh();
+    } catch (err) {
+      if (err instanceof ApiError && err.status >= 400 && err.status < 500) throw err;
+      throw new ApiError("Couldn't reach the server. Check your connection and try again.", 0, { retryable: true });
+    }
     return request(path, opts, true);
   }
 
