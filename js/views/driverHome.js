@@ -847,5 +847,9 @@ export function renderTripProgress(root) {
 
   draw();
 
-  return () => { destroyed = true; if (mapHandle) mapHandle.destroy(); };
+  return () => {
+    destroyed = true;
+    liveTracker?.stop?.().catch?.(() => {});
+    if (mapHandle) mapHandle.destroy();
+  };
 }
