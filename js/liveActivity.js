@@ -44,17 +44,19 @@ let timer = 0;
 let trip = null;
 let expanded = false;
 
-/** Screens where the widget would be redundant or in the way. */
+/* HOME ONLY.
+
+   This started as a deny-list — hide on tracking, hide on rate, hide on auth —
+   which meant every screen added later got the pill by default, including the
+   chat thread, where it sat on top of the message box. A floating card over a
+   keyboard is not an ambient reminder, it is an obstruction.
+
+   Home is the one screen where the ride is context rather than the subject,
+   so home is the only place it belongs. Everywhere else either shows the ride
+   already (tracking) or is a task the rider chose to do instead. */
 function suppressed() {
   const path = location.hash.slice(1) || "/";
-  return (
-    path.startsWith("/tracking") ||
-    path.startsWith("/rate") ||
-    path.startsWith("/signin") ||
-    path.startsWith("/signup") ||
-    path.startsWith("/welcome") ||
-    path.startsWith("/splash")
-  );
+  return !(path === "/" || path === "/home" || path.startsWith("/home?"));
 }
 
 function host() {

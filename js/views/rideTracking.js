@@ -7,7 +7,7 @@
 import { api } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, trustCard, dockSheet, esc, confettiBurst } from "../ui.js";
+import { toast, trustCard, dockSheet, esc, confettiBurst, contactSheet } from "../ui.js";
 import { t } from "../i18n.js";
 import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
@@ -150,7 +150,7 @@ export function renderRideTracking(root) {
              just ask. Message and Share stay, one rank down. -->
         ${trip?.driver?.phone ? `
           <a id="callBtn" class="btn btn-primary btn-block mb-2"
-             href="tel:${esc(trip.driver.phone)}">
+             href="#" id="callDriverBtn">
             ${icon("phone", 18)} Call ${esc((trip.driver.name || "your rider").split(" ")[0])}
           </a>` : ""}
         <!-- WHATSAPP IS NOT A NICE-TO-HAVE IN THIS MARKET, IT IS THE CHANNEL.
@@ -236,6 +236,17 @@ export function renderRideTracking(root) {
        and each routes to something that does something. */
     node.querySelector("#supportBtn")?.addEventListener("click", () => openRideHelp());
     node.querySelector("#shareBtn")?.addEventListener("click", shareRide);
+    /* A bare tel: link is inert on desktop and, on a phone, jumps into the
+       dialer without ever showing the number or offering WhatsApp — which in
+       Karachi is very often the one people actually use. */
+    node.querySelector("#callDriverBtn")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      contactSheet({
+        name: trip?.driver?.name || "Your rider",
+        phone: trip?.driver?.phone,
+        role: trip?.driverProfile?.vehiclePlate ? `Nova Go rider · ${trip.driverProfile.vehiclePlate}` : "Nova Go rider",
+      });
+    });
     node.querySelector("#cancelBtn")?.addEventListener("click", () => askWhyThenCancel());
 
     node.querySelector("#safetyList")?.addEventListener("click", (e) => {

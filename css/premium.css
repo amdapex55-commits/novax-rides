@@ -2091,6 +2091,37 @@
   .nx-offer-card-ring { animation-duration: 15s; }
 }
 
+/* Contact sheet — the number, and the two ways to use it. */
+.nx-contact-scrim {
+  position: fixed; inset: 0; z-index: 1300;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(6,4,14,0.6); opacity: 0; transition: opacity 180ms var(--ease-out);
+}
+.nx-contact-scrim.show { opacity: 1; }
+.nx-contact {
+  width: min(100%, var(--max-w));
+  padding: 22px 20px calc(20px + var(--safe-bottom));
+  border-radius: 24px 24px 0 0;
+  background: var(--surface); text-align: center;
+  transform: translateY(14px); transition: transform 220ms var(--ease-spring);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.nx-contact-scrim.show .nx-contact { transform: none; }
+.nx-contact-name { font-size: 19px; font-weight: 800; }
+.nx-contact-role { font-size: 12.5px; color: var(--text-muted); margin-top: -6px; }
+.nx-contact-number {
+  font-size: 22px; font-weight: 800; letter-spacing: 0.02em;
+  color: var(--accent); margin: 4px 0 10px;
+  font-variant-numeric: tabular-nums;
+}
+.nx-contact-act { height: 52px; display: flex; align-items: center; justify-content: center; }
+.nx-contact-copy, .nx-contact-close {
+  border: none; background: none; font: inherit; cursor: pointer;
+  font-size: 13.5px; font-weight: 700; padding: 10px;
+}
+.nx-contact-copy { color: var(--accent); }
+.nx-contact-close { color: var(--text-muted); }
+
 .nx-link { color: var(--accent); }
 .nx-link-strong { color: var(--accent); font-weight: 800; }
 

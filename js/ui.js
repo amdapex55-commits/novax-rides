@@ -548,3 +548,51 @@ export function e164(local) {
   if (digits.startsWith("92")) return "+" + digits;
   return "+92" + digits;
 }
+
+
+/* ---------------------------------------------------------------------------
+   CONTACT SHEET
+
+   A bare `tel:` link is inert on a desktop browser and, on a phone, jumps
+   straight into the dialer with no chance to see the number or pick WhatsApp
+   — which in Karachi is very often the one people actually use.
+
+   This shows the number, then offers the two things someone might want to do
+   with it, plus a copy for the case where they want to dial it themselves.
+   --------------------------------------------------------------------------- */
+export function contactSheet({ name, phone, role = "" }) {
+  if (!phone) {
+    alertUser(`We don't have a number for ${name || "them"}.`, {
+      suggestion: "Message them in the app instead — it reaches the same person.",
+      tone: "warn",
+    });
+    return;
+  }
+  const digits = String(phone).replace(/[^\d+]/g, "");
+  const wa = digits.replace(/^\+/, "");
+
+  const host = document.createElement("div");
+  host.className = "nx-contact-scrim";
+  host.innerHTML = `
+    <div class="nx-contact" role="dialog" aria-label="Contact ${esc(name || "them")}">
+      <p class="nx-contact-name">${esc(name || "Contact")}</p>
+      ${role ? `<p class="nx-contact-role">${esc(role)}</p>` : ""}
+      <p class="nx-contact-number">${esc(phone)}</p>
+      <a class="btn btn-primary btn-block nx-contact-act" href="tel:${esc(digits)}">Call</a>
+      <a class="btn btn-secondary btn-block nx-contact-act" href="https://wa.me/${esc(wa)}"
+         target="_blank" rel="noopener noreferrer">WhatsApp</a>
+      <button class="nx-contact-copy" data-copy>Copy number</button>
+      <button class="nx-contact-close" data-close>Close</button>
+    </div>`;
+  document.body.appendChild(host);
+  requestAnimationFrame(() => host.classList.add("show"));
+
+  const close = () => { host.classList.remove("show"); setTimeout(() => host.remove(), 200); };
+  host.addEventListener("click", (e) => { if (e.target === host) close(); });
+  host.querySelector("[data-close]").addEventListener("click", close);
+  host.querySelector("[data-copy]").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(phone); toast("Number copied"); } catch { /* denied */ }
+    close();
+  });
+  host.querySelectorAll(".nx-contact-act").forEach((a) => a.addEventListener("click", close));
+}

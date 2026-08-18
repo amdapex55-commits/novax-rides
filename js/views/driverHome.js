@@ -7,7 +7,7 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, esc, fmtMoney, trustCard } from "../ui.js";
+import { toast, esc, fmtMoney, trustCard, contactSheet } from "../ui.js";
 import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
 import { startDriverTracking, requestImmediateFix } from "../driverLocation.js";
@@ -732,8 +732,7 @@ export function renderTripProgress(root) {
            address. It's a full-width primary action, above Message, because
            it is the thing they reach for while stopped at the gate. -->
       ${trip?.rider?.phone ? `
-        <a id="callRiderBtn" class="btn btn-primary btn-block mb-2"
-           href="tel:${esc(trip.rider.phone)}">
+        <a id="callRiderBtn" class="btn btn-primary btn-block mb-2" href="#">
           ${icon("phone", 18)} Call ${esc((trip.rider.name || "passenger").split(" ")[0])}
         </a>` : ""}
       <div class="flex gap-2 mb-3">
@@ -759,9 +758,15 @@ export function renderTripProgress(root) {
 
     paintMetrics(step);
 
-    body.querySelector("#callRiderBtn")?.addEventListener("click", () => {
+    body.querySelector("#callRiderBtn")?.addEventListener("click", (e) => {
+      e.preventDefault();
       haptic.medium();
       track("driver_called_customer", { tripId });
+      contactSheet({
+        name: trip?.rider?.name || "Your passenger",
+        phone: trip?.rider?.phone,
+        role: "Your passenger",
+      });
     });
     body.querySelector("#chatBtn").addEventListener("click", () => {
       state.chatContext = { contextType: "TRIP", contextId: tripId, otherPartyLabel: trip?.rider?.name || "Rider" };
