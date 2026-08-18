@@ -224,6 +224,67 @@ function writeAndroidAppId(appKey, appId) {
   return appId;
 }
 
+/* --------------------------------------------------- android signing -----
+
+   WITHOUT THIS, `gradlew bundleRelease` PRODUCES AN UNSIGNED AAB and the Play
+   Console rejects it on upload. Capacitor does not scaffold a signing config,
+   and android/ is gitignored and regenerated, so the config cannot simply be
+   committed once — it has to be reapplied on every build, from here.
+
+   The keystore itself and its passwords live OUTSIDE the repo, in
+   ~/.novago/, for the same reason the ops credentials do. Nothing secret is
+   in this file: it only points at them.
+
+   ⚠️ THE KEYSTORE IS UNREPLACEABLE. Google identifies an app by the key it
+   was signed with. Lose it and you cannot ship an update to that listing
+   ever again — not with a new key, not by asking support. Back it up
+   somewhere that is not this laptop before the first upload. */
+
+function writeAndroidSigning() {
+  const gradlePath = p("android", "app", "build.gradle");
+  if (!fs.existsSync(gradlePath)) return null;
+
+  const os = require("os");
+  const propsPath = path.join(os.homedir(), ".novago", "keystore.properties");
+  if (!fs.existsSync(propsPath)) return "missing"; // not set up yet — debug builds still work
+
+  let g = fs.readFileSync(gradlePath, "utf8");
+  if (g.includes("novagoSigning")) return "already"; // idempotent across rebuilds
+
+  const loader = `
+def novagoSigning = new Properties()
+def novagoPropsFile = new File(System.getProperty("user.home"), ".novago/keystore.properties")
+if (novagoPropsFile.exists()) {
+    novagoPropsFile.withInputStream { novagoSigning.load(it) }
+}
+`;
+  // Load the properties before the android {} block reads them.
+  g = g.replace(/^android\s*\{/m, loader + "\nandroid {");
+
+  const configs = `
+    signingConfigs {
+        release {
+            if (novagoSigning['storeFile']) {
+                storeFile file(novagoSigning['storeFile'])
+                storePassword novagoSigning['storePassword']
+                keyAlias novagoSigning['keyAlias']
+                keyPassword novagoSigning['keyPassword']
+            }
+        }
+    }
+`;
+  g = g.replace(/(\n\s*buildTypes\s*\{)/, configs + "$1");
+
+  // Point the release build type at it.
+  g = g.replace(
+    /(buildTypes\s*\{\s*\n\s*release\s*\{)/,
+    "$1\n            if (novagoSigning['storeFile']) signingConfig signingConfigs.release"
+  );
+
+  fs.writeFileSync(gradlePath, g);
+  return "written";
+}
+
 /* ------------------------------------------------------ ios Info.plist ---
 
    SAME TRAP AS THE MANIFEST, WITH A WORSE FAILURE MODE.
@@ -330,6 +391,7 @@ function writeIosPlist(appKey, appId, displayName) {
 const writtenPerms = writeAndroidManifest(target);
 const writtenAppId = writeAndroidAppId(target, app.appId);
 const writtenIos = writeIosPlist(target, app.appId, app.name);
+const writtenSigning = writeAndroidSigning();
 
 console.log(`
   Built ${app.name}  (${app.appId})
@@ -342,6 +404,10 @@ ${writtenPerms
     writtenPerms.map((x) => `               ${x.replace("android.permission.", "")}`).join("\n")
   : "    android  : no native project yet (npx cap add android)"}
 ${writtenAppId ? `    android  : applicationId = ${writtenAppId}` : ""}
+${writtenSigning === "written" ? "    android  : release signing config injected"
+  : writtenSigning === "already" ? "    android  : release signing already configured"
+  : writtenSigning === "missing" ? "    android  : NO SIGNING — see IOS-SETUP.md / ANDROID-RELEASE.md"
+  : ""}
 ${writtenIos
   ? `    ios      : bundle id = ${app.appId}\n` +
     `               ${writtenIos.usage.length} usage string(s)` +

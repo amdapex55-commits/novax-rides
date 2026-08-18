@@ -1,6 +1,6 @@
 {
-  "appId": "com.novagorides.customer",
-  "appName": "Nova Go",
+  "appId": "com.novagorides.driver",
+  "appName": "Nova Go Rider",
   "webDir": "www",
   "backgroundColor": "#ffffff",
   "server": {
