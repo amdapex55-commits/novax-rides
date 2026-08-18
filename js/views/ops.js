@@ -257,6 +257,33 @@ export function renderOpsApprovals(root) {
   /* A document tile. Opens the R2 object in a new tab at full size — a
      thumbnail is not enough to read a licence expiry or match a face, and
      approving from a thumbnail is the same as approving blind. */
+  /** Exchange each stored document reference for a short-lived signed URL.
+   *  Done after render so the queue paints immediately and one unreadable
+   *  document cannot blank the whole approvals list. */
+  async function hydrateDocs(scope) {
+    const cells = [...scope.querySelectorAll("[data-doc-src]")];
+    await Promise.all(cells.map(async (cell) => {
+      const ref = cell.dataset.docSrc;
+      if (!ref) return;
+      try {
+        const { url } = await api.viewPrivateDoc(ref);
+        cell.href = url;
+        const img = cell.querySelector("img");
+        if (img) img.src = url;
+      } catch (err) {
+        cell.classList.add("missing");
+        cell.removeAttribute("href");
+        const img = cell.querySelector("img");
+        if (img) img.remove();
+        const note = document.createElement("span");
+        note.className = "nx-doc-cell-state";
+        note.textContent = "Couldn't load";
+        cell.appendChild(note);
+        console.warn("[NovaGo] document fetch failed:", err?.message);
+      }
+    }));
+  }
+
   function doc(label, url) {
     if (!url) {
       return `
@@ -265,9 +292,13 @@ export function renderOpsApprovals(root) {
           <span class="nx-doc-cell-state">Not uploaded</span>
         </div>`;
     }
+    /* The src is filled in later by hydrateDocs(), which trades the stored
+       object key for a signed URL. Rendering the raw value here would either
+       404 (private object) or, for a legacy row, put a permanent public link
+       to someone's CNIC into the DOM and the browser cache. */
     return `
-      <a class="nx-doc-cell" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
-        <img src="${esc(url)}" alt="${esc(label)}" loading="lazy"/>
+      <a class="nx-doc-cell" data-doc-src="${esc(url)}" target="_blank" rel="noopener noreferrer">
+        <img alt="${esc(label)}" loading="lazy"/>
         <span class="nx-doc-cell-label">${esc(label)}</span>
         <span class="nx-doc-cell-state">Tap to enlarge</span>
       </a>`;
@@ -343,6 +374,7 @@ export function renderOpsApprovals(root) {
           ),
         );
         list.innerHTML = full.map(card).join("");
+        hydrateDocs(list);
       })
       .catch(() => {
         list.innerHTML = `

@@ -260,6 +260,13 @@ export const api = {
   // ("kyc-doc" | "proof-of-delivery" | "profile-photo"), and fileName is
   // required — the DTO rejects the request without it. Returns
   // { uploadUrl, publicUrl, key, expiresInSeconds }.
+  /* Identity documents are no longer public objects — the stored value is an
+     object key and this exchanges it for a signed URL that dies in two
+     minutes. Accepts a legacy absolute pub-….r2.dev URL too, so records made
+     before the bucket was locked down still open. */
+  viewPrivateDoc: (keyOrUrl) =>
+    request("/uploads/view", { method: "POST", body: { key: String(keyOrUrl) } }),
+
   presignUpload: (purpose, contentType, fileName) =>
     request("/uploads/presign", { method: "POST", body: { purpose, contentType, fileName } }),
 

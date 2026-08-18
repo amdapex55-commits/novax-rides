@@ -411,7 +411,18 @@ export async function createMap(container, opts = {}) {
           // Live drivers draw on top of dead ones where they overlap.
           zIndexOffset: isStale ? -100 : 0,
         }).addTo(map);
-        if (d.label) marker.bindTooltip(String(d.label), { direction: "top", offset: [0, -8] });
+        /* TEXT, NOT HTML. Leaflet parses a string tooltip as HTML, and this
+           label is built from a driver's own name and phone number. A driver
+           who sets their name to an <img onerror> payload would have it run
+           inside the ops console — the one session that can approve drivers,
+           suspend accounts and move money. Handing bindTooltip a DOM node
+           whose text is set with textContent closes that path at the only
+           place every fleet marker goes through. */
+        if (d.label) {
+          const tip = document.createElement("span");
+          tip.textContent = String(d.label);
+          marker.bindTooltip(tip, { direction: "top", offset: [0, -8] });
+        }
         extraMarkers.push(marker);
       });
     },

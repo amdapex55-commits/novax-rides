@@ -5,7 +5,7 @@
 import { api } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, fmtMoney } from "../ui.js";
+import { toast, fmtMoney, esc } from "../ui.js";
 import { navigate } from "../router.js";
 
 function renderOfferCountdown(root, { badge, onAccept, onDecline, id, fallbackPath }) {
@@ -111,11 +111,11 @@ export function renderFoodOrderProgress(root) {
         <div class="list-row-icon">${icon(step === 0 ? "store" : "map-pin", 18)}</div>
         <div style="flex:1;">
           <p class="text-xs text-muted">${step === 0 ? "Pick up from" : "Deliver to"}</p>
-          <p class="text-sm font-bold" style="color:var(--text-primary);">${step === 0 ? (order.restaurant?.name || "Restaurant") : "Customer"}</p>
-          <p class="text-xs text-secondary">${step === 0 ? (order.restaurant?.address || "") : order.dropoffLabel}</p>
+          <p class="text-sm font-bold" style="color:var(--text-primary);">${esc(step === 0 ? (order.restaurant?.name || "Restaurant") : "Customer")}</p>
+          <p class="text-xs text-secondary">${esc(step === 0 ? (order.restaurant?.address || "") : order.dropoffLabel)}</p>
         </div>
       </div>
-      ${order.notes ? `<div class="pending-flag" style="margin-bottom:0;"><span>${icon("bolt", 14)}</span><span>${order.notes}</span></div>` : ""}
+      ${order.notes ? `<div class="pending-flag" style="margin-bottom:0;"><span>${icon("bolt", 14)}</span><span>${esc(order.notes)}</span></div>` : ""}
     `;
   }
 

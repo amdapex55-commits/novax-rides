@@ -209,8 +209,8 @@ export function renderDriverProfile(root) {
     <div class="page nx-stagger">
       <h1 class="text-xl mb-6">Driver Profile</h1>
       <div class="card-elevated text-center mb-6" style="padding:28px 20px;">
-        <div class="avatar" style="width:80px;height:80px;font-size:28px;margin:0 auto 12px;">${(cached.name || "N").charAt(0)}</div>
-        <h2 id="nameText">${cached.name || "Nova Go Driver"}</h2>
+        <div class="avatar" style="width:80px;height:80px;font-size:28px;margin:0 auto 12px;">${esc((cached.name || "N").charAt(0))}</div>
+        <h2 id="nameText">${esc(cached.name || "Nova Go Driver")}</h2>
         <div class="flex items-center justify-center gap-1 mt-2">
           ${icon("star", 16)}<span id="ratingText" class="font-bold">${cached.rating || "5.0"}</span>
         </div>
@@ -219,7 +219,7 @@ export function renderDriverProfile(root) {
       <div class="card mb-3">
         <label class="field-label">Full Name</label>
         <div class="flex gap-2">
-          <input id="nameInput" class="input" value="${cached.name || ""}" placeholder="Your name"/>
+          <input id="nameInput" class="input" value="${esc(cached.name || "")}" placeholder="Your name"/>
           <button id="saveNameBtn" class="btn btn-secondary">Save</button>
         </div>
       </div>
