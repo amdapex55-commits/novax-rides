@@ -437,6 +437,38 @@ admin account, not Aisha's. Note that ops-bot is not a trip participant, so
 admin-level trip cancellation silently no-ops — cancel as the customer with a
 valid enum reason (e.g. `LONG_WAIT`) instead.
 
+## Addendum — 2026-08-18 afternoon: it builds
+
+**The app compiled for the first time.** `~/Desktop/NovaGo-Rider-debug.apk`,
+5.2MB, package `com.novagorides.driver`, label "Nova Go Rider", all eight
+driver permissions present. Nothing in Nova Go had ever run outside a browser
+before this.
+
+**Not yet done, and it is the only thing that matters next:** installing it on
+a real Android phone and testing background GPS — online, screen locked, phone
+in a pocket, fifteen minutes, does ops still see the rider move. Aisha is doing
+this tomorrow (2026-08-19). Everything else on the Android side is ready for it.
+
+**Three copies of the app's identity were stale**, all found by building and
+then inspecting the artifact rather than trusting the build:
+`build.gradle`'s applicationId, `strings.xml`'s app_name / package_name /
+custom_url_scheme, and the iOS Info.plist having no usage strings at all.
+`select-app.js` now writes every one of them on every build. The lesson
+generalises: **`cap sync` is the only thing that propagates config into the
+native projects, and neither select-app.js nor Android Studio's Run button
+calls it.** Assume anything Capacitor generated is stale until written.
+
+**Domain changed to `novagorides.com`** (in cart, checkout pending), bundle IDs
+follow it as `com.novagorides.*`. **D-U-N-S is in approval** as of 2026-08-18 —
+it unlocks Apple Organization enrolment and, likely, a Google Play organization
+account that is **exempt from the 12-tester / 14-day closed test**. Verify that
+exemption in the Play Console before planning recruitment around the
+alternative; with two listings the rule would otherwise mean 24 testers, not 12.
+
+**Still true and still unfixed:** targetSdk 34 is almost certainly under Play's
+upload floor (see Stage 3b) — it blocks upload, not testing. The app icon is
+Capacitor's placeholder. Share ride is still broken. And `versionCode` is 1.
+
 ## How Aisha wants to work
 
 Fast, no narration, and **never make her repeat a task across sessions** — that

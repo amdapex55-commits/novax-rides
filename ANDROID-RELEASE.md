@@ -27,6 +27,28 @@ Android Studio's bundled runtime.
 
 ---
 
+## This machine's toolchain (verified 2026-08-18)
+
+| | |
+|---|---|
+| Android Studio | **`~/Desktop/Android Studio.app`** — not `/Applications`. Tools that look in the conventional place will not find it. |
+| Bundled JDK | 25. **Gradle 8.2.1 cannot run on it** — fails with `Unsupported class file major version 69`. |
+| JDK for CLI builds | **17**, at `/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home` |
+| SDK platforms | `android-34` (installed by Studio 2026-08-18) and `android-37.0` |
+| Build-tools | 34.0.0, 36.0.0 |
+
+Android Studio is **not** affected by the JDK problem — it resolves its own
+Gradle JVM (`gradleJvm = #GRADLE_LOCAL_JAVA_HOME`) and syncs fine. Only
+command-line `./gradlew` needs the export:
+
+```bash
+export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+```
+
+The whole cluster — this JDK mismatch, targetSdk 34, AGP 8.2.1 — is one root
+cause: Capacitor 6 scaffolds a two-year-old Android toolchain against a current
+Studio, JDK and SDK.
+
 ## Always run select-app before you build
 
 The four apps share one `android/` project. `scripts/select-app.js` swaps the
