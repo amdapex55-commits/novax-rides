@@ -130,6 +130,32 @@ APNs key, no device-token storage, no send path. This is a real build (item
     web layer, not the store identity. Both platforms' identities are now
     written on every build.
 
+## Stage 3b — Found on 2026-08-18, when Android Studio first opened the project
+
+**A. [YOU, 2 minutes] SDK Platform 34 is not installed.** `variables.gradle`
+asks for `compileSdkVersion = 34`; the only platform on this Mac is
+`android-37.0`. The first Gradle sync fails on this and Android Studio offers
+to download it — accept, and the sync goes green. This blocks nothing else.
+
+**B. [TODO — blocks upload, not testing] targetSdk 34 is very likely below
+Play's floor.** Google ratchets the minimum target API for NEW submissions
+every August, roughly to "within a year of current". Current here is API 37.
+A build targeting 34 will compile, install and run on a real handset perfectly
+well — so **it does not block any device testing** — but it is likely refused
+at upload.
+
+Fixing it is not a one-line bump. `variables.gradle` is generated, so the
+change has to live in `select-app.js` like the applicationId does; and moving
+past 34 means moving off AGP 8.2.1 / Gradle 8.2.1, which is what Capacitor 6
+scaffolds. Raising targetSdk also opts the app into Android 14/15/16 behaviour
+changes — foreground-service types most of all, which is precisely the
+machinery the driver app's background GPS depends on.
+
+So: **verify Play's actual current minimum in the console before doing this
+work**, then do it deliberately with a real handset to retest against. Do NOT
+rush it in the week before submission — it lands on the one subsystem with no
+test coverage and no hardware verification.
+
 ## Stage 4 — The native capabilities reviewers look for
 
 21. **[DONE, except credentials] Push notifications.** Built 2026-08-14:
