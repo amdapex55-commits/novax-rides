@@ -20,12 +20,12 @@
 //   Created pending, and cannot go online until ops approves them against the
 //   original document. That gate is not a formality: they carry a passenger.
 
-import { api } from "../api.js";
+import { api, Token } from "../api.js";
 import { prepareForUpload } from "../imagePrep.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
 import { toast, esc, alertUser} from "../ui.js";
-import { navigate } from "../router.js";
+import { navigate, roleHome } from "../router.js";
 import { APP_CONFIG } from "../appMode.js";
 import { track } from "../analytics.js";
 import { reportHandled } from "../errors.js";
@@ -37,9 +37,22 @@ function signupRole() {
   return APP_CONFIG.signupRole === "DRIVER" ? "DRIVER" : "RIDER";
 }
 
+/* WHERE SOMEONE LANDS AFTER SIGNING IN IS NOT ALWAYS "/home".
+
+   This sent everyone to "/home", which in the driver build resolves to the
+   driver dashboard — including a driver whose application is still pending,
+   who was shown a Go Online button they cannot use and a map with no jobs on
+   it. Nothing told them they were waiting on a review.
+
+   roleHome() already encodes the right answer for every role and KYC state,
+   and the router uses it for its own redirects. Using it here too means the
+   signup path, the sign-in path and a router bounce all land in the same
+   place, instead of three near-copies drifting apart — which is exactly how
+   the pending driver ended up on the dashboard by one route and the review
+   screen by another. */
 function afterAuth() {
   window.__novagoRefreshNav?.();
-  const target = state.postAuthRedirect || "/home";
+  const target = state.postAuthRedirect || roleHome(Token.user?.role);
   state.postAuthRedirect = null;
   navigate(target);
 }

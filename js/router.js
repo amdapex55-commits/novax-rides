@@ -141,7 +141,7 @@ export const ROUTES = {
 let currentCleanup = null;
 let currentRoute = null;
 
-function roleHome(role) {
+export function roleHome(role) {
   if (role === "DRIVER") return Token.user?.kycStatus === "APPROVED" ? "/driver/home" : "/driver/pending";
   if (role === "ADMIN") return "/ops/dashboard";
   // RESTAURANT's real home depends on onboarding/approval status, which
