@@ -12,6 +12,7 @@ import { initInstall } from "./install.js";
 import { flush, queueSize } from "./offlineQueue.js";
 import { api } from "./api.js";
 import { alertUser } from "./ui.js";
+import { initLiveActivity } from "./liveActivity.js";
 
 // The nav comes from the BUILD, not the logged-in role. Each app ships with
 // exactly one nav bar — the customer app has no concept of an "Earnings" tab
@@ -87,6 +88,9 @@ function boot() {
   renderShell();
   renderBottomNav();
   watchForSuspension();
+  /* The live ride, pinned above every screen. Customer app only — a driver's
+     active job already owns their whole screen. */
+  if (APP_CONFIG.key === "customer") initLiveActivity();
   initRouter();
   // After initRouter(), so the first view is already painted underneath and
   // the splash fades to real content rather than to an empty container.

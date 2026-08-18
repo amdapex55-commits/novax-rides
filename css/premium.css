@@ -1875,6 +1875,113 @@
 }
 .nx-alert-action:active { transform: scale(0.97); }
 
+/* ---------------------------------------------------------------------------
+   LIVE ACTIVITY — the ride, on every screen.
+
+   Sits above everything except alerts. Collapsed it is a glance; tapped it
+   becomes the whole card and the screen behind it dims, so the ride is
+   briefly the only thing in the room.
+   --------------------------------------------------------------------------- */
+#nxLive { position: fixed; inset: 0; z-index: 1000; pointer-events: none; }
+#nxLive > * { pointer-events: auto; }
+
+.nx-live-scrim {
+  position: absolute; inset: 0;
+  background: rgba(6, 4, 14, 0.55);
+  backdrop-filter: blur(3px);
+  animation: nx-live-fade 200ms var(--ease-out);
+}
+@keyframes nx-live-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.nx-live {
+  position: absolute;
+  left: 12px; right: 12px;
+  bottom: calc(var(--safe-bottom) + 84px);   /* clears the nav bar */
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 14px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.42);
+  transition: bottom 260ms var(--ease-spring), border-radius 260ms var(--ease-spring);
+}
+.nx-live.expanded {
+  bottom: calc(var(--safe-bottom) + 96px);
+  border-radius: 24px;
+  padding: 16px 18px 18px;
+}
+
+.nx-live-tap {
+  display: flex; flex-direction: column; gap: 6px;
+  width: 100%; padding: 0; border: 0; background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+
+.nx-live-top { display: flex; align-items: center; justify-content: space-between; }
+.nx-live-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.14em;
+  color: var(--accent);
+}
+.nx-live-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent);
+  animation: nx-live-beat 1.9s ease-out infinite;
+}
+@keyframes nx-live-beat {
+  70% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.nx-live-ref { font-size: 10.5px; color: var(--text-muted); font-family: var(--mono, ui-monospace, monospace); }
+
+.nx-live-headline { font-size: 15.5px; font-weight: 800; line-height: 1.2; }
+.nx-live-eta { font-size: 13px; color: var(--text-secondary); }
+
+/* The line that keeps it feeling alive. The fill is where the ride actually
+   is; the sheen travelling along it is what stops a static bar reading as a
+   frozen screenshot. */
+.nx-live-track {
+  position: relative; height: 3px; margin-top: 4px;
+  border-radius: 99px; background: var(--surface-3); overflow: hidden;
+}
+.nx-live-fill {
+  display: block; height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--brand-500), var(--brand-300));
+  transition: width 600ms var(--ease-out);
+  position: relative;
+}
+.nx-live-fill::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+  transform: translateX(-100%);
+  animation: nx-live-sheen 1.9s ease-in-out infinite;
+}
+@keyframes nx-live-sheen { to { transform: translateX(220%); } }
+
+.nx-live-route {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-top: 8px; font-size: 12.5px; color: var(--text-secondary);
+}
+.nx-live-arrow { display: inline-flex; color: var(--text-muted); }
+
+.nx-live-driver { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.nx-live-avatar {
+  width: 36px; height: 36px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent); color: #fff; font-weight: 800; font-size: 15px;
+}
+.nx-live-driver-text { display: flex; flex-direction: column; }
+.nx-live-driver-text b { font-size: 14px; }
+.nx-live-driver-text em { font-style: normal; font-size: 12px; color: var(--text-muted); }
+
+.nx-live-fare { margin-top: 10px; font-size: 20px; font-weight: 800; }
+.nx-live-cta { height: 48px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-live-dot, .nx-live-fill::after { animation: none; }
+  .nx-live, .nx-live-fill { transition: none; }
+}
+
 .nx-link { color: var(--accent); }
 .nx-link-strong { color: var(--accent); font-weight: 800; }
 
