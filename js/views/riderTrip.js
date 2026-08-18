@@ -2,7 +2,7 @@
 import { api } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
-import { toast, confettiBurst } from "../ui.js";
+import { toast, confettiBurst, alertUser } from "../ui.js";
 import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
 import { savePlace, listSavedPlaces } from "../savedPlaces.js";
@@ -158,8 +158,9 @@ export function renderRateTrip(root) {
            their hand, which is exactly what the moment needs. -->
       <div id="cashCard" class="mb-5" style="width:100%;" hidden></div>
 
-      <p class="text-secondary mb-6">How was your ride?</p>
-      <div class="flex gap-2 mb-8" id="stars">
+      <p class="text-secondary mb-2" id="rateWho">How was your ride?</p>
+      <p class="text-xs text-muted mb-5" id="rateNote">Your rating goes on their profile.</p>
+      <div class="flex gap-2 mb-4" id="stars">
         ${Array.from({ length: 5 }).map((_, i) => `<button data-star="${i + 1}" style="color:${i < 5 ? "var(--warning)" : "var(--surface-border)"};">${icon("star", 36)}</button>`).join("")}
       </div>
       <!-- Offer to save the destination, here and nowhere else. This is the
@@ -177,7 +178,11 @@ export function renderRateTrip(root) {
         </span>
       </div>
 
-      <button id="submitBtn" class="btn btn-primary btn-block mt-4">Submit Rating</button>
+      <!-- A star alone tells a rider nothing they can act on. One line does. -->
+      <textarea id="rateComment" class="input mb-4" rows="2"
+                placeholder="Anything you'd want them to know? (optional)"
+                maxlength="300" style="resize:none;"></textarea>
+      <button id="submitBtn" class="btn btn-primary btn-block mt-2">Submit Rating</button>
       <button id="skipBtn" class="btn btn-ghost btn-block mt-2">Skip</button>
     </div>
   `;
@@ -208,6 +213,21 @@ export function renderRateTrip(root) {
 
   paintCashCard(root.querySelector("#cashCard"), state.lastFare);
 
+  /* Rating "your ride" is abstract; rating Zaid is not. The name also makes
+     it obvious this lands on a person, which is the whole reason the score
+     is worth giving honestly. */
+  if (tripId) {
+    api.getTrip(tripId)
+      .then((t) => {
+        const name = t?.driver?.name;
+        if (!name || !root.isConnected) return;
+        root.querySelector("#rateWho").textContent = `How was your ride with ${name}?`;
+        root.querySelector("#rateNote").textContent =
+          `Your rating updates ${String(name).split(" ")[0]}'s star rating on their profile.`;
+      })
+      .catch(() => { /* the generic copy is still true */ });
+  }
+
   const stars = Array.from(root.querySelectorAll("#stars button"));
   function paint() {
     stars.forEach((s, i) => { s.style.color = i < score ? "var(--warning)" : "var(--surface-border)"; });
@@ -221,13 +241,42 @@ export function renderRateTrip(root) {
   }
 
   root.querySelector("#submitBtn").addEventListener("click", async (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    confettiBurst(rect.left + rect.width / 2, rect.top);
-    if (tripId) {
-      try { await api.rateTrip(tripId, score); } catch (err) { console.warn("[NovaGo] rate failed", err); }
+    const btn = e.currentTarget;
+    /* IT USED TO SAY THANK YOU EITHER WAY.
+
+       The call was wrapped in a catch that only console.warn'd, and the
+       toast fired regardless — so a rating that never reached the server
+       looked identical to one that did. The customer believed they had rated
+       their rider, the rider's star average never moved, and nobody could
+       have known. A rating system that cannot fail visibly is not a rating
+       system.
+
+       The confetti now waits for the server to agree. */
+    if (!tripId) { finish(); return; }
+    btn.disabled = true;
+    const label = btn.textContent;
+    btn.innerHTML = `<span class="spinner"></span>`;
+    const comment = root.querySelector("#rateComment")?.value.trim() || undefined;
+    try {
+      await api.rateTrip(tripId, score, comment);
+      const rect = btn.getBoundingClientRect();
+      confettiBurst(rect.left + rect.width / 2, rect.top);
+      toast("Thanks — that goes on their profile");
+      setTimeout(finish, 900);
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = label;
+      /* Already rated is not a failure worth blocking on — the score is
+         recorded, they simply came back to this screen. */
+      if (/already been rated/i.test(err?.message || "")) {
+        toast("You've already rated this trip");
+        setTimeout(finish, 900);
+        return;
+      }
+      alertUser("That rating didn't send.", {
+        suggestion: err?.message || "Check your connection and try again.",
+      });
     }
-    toast("Thanks for rating!");
-    setTimeout(finish, 900);
   });
   root.querySelector("#skipBtn").addEventListener("click", finish);
 }
