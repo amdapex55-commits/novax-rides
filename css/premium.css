@@ -1584,6 +1584,101 @@
 }
 .nx-doc.error .nx-doc-state { color: var(--error); font-weight: 700; }
 
+/* ---------------------------------------------------------------------------
+   The single driver application.
+
+   One long form beats two short ones, but only if the length is legible.
+   Section headers break it into four decisions instead of one wall, and each
+   document is a full-width row with a real thumbnail — on a 360px phone a
+   three-column grid of dashed squares is unreadable, and a rider cannot tell
+   whether the photo they just took was the blurry one.
+   --------------------------------------------------------------------------- */
+.nx-form-section {
+  margin: 26px 0 12px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.nx-form-section::after {
+  content: "";
+  display: block;
+  height: 1px;
+  margin-top: 8px;
+  background: var(--surface-border);
+}
+
+.nx-field-hint {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.nx-field-hint svg { flex: none; margin-top: 2px; }
+
+/* A field the form just rejected. The red edge survives until the next
+   submit, so someone who scrolled away can still find it. */
+.input.invalid,
+.nx-phone-field:has(.invalid) {
+  border-color: var(--error);
+  background: color-mix(in srgb, var(--error) 5%, transparent);
+}
+
+.nx-doc-list { display: flex; flex-direction: column; gap: 10px; }
+.nx-doc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  padding: 10px 14px 10px 10px;
+  border: 1.5px dashed var(--surface-border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 160ms var(--ease-out), background 160ms var(--ease-out);
+}
+.nx-doc-row:active { transform: scale(0.995); }
+.nx-doc-thumb {
+  flex: none;
+  width: 48px; height: 48px;
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  overflow: hidden;
+}
+.nx-doc-thumb.has-image { background: none; }
+.nx-doc-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nx-doc-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nx-doc-row .nx-doc-label { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.nx-doc-hint {
+  font-size: 12px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nx-doc-row .nx-doc-state { flex: none; font-size: 12px; font-weight: 700; color: var(--text-muted); }
+
+.nx-doc-row.busy { border-color: var(--accent); }
+.nx-doc-row.done {
+  border-style: solid;
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 8%, transparent);
+}
+.nx-doc-row.done .nx-doc-state { color: var(--success); }
+.nx-doc-row.error,
+.nx-doc-row.invalid {
+  border-color: var(--error);
+  background: color-mix(in srgb, var(--error) 7%, transparent);
+}
+.nx-doc-row.error .nx-doc-state { color: var(--error); }
+
+/* Narrow phones: the hint is the first thing to go, not the label. */
+@media (max-width: 340px) {
+  .nx-doc-hint { display: none; }
+}
+
 .nx-link { color: var(--accent); }
 .nx-link-strong { color: var(--accent); font-weight: 800; }
 

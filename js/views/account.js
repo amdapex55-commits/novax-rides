@@ -126,6 +126,44 @@ export function renderSignIn(root) {
 
 /* ------------------------------------------------------------- sign up --- */
 
+/* THE WHOLE APPLICATION, ON ONE SCREEN.
+
+   There used to be two: this form, and then a second "onboarding" form after
+   sign-in that asked for the documents all over again. A rider photographed
+   their licence, created an account, and was immediately shown a form
+   demanding the same licence plus four more things. That is where they left.
+
+   So everything a reviewer needs is collected once, here, and the application
+   is submitted for review automatically. The onboarding screen still exists,
+   but only as a repair path for the rare case where an upload fails after the
+   account is already created — never as a second gate.
+
+   Payout details are the one deliberate exception. They are asked for after
+   approval, because a bank or wallet number is a strange thing to demand from
+   someone we might be about to reject, and nobody is paid before their first
+   completed job anyway. */
+
+const DRIVER_DOCS = [
+  {
+    key: "cnic",
+    field: "cnicFrontUrl",
+    label: "CNIC",
+    hint: "Front side — all four corners in frame",
+  },
+  {
+    key: "licence",
+    field: "licenseDocUrl",
+    label: "Driving licence",
+    hint: "The side with your photo and licence number",
+  },
+  {
+    key: "vehicle",
+    field: "vehiclePhotoUrl",
+    label: "Photo of your bike",
+    hint: "Whole bike, with the number plate readable",
+  },
+];
+
 export function renderSignUp(root) {
   const role = signupRole();
   const isDriver = role === "DRIVER";
@@ -137,11 +175,13 @@ export function renderSignUp(root) {
         <h1 class="nx-auth-title">${isDriver ? "Ride with Nova Go" : "Create your account"}</h1>
         <p class="nx-auth-sub">
           ${isDriver
-            ? "We'll check your licence before you can take jobs — usually the same day."
+            ? "One form, then we review it — usually the same day. There is nothing else to fill in afterwards."
             : "Takes a minute. You can book straight away."}
         </p>
 
         <form id="signupForm" novalidate>
+          ${isDriver ? `<p class="nx-form-section">About you</p>` : ""}
+
           <div class="nx-field-row">
             <div>
               <label class="field-label" for="firstName">First name</label>
@@ -162,30 +202,66 @@ export function renderSignUp(root) {
 
           <label class="field-label" for="email">Email</label>
           <input id="email" class="input mb-3" type="email" autocomplete="email"
-                 placeholder="you@example.com" required/>
+                 inputmode="email" placeholder="you@example.com" required/>
 
           ${isDriver ? `
             <label class="field-label" for="address">Home address</label>
             <input id="address" class="input mb-3" autocomplete="street-address"
                    placeholder="House 12, Street 4, Gulshan-e-Iqbal" required/>
-
-            <!-- Both sides, because the expiry and the licence class are on
-                 the back. A front-only photo can't actually be checked. -->
-            <p class="field-label" style="margin-bottom:8px;">Driving licence</p>
-            <div class="nx-doc-grid mb-3">
-              ${docSlot("licenseFront", "Front")}
-              ${docSlot("licenseBack", "Back")}
-            </div>
           ` : ""}
 
           <label class="field-label" for="password">Password</label>
-          <div class="nx-pw-wrap mb-2">
+          <div class="nx-pw-wrap ${isDriver ? "mb-3" : "mb-2"}">
             <input id="password" class="input" type="password" autocomplete="new-password"
                    placeholder="At least 8 characters" required/>
             <button type="button" class="nx-pw-toggle" id="pwToggle" aria-label="Show password">
               ${icon("eye", 18)}
             </button>
           </div>
+
+          ${isDriver ? `
+            <p class="nx-form-section">Your bike</p>
+            <!-- Bike only in the pilot, so this is a statement rather than a
+                 dropdown offering a rickshaw we can never approve. -->
+            <input type="hidden" id="vehicleType" value="bike"/>
+            <label class="field-label" for="vehiclePlate">Number plate</label>
+            <input id="vehiclePlate" class="input mb-3" placeholder="KHI-2024"
+                   autocapitalize="characters" required/>
+
+            <label class="field-label" for="serviceZone">Where you'll mostly drive</label>
+            <input id="serviceZone" class="input mb-1" placeholder="DHA / Clifton / Saddar" required/>
+            <p class="nx-field-hint mb-3">Just the areas you know well. You can still take jobs anywhere.</p>
+
+            <p class="nx-form-section">Your documents</p>
+            <label class="field-label" for="cnicNumber">CNIC number</label>
+            <input id="cnicNumber" class="input mb-3" inputmode="numeric"
+                   placeholder="42101-1234567-1" maxlength="15" required/>
+
+            <div class="nx-doc-list mb-3">
+              ${DRIVER_DOCS.map(docRow).join("")}
+            </div>
+            <p class="nx-field-hint mb-3">
+              ${icon("shield", 13)} Photos go straight to Nova Go's secure storage.
+              Only our review team ever sees them.
+            </p>
+
+            <p class="nx-form-section">Emergency contact</p>
+            <p class="nx-field-hint mb-3">Who we call if something happens to you while you're working.</p>
+            <label class="field-label" for="emergencyContactName">Name</label>
+            <input id="emergencyContactName" class="input mb-3" placeholder="Fatima Khan" required/>
+            <label class="field-label" for="emergencyContactPhone">Their mobile number</label>
+            <div class="nx-phone-field mb-3">
+              <span class="nx-phone-cc">+92</span>
+              <input id="emergencyContactPhone" class="nx-phone-input" type="tel" inputmode="numeric"
+                     maxlength="11" placeholder="300 1234567" required/>
+            </div>
+
+            <div class="nx-launch-note mb-3">
+              ${icon("wallet", 15)}
+              <span>We'll ask where to send your earnings <strong>after you're approved</strong> —
+              no bank or wallet number needed to apply.</span>
+            </div>
+          ` : ""}
 
           <p class="nx-auth-hint" id="hint">&nbsp;</p>
 
@@ -212,8 +288,8 @@ export function renderSignUp(root) {
 
   wirePasswordToggle(root);
 
-  // Uploaded document URLs, filled in as each upload completes.
-  const docs = { licenseFront: null, licenseBack: null };
+  // Prepared files, held in memory until there is a token to upload them with.
+  const docs = {};
   if (isDriver) wireDocUploads(root, docs);
 
   root.querySelector("#signupForm").addEventListener("submit", async (e) => {
@@ -231,56 +307,98 @@ export function renderSignUp(root) {
       role,
     };
 
-    const fail = (msg) => {
+    /* Scroll the offending field into view and focus it. On a form this long
+       a red line of text at the bottom is invisible — the rider sees a button
+       that did nothing and taps it again. */
+    const fail = (msg, fieldId) => {
       hint.textContent = msg;
       hint.className = "nx-auth-hint error";
+      const el = fieldId && root.querySelector(`#${fieldId}`);
+      if (el) {
+        el.classList.add("invalid");
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.focus({ preventScroll: true });
+      } else {
+        hint.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     };
 
-    if (!dto.firstName || !dto.lastName) return fail("Enter your first and last name.");
-    if (dto.phone.replace(/\D/g, "").length < 10) return fail("Enter your 10-digit mobile number.");
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(dto.email)) return fail("Enter a valid email address.");
-    if (dto.password.length < 8) return fail("Password must be at least 8 characters.");
+    root.querySelectorAll(".invalid").forEach((el) => el.classList.remove("invalid"));
 
+    if (!dto.firstName) return fail("Enter your first name.", "firstName");
+    if (!dto.lastName) return fail("Enter your last name.", "lastName");
+    if (dto.phone.replace(/\D/g, "").length < 10) return fail("Enter your 10-digit mobile number.", "phone");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(dto.email)) return fail("Enter a valid email address.", "email");
+    if (dto.password.length < 8) return fail("Password must be at least 8 characters.", "password");
+
+    // The driver's half of the application — everything ops needs to decide.
+    let profile = null;
     if (isDriver) {
       dto.address = val("address");
-      if (!dto.address) return fail("Enter your home address.");
-      // Blocked here rather than server-side so nobody submits an application
-      // that ops will only have to reject.
-      if (!docs.licenseFront || !docs.licenseBack) {
-        return fail("Upload both sides of your driving licence.");
+      if (!dto.address) return fail("Enter your home address.", "address");
+
+      profile = {
+        vehicleType: "bike",
+        vehiclePlate: val("vehiclePlate"),
+        serviceZone: val("serviceZone"),
+        cnicNumber: val("cnicNumber"),
+        emergencyContactName: val("emergencyContactName"),
+        emergencyContactPhone: val("emergencyContactPhone"),
+      };
+
+      if (!profile.vehiclePlate) return fail("Enter your number plate.", "vehiclePlate");
+      if (!profile.serviceZone) return fail("Tell us the areas you'll mostly drive in.", "serviceZone");
+      if (profile.cnicNumber.replace(/\D/g, "").length !== 13) {
+        return fail("A CNIC number has 13 digits.", "cnicNumber");
       }
-      // The URLs do not exist yet — the files are uploaded after register(),
-      // because that is the first moment there is a token to upload with.
+      if (!profile.emergencyContactName) return fail("Enter your emergency contact's name.", "emergencyContactName");
+      if (profile.emergencyContactPhone.replace(/\D/g, "").length < 10) {
+        return fail("Enter your emergency contact's 10-digit number.", "emergencyContactPhone");
+      }
+
+      // Blocked here rather than server-side so nobody submits an application
+      // ops will only have to reject.
+      const missingDoc = DRIVER_DOCS.find((d) => !docs[d.key]);
+      if (missingDoc) return fail(`Add a photo of your ${missingDoc.label.toLowerCase()}.`, `${missingDoc.key}Slot`);
     }
 
     btn.disabled = true;
     const label = btn.innerHTML;
-    btn.innerHTML = `<span class="spinner"></span>`;
+    const working = (text) => { btn.innerHTML = `<span class="spinner"></span> ${esc(text)}`; };
+    working(isDriver ? "Creating your account…" : "Creating your account…");
+
     try {
       // api.register stores the tokens and hydrates Token.user.
       await api.register(dto);
       track("signed_up", { role });
 
-      /* Now there is a token, so the documents can go up. A failure here
-         must NOT read as a failed signup — the account exists and they are
-         signed in; only the licence is missing, and onboarding asks for it
-         again. Losing that distinction would send someone back to create a
-         second account they cannot create, because the phone is taken. */
       if (isDriver) {
+        /* Now there is a token, so the photos can go up — /uploads/presign is
+           behind the JWT guard, which is why nothing could be uploaded before
+           this line. A failure from here on must NOT read as a failed signup:
+           the account exists and they are signed in. Sending them back to
+           "create an account" would strand them, because their own phone
+           number is now taken. */
         try {
-          const urls = await uploadHeldDocs(docs);
-          if (Object.keys(urls).length) await api.saveDriverOnboarding(urls);
+          const urls = await uploadHeldDocs(docs, working);
+          working("Submitting your application…");
+          await api.saveDriverOnboarding({ ...profile, ...urls });
+          await api.submitDriverOnboarding();
+          track("driver_application_submitted");
+          toast("Application received — we'll review it shortly");
         } catch (err) {
-          reportHandled(err, "signup-doc-upload", { role });
-          alertUser("Your account is created, but the licence didn't upload.", {
-            suggestion: "Nothing is lost — you'll be asked for it again on the next screen.",
+          reportHandled(err, "signup-application", { role });
+          alertUser("Your account is ready, but the application didn't finish sending.", {
+            suggestion: "Nothing is lost — the next screen picks up exactly where this stopped.",
             tone: "warn",
           });
+          window.__novagoRefreshNav?.();
+          state.postAuthRedirect = null;
+          return navigate("/driver/onboarding");
         }
+      } else {
+        toast("Welcome to Nova Go");
       }
-      toast(isDriver
-        ? "Application received — we'll review your licence shortly"
-        : "Welcome to Nova Go");
       afterAuth();
     } catch (err) {
       reportHandled(err, "signup", { role });
@@ -293,13 +411,16 @@ export function renderSignUp(root) {
 
 /* ------------------------------------------------------------- helpers --- */
 
-function docSlot(id, label) {
+function docRow(d) {
   return `
-    <label class="nx-doc" for="${id}Input" id="${id}Slot">
-      <input type="file" id="${id}Input" accept="image/*" capture="environment" hidden/>
-      <span class="nx-doc-icon">${icon("camera", 20)}</span>
-      <span class="nx-doc-label">${esc(label)}</span>
-      <span class="nx-doc-state" id="${id}State">Tap to upload</span>
+    <label class="nx-doc-row" for="${d.key}Input" id="${d.key}Slot">
+      <input type="file" id="${d.key}Input" accept="image/*" capture="environment" hidden/>
+      <span class="nx-doc-thumb" id="${d.key}Thumb">${icon("camera", 20)}</span>
+      <span class="nx-doc-text">
+        <span class="nx-doc-label">${esc(d.label)}</span>
+        <span class="nx-doc-hint">${esc(d.hint)}</span>
+      </span>
+      <span class="nx-doc-state" id="${d.key}State">Add photo</span>
     </label>`;
 }
 
@@ -318,22 +439,27 @@ function wireDocUploads(root, docs) {
      token. That is the only ordering that can work, and it keeps the guard on
      the endpoint, which should stay: an unauthenticated presign endpoint is
      an open invitation to fill someone else's bucket. */
-  ["licenseFront", "licenseBack"].forEach((key) => {
+  DRIVER_DOCS.forEach((d) => {
+    const key = d.key;
     const input = root.querySelector(`#${key}Input`);
     const slot = root.querySelector(`#${key}Slot`);
     const stateEl = root.querySelector(`#${key}State`);
+    const thumb = root.querySelector(`#${key}Thumb`);
 
     input.addEventListener("change", async () => {
       const file = input.files?.[0];
       if (!file) return;
 
       if (file.size > MAX_DOC_BYTES) {
-        stateEl.textContent = "Too large — under 5MB please";
+        stateEl.textContent = "Too large";
         slot.classList.add("error");
+        alertUser("That photo is too large.", {
+          suggestion: "Take a fresh one with the camera — phone photos from the camera app are fine.",
+        });
         return;
       }
 
-      slot.classList.remove("error", "done");
+      slot.classList.remove("error", "done", "invalid");
       slot.classList.add("busy");
       stateEl.textContent = "Preparing…";
 
@@ -344,15 +470,22 @@ function wireDocUploads(root, docs) {
         docs[key] = prepared;
         slot.classList.remove("busy");
         slot.classList.add("done");
-        stateEl.textContent = `Ready · ${Math.round(prepared.blob.size / 1024)}KB`;
+        stateEl.textContent = "Ready";
+        // Seeing the actual photo is how someone catches a blurry or
+        // half-cropped licence before ops rejects it three days later.
+        if (thumb) {
+          const url = URL.createObjectURL(prepared.blob);
+          thumb.innerHTML = `<img src="${url}" alt=""/>`;
+          thumb.classList.add("has-image");
+        }
       } catch (err) {
         slot.classList.remove("busy");
         slot.classList.add("error");
-        stateEl.textContent = "Couldn't read that file";
+        stateEl.textContent = "Try again";
         alertUser("That photo couldn't be read.", {
           suggestion: `Try taking a fresh one with the camera. (${file.type || "unknown type"} · ${Math.round(file.size / 1024)}KB)`,
         });
-        console.warn("[NovaGo] licence prepare failed:", err?.message);
+        console.warn("[NovaGo] document prepare failed:", err?.message);
       }
     });
   });
@@ -360,17 +493,24 @@ function wireDocUploads(root, docs) {
 
 /**
  * Upload the held documents. Called AFTER registration, when a token exists.
- * @returns {Promise<{licenseFrontUrl?: string, licenseBackUrl?: string}>}
+ * @param {object} docs   prepared blobs, keyed by DRIVER_DOCS key
+ * @param {(text: string) => void} onProgress  drives the button label
+ * @returns {Promise<Record<string, string>>} profile fields -> public URLs
  */
-async function uploadHeldDocs(docs) {
+async function uploadHeldDocs(docs, onProgress = () => {}) {
   const urls = {};
-  for (const [key, field] of [["licenseFront", "licenseFrontUrl"], ["licenseBack", "licenseBackUrl"]]) {
-    const prepared = docs[key];
+  let done = 0;
+  const total = DRIVER_DOCS.filter((d) => docs[d.key]).length;
+
+  for (const d of DRIVER_DOCS) {
+    const prepared = docs[d.key];
     if (!prepared) continue;
+    onProgress(`Uploading photo ${done + 1} of ${total}…`);
+
     const { uploadUrl, publicUrl } = await api.presignUpload(
       "kyc-doc",
       prepared.contentType,
-      prepared.fileName || `${key}.jpg`,
+      prepared.fileName || `${d.key}.jpg`,
     );
     const res = await fetch(uploadUrl, {
       method: "PUT",
@@ -378,10 +518,14 @@ async function uploadHeldDocs(docs) {
       body: prepared.blob,
     });
     if (!res.ok) {
+      // R2's own body explains refusals (signature mismatch, expired URL,
+      // content-type disagreement). Losing it and saying "upload failed" is
+      // how an hour disappears.
       const detail = await res.text().catch(() => "");
-      throw new Error(`Storage refused ${key} (${res.status})${detail ? `: ${detail.slice(0, 120)}` : ""}`);
+      throw new Error(`Storage refused your ${d.label} (${res.status})${detail ? `: ${detail.slice(0, 120)}` : ""}`);
     }
-    urls[field] = publicUrl;
+    urls[d.field] = publicUrl;
+    done += 1;
   }
   return urls;
 }

@@ -12,16 +12,42 @@ export function renderPendingApproval(root) {
       <div style="width:88px;height:88px;border-radius:50%;background:rgba(255,181,71,0.12);display:flex;align-items:center;justify-content:center;color:var(--warning);margin-bottom:24px;">
         ${icon("shield", 40)}
       </div>
-      <h1 class="text-xl mb-2">Verification in Progress</h1>
-      <p class="text-secondary mb-8">We're reviewing your documents. This usually takes 24-48 hours once submitted.</p>
-      <button id="kycBtn" class="btn btn-primary btn-block mb-3">${icon("upload", 18)} Complete Your Application</button>
-      <button id="checkStatusBtn" class="btn btn-secondary btn-block">${icon("refresh", 18)} Check Status</button>
+      <h1 class="text-xl mb-2">Verification in progress</h1>
+      <p class="text-secondary mb-8" id="pendingSub">
+        We're reviewing your documents. This usually takes 24–48 hours.
+      </p>
+      <div class="flex-col gap-2" style="width:100%;">
+        <button id="checkStatusBtn" class="btn btn-primary btn-block">${icon("refresh", 18)} Check status</button>
+        <button id="kycBtn" class="btn btn-secondary btn-block">${icon("upload", 18)} View your application</button>
+      </div>
     </div>
   `;
-  // Points at the full onboarding flow (documents + vehicle + service area +
-  // payout + emergency contact), not the old upload-only screen — an
-  // application missing half its fields just gets rejected.
-  root.querySelector("#kycBtn").addEventListener("click", () => navigate("/driver/onboarding"));
+
+  /* THE BUTTON USED TO LIE.
+     It said "Complete your application" to every driver, including the ones
+     who had just completed it — sending them into a second form that asked
+     for the documents they had photographed ninety seconds earlier. The whole
+     application is now taken at signup, so this only offers repair when
+     something is genuinely missing, and otherwise just shows them what we
+     hold. */
+  const kycBtn = root.querySelector("#kycBtn");
+  const sub = root.querySelector("#pendingSub");
+  kycBtn.addEventListener("click", () => navigate("/driver/onboarding"));
+
+  api.getDriverOnboarding()
+    .then((status) => {
+      if (!status.canSubmit) {
+        kycBtn.innerHTML = `${icon("upload", 18)} Finish your application`;
+        kycBtn.className = "btn btn-primary btn-block";
+        root.querySelector("#checkStatusBtn").className = "btn btn-secondary btn-block";
+        sub.textContent = `We still need: ${status.missing.join(", ")}.`;
+      } else if (!status.submittedForReviewAt) {
+        // Complete but never submitted — one tap away from the queue.
+        kycBtn.innerHTML = `${icon("arrow-forward", 18)} Submit for review`;
+        kycBtn.className = "btn btn-primary btn-block";
+      }
+    })
+    .catch(() => { /* Offline: the default copy is still true. */ });
 
   const checkBtn = root.querySelector("#checkStatusBtn");
   async function check(showToastIfPending) {

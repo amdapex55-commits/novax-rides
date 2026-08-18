@@ -72,7 +72,6 @@ export const ROUTES = {
   "/refer": { view: () => import("./views/riderExtras.js"), fn: "renderRefer", auth: "guest", nav: false },
   "/business": { view: () => import("./views/riderExtras.js"), fn: "renderBusiness", auth: "guest", nav: false },
   "/driver/pending": { view: () => import("./views/driverAuth.js"), fn: "renderPendingApproval", auth: "DRIVER", nav: false },
-  "/driver/kyc": { view: () => import("./views/driverAuth.js"), fn: "renderKycUpload", auth: "DRIVER", nav: false },
   "/driver/onboarding": { view: () => import("./views/driverOnboarding.js"), fn: "renderDriverOnboarding", auth: "DRIVER", nav: false },
   "/driver/home": { view: () => import("./views/driverHome.js"), fn: "renderDriverHome", auth: "DRIVER", nav: true, tab: "home" },
   "/driver/offer": { view: () => import("./views/driverHome.js"), fn: "renderIncomingOffer", auth: "DRIVER", nav: false },

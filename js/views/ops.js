@@ -310,10 +310,17 @@ export function renderOpsApprovals(root) {
         <div>
           <p class="field-label" style="margin-bottom:8px;">Documents</p>
           <div class="nx-doc-review">
-            ${doc("Licence front", p.licenseFrontUrl || p.licenseDocUrl)}
-            ${doc("Licence back", p.licenseBackUrl)}
-            ${doc("CNIC front", p.cnicFrontUrl)}
-            ${doc("CNIC back", p.cnicBackUrl)}
+            ${doc("CNIC", p.cnicFrontUrl)}
+            ${doc("Driving licence", p.licenseDocUrl || p.licenseFrontUrl)}
+            ${doc("Bike", p.vehiclePhotoUrl)}
+            ${/* Older applications collected a second licence photo and a
+                  CNIC back. Both are gone from signup, but a reviewer must
+                  still see them on the records that have them — otherwise
+                  approving an old application means judging it on less
+                  evidence than the driver actually sent. */""}
+            ${p.licenseBackUrl ? doc("Licence back", p.licenseBackUrl) : ""}
+            ${p.cnicBackUrl ? doc("CNIC back", p.cnicBackUrl) : ""}
+            ${p.vehicleDocUrl ? doc("Vehicle registration", p.vehicleDocUrl) : ""}
           </div>
         </div>
         </div>

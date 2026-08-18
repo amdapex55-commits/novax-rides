@@ -105,7 +105,7 @@ const CONFIGS = {
     home: "/driver/home",
     routes: [
       "/splash", "/welcome", "/signin", "/signup", "/forgot-password",
-      "/driver/onboarding", "/driver/pending", "/driver/kyc",
+      "/driver/onboarding", "/driver/pending",
       "/driver/home", "/driver/offer", "/driver/progress",
       "/driver/food-offer", "/driver/food-progress",
       "/driver/errand-offer", "/driver/errand-progress",
