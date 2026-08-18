@@ -386,6 +386,12 @@ export function renderSignUp(root) {
           await api.submitDriverOnboarding();
           track("driver_application_submitted");
           toast("Application received — we'll review it shortly");
+          /* NOT afterAuth(). That lands on the driver dashboard, which offers
+             a Go Online button to someone ops has not looked at yet. The
+             honest next screen is the one that says we're reviewing it. */
+          window.__novagoRefreshNav?.();
+          state.postAuthRedirect = null;
+          return navigate("/driver/pending");
         } catch (err) {
           reportHandled(err, "signup-application", { role });
           alertUser("Your account is ready, but the application didn't finish sending.", {
