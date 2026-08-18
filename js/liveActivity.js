@@ -91,9 +91,11 @@ function render() {
   const pct = Math.round((PROGRESS[trip.status] ?? 0.3) * 100);
 
   h.className = expanded ? "is-open" : "";
+  // Arrived is a different fact to en route, and should not animate like it.
+  const waiting = trip.status === "ARRIVED";
   h.innerHTML = `
     ${expanded ? '<div class="nx-live-scrim" id="nxLiveScrim"></div>' : ""}
-    <div class="nx-live ${expanded ? "expanded" : ""}" role="status">
+    <div class="nx-live ${expanded ? "expanded" : ""}${waiting ? " waiting" : ""}" role="status">
       <button class="nx-live-tap" id="nxLiveTap" aria-label="${expanded ? "Collapse" : "Expand"} your live ride">
         <span class="nx-live-top">
           <span class="nx-live-badge"><span class="nx-live-dot"></span>LIVE</span>
@@ -105,6 +107,7 @@ function render() {
 
         <span class="nx-live-track" aria-hidden="true">
           <span class="nx-live-fill" style="width:${pct}%;"></span>
+          ${waiting ? "" : `<span class="nx-live-rider">${icon("bike", 14)}</span>`}
         </span>
 
         ${expanded ? `

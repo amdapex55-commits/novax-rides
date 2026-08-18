@@ -82,6 +82,8 @@ export const ROUTES = {
   "/driver/progress": { view: () => import("./views/driverHome.js"), fn: "renderTripProgress", auth: "DRIVER", nav: false },
   "/driver/earnings": { view: () => import("./views/driverAccount.js"), fn: "renderEarnings", auth: "DRIVER", nav: true, tab: "earnings" },
   "/driver/profile": { view: () => import("./views/driverAccount.js"), fn: "renderDriverProfile", auth: "DRIVER", nav: true, tab: "profile" },
+  // What the star on their profile is actually made of.
+  "/driver/reviews": { view: () => import("./views/driverAccount.js"), fn: "renderDriverReviews", auth: "DRIVER", nav: true, navTab: "profile" },
   "/driver/vehicle": { view: () => import("./views/driverAccount.js"), fn: "renderVehicle", auth: "DRIVER", nav: false },
   "/driver/notifications": { view: () => import("./views/driverAccount.js"), fn: "renderDriverNotifications", auth: "DRIVER", nav: true, tab: "alerts" },
   "/driver/diagnostics": { view: () => import("./views/driverAccount.js"), fn: "renderDriverDiagnostics", auth: "DRIVER", nav: false },

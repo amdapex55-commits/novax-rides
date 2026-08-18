@@ -62,6 +62,7 @@ export function renderOpsDashboard(root) {
           <div>
             <p class="font-bold text-sm">Fleet map</p>
             <p class="text-xs text-muted" id="fleetCount">Loading drivers…</p>
+            <p id="fleetMissing"></p>
           </div>
           <div class="flex gap-3 text-xs text-secondary">
             <span class="flex items-center gap-1"><i class="nx-key-dot" style="--dot:#6d28d9;"></i>Idle</span>
@@ -286,6 +287,26 @@ export function renderOpsDashboard(root) {
         const available = points.filter((p) => p.status === "idle").length;
         plottedNow = points.length;
         paintOnlineNote();
+
+        /* NAME THE ONES THE MAP CANNOT SHOW.
+
+           A driver who is online but sending no position simply vanished from
+           this map — the dashboard said two, the map drew one, and there was
+           no way to tell who was missing or to do anything about it. They are
+           the drivers most worth a phone call, because they believe they are
+           working and cannot be dispatched. */
+        const missing = (Array.isArray(drivers) ? drivers : [])
+          .filter((d) => d?.lat == null)
+          .map((d) => d?.user?.name || d?.name || d?.user?.phone || "a driver");
+        const box = root.querySelector("#fleetMissing");
+        if (box) {
+          box.innerHTML = missing.length
+            ? `<span class="nx-fleet-missing">${icon("bolt", 13)}
+                 ${esc(missing.join(", "))} ${missing.length === 1 ? "is" : "are"} online with no GPS —
+                 ${missing.length === 1 ? "they" : "they"} can't be sent jobs.
+               </span>`
+            : "";
+        }
 
         // Say which number this is. "No drivers online right now" under a card
         // reading 1 is a contradiction; "0 of 1 online drivers are sending a

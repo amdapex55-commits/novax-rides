@@ -343,6 +343,8 @@ export const api = {
   chatUnreadCount: (contextType, contextId) =>
     request(`/chat/${contextType}/${contextId}/unread`),
 
+  myRatings: () => request("/ratings/me"),
+
   presignUpload: (purpose, contentType, fileName) =>
     request("/uploads/presign", { method: "POST", body: { purpose, contentType, fileName } }),
 

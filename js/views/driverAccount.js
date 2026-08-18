@@ -231,6 +231,13 @@ export function renderDriverProfile(root) {
           <div class="list-row-icon">${icon("add", 18)}</div>
           <p style="flex:1;" class="font-bold text-sm">Add to home screen</p>${icon("chevronRight", 18)}
         </div>
+        <!-- The star on this screen is a number with nothing behind it until
+             there is somewhere to go and read the reasons. -->
+        <div class="list-row" style="cursor:pointer;" data-nav="/driver/reviews">
+          <div class="list-row-icon" style="color:var(--warning);">${icon("star", 18)}</div>
+          <p style="flex:1;" class="font-bold text-sm">Your rating &amp; reviews</p>
+          ${icon("arrow-forward", 16)}
+        </div>
         <div class="list-row" style="cursor:pointer;" data-nav="/driver/vehicle">
           <div class="list-row-icon">${icon("car", 18)}</div>
           <p style="flex:1;" class="font-bold text-sm">Vehicle Management</p>${icon("chevronRight", 18)}
@@ -745,4 +752,83 @@ function agoTone(seconds, staleAfter) {
   if (seconds > staleAfter) return "bad";
   if (seconds > staleAfter * 0.6) return "warn";
   return "ok";
+}
+
+/**
+ * What the star on a driver's profile is actually made of.
+ *
+ * The average was written to User.rating and displayed as a single number
+ * with nothing behind it. A rider could see they were a 4.6 and never learn
+ * that three people had written "kept me waiting" — a score with no reasons
+ * attached cannot be acted on, which makes it decoration rather than
+ * feedback.
+ *
+ * The breakdown is here for the same reason: 4.6 from forty ratings and 4.6
+ * from two are different facts, and one bad night looks very different
+ * depending on which one you are.
+ */
+export function renderDriverReviews(root) {
+  root.innerHTML = `
+    <div class="page nx-stagger">
+      <button id="backBtn" class="btn-icon mb-4">${icon("arrow-back", 20)}</button>
+      <h1 class="text-xl mb-1">Your rating</h1>
+      <p class="text-secondary text-sm mb-5">What passengers said after their ride.</p>
+      <div id="wrap">${skeletonRows(3)}</div>
+    </div>
+  `;
+  root.querySelector("#backBtn").addEventListener("click", () => navigate("/driver/profile"));
+
+  let cancelled = false;
+  api.myRatings()
+    .then((d) => {
+      if (cancelled) return;
+      const total = Number(d?.total || 0);
+      const avg = d?.average;
+      const max = Math.max(1, ...(d?.breakdown || []).map((b) => b.count));
+
+      root.querySelector("#wrap").innerHTML = total === 0
+        ? `<div class="empty-state">
+             <div class="icon">${icon("star", 30)}</div>
+             <p>No ratings yet.</p>
+             <p class="text-xs text-muted mt-1">Your first few rides decide this, so they are worth taking slowly.</p>
+           </div>`
+        : `
+        <div class="nx-rating-hero mb-4">
+          <span class="nx-rating-avg">${esc(String(avg ?? "—"))}</span>
+          <span class="nx-rating-stars">${[1,2,3,4,5].map((i) =>
+            `<span class="${avg != null && i <= Math.round(avg) ? "on" : ""}">${icon("star", 15)}</span>`).join("")}</span>
+          <span class="nx-rating-count">${total} rating${total === 1 ? "" : "s"}</span>
+        </div>
+
+        <div class="nx-rating-bars mb-5">
+          ${(d.breakdown || []).map((b) => `
+            <div class="nx-rating-row">
+              <span class="nx-rating-star">${b.star}${icon("star", 11)}</span>
+              <span class="nx-rating-track"><span class="nx-rating-fill" style="width:${Math.round((b.count / max) * 100)}%;"></span></span>
+              <span class="nx-rating-num">${b.count}</span>
+            </div>`).join("")}
+        </div>
+
+        ${(d.reviews || []).length ? `
+          <h3 class="nx-sec-title mb-3">What they wrote</h3>
+          <div class="flex-col gap-2">
+            ${d.reviews.map((r) => `
+              <div class="card">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="nx-rating-inline">${[1,2,3,4,5].map((i) =>
+                    `<span class="${i <= r.score ? "on" : ""}">${icon("star", 11)}</span>`).join("")}</span>
+                  <span class="text-xs text-muted">${fmtDate(r.createdAt)}</span>
+                </div>
+                <p class="text-sm">${esc(r.comment)}</p>
+              </div>`).join("")}
+          </div>
+        ` : `<p class="text-xs text-muted">Nobody has written a comment yet — just stars.</p>`}
+      `;
+    })
+    .catch(() => {
+      if (!cancelled) root.querySelector("#wrap").innerHTML =
+        `<div class="empty-state"><p class="text-sm">Couldn't load your ratings.</p></div>`;
+    });
+
+  return () => { cancelled = true; };
 }
