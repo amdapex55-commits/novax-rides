@@ -81,9 +81,9 @@ export function renderOpsDashboard(root) {
 
   /* ---------------------------------------------------- action queue --- */
 
-  function actionRow({ count, label, detail, path, tone }) {
+  function actionRow({ count, label, detail, path, tone, key }) {
     return `
-      <a class="nx-action-row ${tone}" href="#${path}">
+      <a class="nx-action-row ${tone}" data-key="${key}" data-count="${count}" href="#${path}">
         <span class="nx-action-count">${count}</span>
         <span class="nx-action-text">
           <span class="nx-action-label">${label}</span>
@@ -92,6 +92,13 @@ export function renderOpsDashboard(root) {
         ${icon("chevronRight", 18)}
       </a>`;
   }
+
+  /* What the queue looked like last pass, so the next one can tell a new
+     emergency from one already being worked. Empty on the first paint, which
+     is why firstQueuePaint suppresses the animation there — a desk opening
+     the console does not need five rows flying in at once. */
+  let previousQueue = new Map();
+  let firstQueuePaint = true;
 
   async function loadActionQueue() {
     const box = root.querySelector("#actionQueue");
@@ -113,7 +120,7 @@ export function renderOpsDashboard(root) {
     const sos = val(incidents);
     if (sos.length) {
       rows.push(actionRow({
-        count: sos.length, tone: "danger",
+        key: "sos", count: sos.length, tone: "danger",
         label: sos.length === 1 ? "Open safety incident" : "Open safety incidents",
         detail: "Someone pressed SOS. Handle before anything else.",
         path: "/ops/live",
@@ -123,7 +130,7 @@ export function renderOpsDashboard(root) {
     const jobs = val(stuck);
     if (jobs.length) {
       rows.push(actionRow({
-        count: jobs.length, tone: "warn",
+        key: "stuck", count: jobs.length, tone: "warn",
         label: jobs.length === 1 ? "Job with no driver" : "Jobs with no driver",
         detail: "Unmatched for 3+ minutes — assign someone by hand.",
         path: "/ops/command",
@@ -133,7 +140,7 @@ export function renderOpsDashboard(root) {
     const pending = val(approvals);
     if (pending.length) {
       rows.push(actionRow({
-        count: pending.length, tone: "warn",
+        key: "approvals", count: pending.length, tone: "warn",
         label: pending.length === 1 ? "Driver waiting for approval" : "Drivers waiting for approval",
         detail: "Check the licence against the original before approving.",
         path: "/ops/approvals",
@@ -143,7 +150,7 @@ export function renderOpsDashboard(root) {
     const blocked = val(balances).filter((d) => d.blocked);
     if (blocked.length) {
       rows.push(actionRow({
-        count: blocked.length, tone: "warn",
+        key: "blocked", count: blocked.length, tone: "warn",
         label: blocked.length === 1 ? "Driver blocked on balance" : "Drivers blocked on balance",
         detail: "Over the credit limit — not receiving jobs until they settle.",
         path: "/ops/settle",
@@ -153,12 +160,30 @@ export function renderOpsDashboard(root) {
     const open = val(tickets);
     if (open.length) {
       rows.push(actionRow({
-        count: open.length, tone: "info",
+        key: "tickets", count: open.length, tone: "info",
         label: open.length === 1 ? "Open support ticket" : "Open support tickets",
         detail: "The same complaint three times is a product bug.",
         path: "/ops/tickets",
       }));
     }
+
+    /* A DISPATCHER IS NOT WATCHING THIS LIST — they are on the phone to a
+       driver. The queue repaints every thirty seconds, so a new SOS used to
+       appear between two glances with nothing to mark it as new, and the desk
+       found out about it whenever somebody happened to look down.
+
+       Only genuinely new rows animate, and rows whose count went UP: a stuck
+       job that has been sitting there for ten minutes is not news, and
+       animating it every half-minute would train the eye to ignore exactly
+       the movement that matters. */
+    const seen = new Map(previousQueue);
+    previousQueue = new Map(
+      rows.map((html) => {
+        const key = /data-key="([^"]*)"/.exec(html)?.[1] || "";
+        const count = Number(/data-count="([^"]*)"/.exec(html)?.[1] || 0);
+        return [key, count];
+      })
+    );
 
     box.innerHTML = rows.length
       ? rows.join("")
@@ -169,6 +194,16 @@ export function renderOpsDashboard(root) {
              <p class="text-xs text-muted">No SOS, no stuck jobs, no approvals, no open tickets.</p>
            </div>
          </div>`;
+
+    if (!firstQueuePaint) {
+      box.querySelectorAll(".nx-action-row").forEach((row) => {
+        const key = row.dataset.key;
+        const count = Number(row.dataset.count || 0);
+        const before = seen.get(key);
+        if (before === undefined || count > before) row.classList.add("nx-row-in");
+      });
+    }
+    firstQueuePaint = false;
   }
 
   /* ----------------------------------------------------- counters ------ */

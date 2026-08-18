@@ -1,65 +1,103 @@
-// Nova Go Rides — minimal inline SVG icon set (stroke-based, consistent
-// weight). One shared function so every screen's icons stay visually
-// consistent instead of relying on an external icon font.
+// Nova Go Rides — inline SVG icon set. One shared function so every screen's
+// icons stay visually consistent instead of relying on an external icon font.
+//
+// DRAWING RULES, because an icon set drifts the moment they are unwritten:
+//
+//  * 24×24 grid, stroke-based, no fills. Optical bounds sit inside 3–21 so
+//    nothing touches the edge of its container.
+//  * Even optical weight. A glyph's job is to read at 16px on a cheap phone,
+//    and density is what decides that — not detail. Two glyphs sitting next
+//    to each other on the home grid must carry roughly the same amount of
+//    ink, which is why `basket` lost its two internal ticks and `settings`
+//    lost the twelve-node gear it used to be.
+//  * Geometry over illustration. Circles are arcs, not hand-plotted curves,
+//    so they stay round at every size.
+//  * Round caps and joins, set once in icon() below.
+//
+// The renderer splits on "M", so every subpath must start with an absolute
+// moveto and no path may use a relative "m".
 const PATHS = {
-  home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
-  history: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 3',
-  wallet: 'M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zM16 12h3',
-  person: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1.5-4 5-6 8-6s6.5 2 8 6',
-  'arrow-back': 'M19 12H5M12 19l-7-7 7-7',
-  'arrow-forward': 'M5 12h14M12 5l7 7-7 7',
-  close: 'M6 6l12 12M18 6L6 18',
-  check: 'M5 13l4 4L19 7',
-  'check-circle': 'M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
-  star: 'M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z',
-  'map-pin': 'M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
-  car: 'M3 13l1.5-5A2 2 0 0 1 6.4 6.5h11.2A2 2 0 0 1 19.5 8L21 13v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM6 17.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM18 17.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
-  bike: 'M5 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 15l4-7h4l3 4M9 8H7M15 15l-2-4',
-  rickshaw: 'M4 17V10a2 2 0 0 1 2-2h6l3 4h3a1 1 0 0 1 1 1v4M4 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM15 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z',
-  phone: 'M4 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 2 6a2 2 0 0 1 2-2z',
-  package: 'M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8',
-  settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z',
-  logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
-  camera: 'M4 8a2 2 0 0 1 2-2h1l1.5-2h7L17 6h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
-  upload: 'M12 16V4M7 9l5-5 5 5M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3',
-  bell: 'M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 13 6 9zM10 19a2 2 0 0 0 4 0',
-  gift: 'M20 7h-3.5a2.5 2.5 0 1 0-4.5-2 2.5 2.5 0 1 0-4.5 2H4a1 1 0 0 0-1 1v3h18V8a1 1 0 0 0-1-1zM4 11v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8M12 7v13',
-  users: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
-  navigation: 'M3 11l19-8-8 19-2-9-9-2z',
-  shield: 'M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z',
-  chat: 'M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z',
-  help: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 2-3 4M12 17h.01',
-  dashboard: 'M3 3h8v8H3zM13 3h8v5h-8zM13 12h8v9h-8zM3 15h8v6H3z',
-  document: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 13h6M9 17h6',
-  eye: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
-  refresh: 'M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6',
-  chevronRight: 'M9 18l6-6-6-6',
-  send: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',
-  sos: 'M12 9v4M12 17h.01M10.3 3.9L1.8 18a1.7 1.7 0 0 0 1.5 2.6h17.4a1.7 1.7 0 0 0 1.5-2.6L13.7 3.9a1.7 1.7 0 0 0-3.4 0z',
-  bolt: 'M13 2 3 14h7l-1 8 10-12h-7z',
-  sun: 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4',
-  moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
-  layers: 'M12 2l9 5-9 5-9-5 9-5zM3 12l9 5 9-5M3 17l9 5 9-5',
-  locate: 'M12 2v3M12 19v3M2 12h3M19 12h3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
-  utensils: 'M6 2v7a2 2 0 0 0 4 0V2M8 9v13M16 2c-2 0-3 2-3 5s1 4 3 4M16 2v18',
-  store: 'M3 7l1-4h16l1 4M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7M3 7h18M9 21v-6h6v6',
-  plus: 'M12 5v14M5 12h14',
-  cart: 'M6 2l1.5 4M18 2l-1.5 4M3.5 6h17l-1.5 12a2 2 0 0 1-2 1.8H7a2 2 0 0 1-2-1.8L3.5 6zM9 10v4M15 10v4',
-  swap: 'M7 4v3H3l4 4 4-4H7V4zM17 20v-3h4l-4-4-4 4h4v3z',
-  taxi: 'M5 17V9l2-4h10l2 4v8M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM15 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM5 13h14M9 5v0M15 5v0',
-  basket: 'M4 9h16l-1.5 10.5a2 2 0 0 1-2 1.5H7.5a2 2 0 0 1-2-1.5L4 9zM8 9l2-6M16 9l-2-6M9 13v4M15 13v4',
+  /* ---- navigation & chrome ---------------------------------------------- */
+  home: 'M3 10.4 12 3l9 7.4M5.6 9.3V19.5A1.5 1.5 0 0 0 7.1 21h9.8a1.5 1.5 0 0 0 1.5-1.5V9.3M9.6 21v-5.6h4.8V21',
+  history: 'M3.4 12a8.6 8.6 0 1 0 2.6-6.1M3.4 4.6v4.2h4.2M12 7.4v4.9l3.3 2',
+  dashboard: 'M3.5 3.5h7v6.4h-7zM13.5 3.5h7v4.2h-7zM13.5 11.6h7v8.9h-7zM3.5 13.8h7v6.7h-7z',
+  settings: 'M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4M13 3.2h-2l-.4 2.4a6.9 6.9 0 0 0-1.8 1L6.5 5.5 5 8l1.9 1.5a6.9 6.9 0 0 0 0 2.1L5 13.1 6.5 15.6l2.3-1.1a6.9 6.9 0 0 0 1.8 1l.4 2.4h2l.4-2.4a6.9 6.9 0 0 0 1.8-1l2.3 1.1L19 13.1l-1.9-1.5a6.9 6.9 0 0 0 0-2.1L19 8l-1.5-2.5-2.3 1.1a6.9 6.9 0 0 0-1.8-1z',
+  logout: 'M9.5 21H5.6A1.6 1.6 0 0 1 4 19.4V4.6A1.6 1.6 0 0 1 5.6 3h3.9M15.8 16.6 20.4 12l-4.6-4.6M20.4 12H9.5',
+  layers: 'M12 3.2 20.8 7.6 12 12 3.2 7.6zM3.2 12 12 16.4 20.8 12M3.2 16.4 12 20.8l8.8-4.4',
 
-  // Added for the bike pilot + storefront wizard. Without these the icon()
-  // helper silently falls back to the "help" question mark, which is how you
-  // end up shipping a screen full of question marks.
-  clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3.5 2',
-  search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',
-  info: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v5M12 8v0',
-  image: 'M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6',
-  add: 'M12 5v14M5 12h14',
-  location: 'M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11zM12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
-  restaurant: 'M6 2v7a2 2 0 0 0 4 0V2M8 9v13M16 2c-2 0-3 2-3 5s1 4 3 4M16 2v18',
+  /* ---- arrows & disclosure ---------------------------------------------- */
+  'arrow-back': 'M19.4 12H4.6M11.4 19.2 4.6 12l6.8-7.2',
+  'arrow-forward': 'M4.6 12h14.8M12.6 4.8 19.4 12l-6.8 7.2',
+  chevronRight: 'M9.4 4.8 16.6 12l-7.2 7.2',
+  chevronLeft: 'M14.6 4.8 7.4 12l7.2 7.2',
+  close: 'M6.2 6.2 17.8 17.8M17.8 6.2 6.2 17.8',
+  plus: 'M12 4.8v14.4M4.8 12h14.4',
+  swap: 'M7.4 20.4V5.2M7.4 5.2 3.8 8.8M7.4 5.2 11 8.8M16.6 3.6v15.2M16.6 18.8 13 15.2M16.6 18.8l3.6-3.6',
+  refresh: 'M20.6 12a8.6 8.6 0 1 1-2.5-6.1M20.6 3.9v5.2h-5.2',
+  send: 'M20.8 3.2 3.6 9.6a.5.5 0 0 0 0 .9l7.1 2.7 2.7 7.1a.5.5 0 0 0 .9 0zM20.8 3.2 10.7 13.3',
+
+  /* ---- confirmation & status -------------------------------------------- */
+  check: 'M4.8 12.6 9.4 17.2 19.2 6.8',
+  'check-circle': 'M20.8 12a8.8 8.8 0 1 1-17.6 0 8.8 8.8 0 0 1 17.6 0zM8.4 12.2l2.6 2.6 4.8-5',
+  star: 'M12 3.1l2.8 5.7 6.3.9-4.6 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.7l6.3-.9z',
+  shield: 'M12 3.2 19 6.1v5.6c0 4.5-2.9 7.7-7 9.1-4.1-1.4-7-4.6-7-9.1V6.1z',
+  sos: 'M12 9.4v4M12 16.8h.01M10.4 4.4 2.6 17.6a1.6 1.6 0 0 0 1.4 2.4h16a1.6 1.6 0 0 0 1.4-2.4L13.6 4.4a1.6 1.6 0 0 0-3.2 0z',
+  info: 'M20.8 12a8.8 8.8 0 1 1-17.6 0 8.8 8.8 0 0 1 17.6 0zM12 11.2v5M12 7.9h.01',
+  help: 'M20.8 12a8.8 8.8 0 1 1-17.6 0 8.8 8.8 0 0 1 17.6 0zM9.4 9.4a2.7 2.7 0 0 1 5.2.9c0 1.8-2.6 2-2.6 3.6M12 17.2h.01',
+  eye: 'M2.2 12S6.1 4.8 12 4.8 21.8 12 21.8 12 17.9 19.2 12 19.2 2.2 12 2.2 12zM12 14.8a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6z',
+  bolt: 'M13.4 3 4.6 13.6h5.8L10.6 21l8.8-10.6h-5.8z',
+
+  /* ---- vehicles ---------------------------------------------------------
+     THE BIKE WAS A BICYCLE. Nova Go dispatches motorcycles — the drop
+     handlebars, thin frame and pedal crank of the old glyph described a
+     different vehicle to every customer choosing a ride and every rider
+     picking a job. This one has a fuel tank, a seat and flat bars. */
+  bike: 'M5 20.2a3.1 3.1 0 1 0 0-6.2 3.1 3.1 0 0 0 0 6.2zM19 20.2a3.1 3.1 0 1 0 0-6.2 3.1 3.1 0 0 0 0 6.2zM5 17.1h3.5l3.1-4.6h4.3l2.9 4.6M8.6 12.5 7.4 9.7H4.8M15.7 12.5 17.3 9.2h2.9',
+  car: 'M4.2 14.4 5.8 9.3A2 2 0 0 1 7.7 7.9h8.6a2 2 0 0 1 1.9 1.4l1.6 5.1M4.2 14.4h15.6v3.4a1.2 1.2 0 0 1-1.2 1.2h-1a1.2 1.2 0 0 1-1.2-1.2v-.9H7.6v.9a1.2 1.2 0 0 1-1.2 1.2h-1a1.2 1.2 0 0 1-1.2-1.2zM7.4 16.6h.01M16.6 16.6h.01',
+  taxi: 'M4.2 14.4 5.8 9.3A2 2 0 0 1 7.7 7.9h8.6a2 2 0 0 1 1.9 1.4l1.6 5.1M4.2 14.4h15.6v3.4a1.2 1.2 0 0 1-1.2 1.2h-1a1.2 1.2 0 0 1-1.2-1.2v-.9H7.6v.9a1.2 1.2 0 0 1-1.2 1.2h-1a1.2 1.2 0 0 1-1.2-1.2zM7.4 16.6h.01M16.6 16.6h.01M9.8 7.9V5.2h4.4v2.7',
+  rickshaw: 'M5 15V10.4A5.4 5.4 0 0 1 10.4 5h1.2A5.4 5.4 0 0 1 17 10.4V15M4.4 15h13.2M10.8 5.2V15M7.2 20.2a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM15 20.2a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+  navigation: 'M20.8 3.2 3.9 10.4a.5.5 0 0 0 .1.9l6.6 1.9 1.9 6.6a.5.5 0 0 0 .9.1z',
+  locate: 'M12 4.2V6.4M12 17.6v2.2M4.2 12h2.2M17.6 12h2.2M12 15.8a3.8 3.8 0 1 0 0-7.6 3.8 3.8 0 0 0 0 7.6z',
+  'map-pin': 'M12 21.4S18.7 15 18.7 10a6.7 6.7 0 1 0-13.4 0c0 5 6.7 11.4 6.7 11.4zM12 12.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2z',
+
+  /* ---- services ---------------------------------------------------------
+     package and basket carry the same ink as bike so the home grid reads as
+     one family. The basket's two internal ticks were the difference. */
+  package: 'M12 3.1 20.6 7.6v8.8L12 20.9 3.4 16.4V7.6zM3.4 7.6 12 12.1l8.6-4.5M12 12.1v8.8',
+  basket: 'M4.4 9.2h15.2l-1.4 9.3a2 2 0 0 1-2 1.7H7.8a2 2 0 0 1-2-1.7zM8.9 9.2 11.1 3.6M15.1 9.2 12.9 3.6',
+  cart: 'M3.2 4.2h2.3l2.4 10.6a1.7 1.7 0 0 0 1.7 1.3h7.7a1.7 1.7 0 0 0 1.7-1.3L20.4 8.2H6.1M9.6 19.6h.01M17.2 19.6h.01',
+  utensils: 'M6.6 3.2v6.4a2.2 2.2 0 0 0 4.4 0V3.2M8.8 9.6V20.8M17.4 3.2c-1.8 0-3 1.9-3 4.6s1.2 3.9 3 3.9M17.4 3.2v17.6',
+  store: 'M4 8.6h16M4 8.6 5.3 3.8h13.4L20 8.6M5.2 8.6v10.6A1.4 1.4 0 0 0 6.6 20.6h10.8a1.4 1.4 0 0 0 1.4-1.4V8.6M9.8 20.6v-5.4h4.4v5.4',
+  gift: 'M4.2 11.4h15.6v7.8a1.4 1.4 0 0 1-1.4 1.4H5.6a1.4 1.4 0 0 1-1.4-1.4zM3.2 7.6h17.6v3.8H3.2zM12 7.6v13M12 7.6H8.6a2.2 2.2 0 1 1 2.2-2.2v2.2M12 7.6h3.4a2.2 2.2 0 1 0-2.2-2.2v2.2',
+
+  /* ---- money & documents ------------------------------------------------ */
+  wallet: 'M19.8 9.4V7.6A1.6 1.6 0 0 0 18.2 6H5.6A1.6 1.6 0 0 0 4 7.6v8.8A1.6 1.6 0 0 0 5.6 18h12.6a1.6 1.6 0 0 0 1.6-1.6v-1.8M19.8 9.4h-3.6a2.6 2.6 0 0 0 0 5.2h3.6z',
+  document: 'M13.6 3.2H7a1.9 1.9 0 0 0-1.9 1.9v13.8A1.9 1.9 0 0 0 7 20.8h10a1.9 1.9 0 0 0 1.9-1.9V8.5zM13.6 3.2v5.3h5.3M8.8 13.4h6.4M8.8 16.8h4.2',
+  image: 'M3.6 4.6h16.8v14.8H3.6zM3.6 15.2 8.2 10.6l3.7 3.7 2.8-2.8 4.7 4.7M8.6 9.4h.01',
+  camera: 'M4.2 8.6a1.9 1.9 0 0 1 1.9-1.9h1.2L8.8 4.4h6.4l1.5 2.3h1.2a1.9 1.9 0 0 1 1.9 1.9v8.8a1.9 1.9 0 0 1-1.9 1.9H6.1a1.9 1.9 0 0 1-1.9-1.9zM12 16.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2z',
+  upload: 'M12 15.8V4.4M7.6 8.8 12 4.4l4.4 4.4M4.4 15.8v3.2a1.6 1.6 0 0 0 1.6 1.6h12a1.6 1.6 0 0 0 1.6-1.6v-3.2',
+
+  /* ---- people & contact -------------------------------------------------- */
+  person: 'M12 12.4a4.2 4.2 0 1 0 0-8.4 4.2 4.2 0 0 0 0 8.4zM4.6 20.6a7.4 7.4 0 0 1 14.8 0',
+  users: 'M9.2 11.4a3.9 3.9 0 1 0 0-7.8 3.9 3.9 0 0 0 0 7.8zM2.6 20.6a6.6 6.6 0 0 1 13.2 0M16.4 4a3.9 3.9 0 0 1 0 7.5M18 14.6a6.6 6.6 0 0 1 3.4 6',
+  phone: 'M4.4 4.2h3.8l1.9 4.7-2.4 1.4a10.6 10.6 0 0 0 4.8 4.8l1.4-2.4 4.7 1.9v3.8a1.9 1.9 0 0 1-1.9 1.9A14.6 14.6 0 0 1 2.5 6.1a1.9 1.9 0 0 1 1.9-1.9z',
+  chat: 'M20.6 11.6a8.1 8.1 0 0 1-8.6 8.1 8.6 8.6 0 0 1-3.6-.8l-5 1.7 1.7-5a8.6 8.6 0 0 1-.8-3.6 8.1 8.1 0 0 1 8.1-8.6h.5a8.1 8.1 0 0 1 7.7 7.7z',
+  bell: 'M17.8 9.2a5.8 5.8 0 1 0-11.6 0c0 3.5-1.3 5.1-1.3 5.1h14.2s-1.3-1.6-1.3-5.1zM10.2 18.4a2 2 0 0 0 3.6 0',
+  search: 'M11 4.2a6.8 6.8 0 1 0 0 13.6 6.8 6.8 0 0 0 0-13.6zM19.8 19.8 15.8 15.8',
+  clock: 'M20.8 12a8.8 8.8 0 1 1-17.6 0 8.8 8.8 0 0 1 17.6 0zM12 7.2v5l3.3 2',
+
+  /* ---- theme ------------------------------------------------------------- */
+  sun: 'M12 16.8a4.8 4.8 0 1 0 0-9.6 4.8 4.8 0 0 0 0 9.6zM12 2.4v2M12 19.6v2M4.6 4.6 6 6M18 18l1.4 1.4M2.4 12h2M19.6 12h2M4.6 19.4 6 18M18 6l1.4-1.4',
+  moon: 'M20.8 13.1A9 9 0 1 1 10.9 3.2a7 7 0 0 0 9.9 9.9z',
 };
+
+/* Aliases. These were duplicate path strings, which meant a change to one
+   quietly desynced it from its twin — `restaurant` and `utensils` had already
+   drifted apart once. Pointing them at a single source makes that
+   impossible. */
+PATHS.location = PATHS['map-pin'];
+PATHS.restaurant = PATHS.utensils;
+PATHS.add = PATHS.plus;
 
 /* Icons that encode a direction rather than a thing. In an RTL layout these
    have to mirror: a chevron still pointing right after the rest of the screen
@@ -71,7 +109,11 @@ const DIRECTIONAL = new Set([
   "arrow-back", "arrow-forward", "chevronRight", "chevronLeft", "logout", "send",
 ]);
 
-export function icon(name, size = 20, strokeWidth = 2) {
+/* 1.75 rather than 2. These render between 13px and 23px, and a 2px stroke at
+   that size fills the counters — the gap inside the `a` of a gear tooth, the
+   hole in a wallet's card slot — which is what made the set look heavy next
+   to the type. */
+export function icon(name, size = 20, strokeWidth = 1.75) {
   const d = PATHS[name] || PATHS.help;
   const dir = DIRECTIONAL.has(name) ? ` data-icon="${name}"` : "";
   return `<svg${dir} width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">

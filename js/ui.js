@@ -1,3 +1,4 @@
+import { countTo } from "./motion.js";
 // Nova Go Rides — shared UI helpers used across every view: toast, bottom
 // sheet, confetti burst, count-up numbers, skeleton loaders.
 
@@ -164,20 +165,27 @@ export function confettiBurst(x, y, count = 26) {
   }
 }
 
-export function countUp(el, target, { prefix = "", suffix = "", decimals = 0, duration = 900 } = {}) {
-  const start = performance.now();
-  function frame(now) {
-    const t = Math.min(1, (now - start) / duration);
-    const eased = 1 - Math.pow(1 - t, 3);
-    const current = target * eased;
-    el.textContent = prefix + current.toLocaleString("en-PK", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + suffix;
-    if (t < 1) requestAnimationFrame(frame);
-    else {
-      el.textContent = prefix + target.toLocaleString("en-PK", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + suffix;
-      el.classList.add("count-pulse");
-    }
-  }
-  requestAnimationFrame(frame);
+export function countUp(el, target, { prefix = "", suffix = "", decimals = 0, duration = 900, from } = {}) {
+  /* THIS USED TO ALWAYS COUNT FROM ZERO, which is right exactly once — the
+     first time a figure appears. For a value that CHANGES it was wrong and
+     slightly dishonest: a driver whose wallet went from Rs 1,000 to Rs 1,050
+     watched it sweep up from nothing, so the animation described a balance
+     arriving rather than the fifty rupees they had just earned.
+
+     It also ignored prefers-reduced-motion entirely, despite a comment at one
+     call site claiming otherwise. countTo() starts from whatever is already
+     on screen, cancels a run still in flight rather than letting two rAF
+     loops fight over one element, and honours the motion preference. */
+  if (!el) return;
+  el.classList.add("nx-count");
+  countTo(el, target, {
+    from,
+    duration,
+    format: (n) =>
+      prefix +
+      n.toLocaleString("en-PK", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) +
+      suffix,
+  });
 }
 
 /**

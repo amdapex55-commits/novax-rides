@@ -153,3 +153,80 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ===========================================================================
+   STATE-CHANGE MOTION
+   Paired with js/motion.js. These animate moments that carry information —
+   a status changing, a rider being found, a job arriving on the ops board —
+   as opposed to the ambient loops that used to run whether or not anything
+   had happened.
+   ========================================================================= */
+
+/* Text replaced under the reader. Small rise, quick fade: enough to catch the
+   eye in peripheral vision, short enough that the new value is readable
+   almost immediately. */
+@keyframes nx-swap-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.nx-swap-in { animation: nx-swap-in 260ms var(--ease-out, cubic-bezier(.2,.7,.3,1)) both; }
+
+/* THE BIGGEST MOMENT ON THE CUSTOMER'S SCREEN.
+   "Finding a rider" becoming a named human with a face, a plate and an ETA
+   used to be an instant swap — the single most anticipated transition in the
+   product, delivered like a table refresh. The card rises into place and its
+   contents follow, so the eye lands on the person first. */
+@keyframes nx-found-card {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes nx-found-item {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.nx-found { animation: nx-found-card 420ms cubic-bezier(.2,.75,.3,1) both; }
+.nx-found > * { animation: nx-found-item 340ms cubic-bezier(.2,.75,.3,1) both; }
+.nx-found > *:nth-child(1) { animation-delay: 90ms; }
+.nx-found > *:nth-child(2) { animation-delay: 150ms; }
+.nx-found > *:nth-child(3) { animation-delay: 205ms; }
+.nx-found > *:nth-child(4) { animation-delay: 255ms; }
+
+/* A row arriving on the ops board. A dispatcher is not staring at the list;
+   they are on the phone. The slide is what catches them, and the wash is what
+   is still there two seconds later when they look back. */
+@keyframes nx-row-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes nx-row-flash {
+  from { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  to   { background: transparent; }
+}
+.nx-row-in {
+  animation: nx-row-in 300ms var(--ease-out, cubic-bezier(.2,.7,.3,1)) both,
+             nx-row-flash 1600ms ease-out 300ms both;
+}
+
+/* A generic entrance for anything revealIn() is pointed at. */
+@keyframes nx-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.nx-reveal { animation: nx-reveal 320ms var(--ease-out, cubic-bezier(.2,.7,.3,1)) both; }
+
+/* Chat receipts. The tick that has just been earned pops once; it never
+   loops, because a delivered message is not an ongoing event. */
+@keyframes nx-tick-earned {
+  0%   { transform: scale(0.7); opacity: 0.5; }
+  55%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.nx-tick-earned { animation: nx-tick-earned 320ms cubic-bezier(.3,.8,.4,1) both; }
+
+/* Numbers that count deserve a figure width that does not jitter. */
+.nx-count { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-swap-in, .nx-found, .nx-found > *, .nx-row-in,
+  .nx-reveal, .nx-tick-earned { animation: none; }
+}

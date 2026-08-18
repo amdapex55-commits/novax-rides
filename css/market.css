@@ -55,48 +55,29 @@
 }
 .nx-tile:active { transform: scale(0.965); box-shadow: none; }
 
-/* The wash is what makes a tile feel coloured without putting text on a
-   saturated ground, which is where contrast goes to die in daylight. */
-.nx-tile::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--tile-wash, transparent);
-  opacity: 0.55;
-  pointer-events: none;
-}
 .nx-tile > * { position: relative; }
 
-/* The service chip carries the whole tile's identity, so it has to look
-   made rather than filled. A flat 13% wash behind a 21px line icon reads as
-   a placeholder — the colour is right but there is no object there.
-   A gradient with a light top edge and a shadow in the tile's own colour
-   gives it a surface, and the icon sits ON something instead of in a tint. */
+/* THE CHIP USED TO HAVE A LIGHT SOURCE.
+   It carried a gradient fill, a white inset along its top edge and a drop
+   shadow tinted in the service's own hue — gel-button lighting, the language
+   of app-store game icons. On a white ground that read as a tasteful chip. On
+   our near-black ground the white inset became a glow and the tinted shadow
+   became a halo, and six of them in a grid read as chips on a table.
+   Flat, one neutral surface, no fake light. The glyph is the thing. */
 .nx-tile-icon {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   color: var(--tile-ink, var(--accent));
-  background:
-    linear-gradient(160deg,
-      color-mix(in srgb, var(--tile-ink, var(--accent)) 22%, transparent),
-      color-mix(in srgb, var(--tile-ink, var(--accent)) 9%, transparent));
-  /* Top edge catches light, bottom drops a shadow tinted by the service
-     colour rather than a generic grey. */
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #fff 55%, transparent),
-    0 2px 8px color-mix(in srgb, var(--tile-ink, var(--accent)) 20%, transparent);
+  background: var(--tile-chip, var(--surface-2));
   transition: transform var(--dur-fast) var(--ease-spring),
-              box-shadow var(--dur-fast) ease;
+              background-color var(--dur-fast) ease;
 }
 /* The press belongs on the chip, not the whole card: it reads as the icon
    being the button, which is what the thumb aimed at. */
 .nx-tile:active .nx-tile-icon { transform: scale(0.93); }
-@supports not (color: color-mix(in srgb, red, blue)) {
-  .nx-tile-icon { background: var(--tile-chip, var(--accent-soft)); box-shadow: none; }
-}
 @media (prefers-reduced-motion: reduce) {
   .nx-tile-icon { transition: none; }
   .nx-tile:active .nx-tile-icon { transform: none; }
@@ -113,62 +94,48 @@
   line-height: 1.3;
 }
 
-/* Per-service colour. One hue per service, used everywhere that service
-   appears, so colour becomes a wayfinding cue rather than decoration. */
-.nx-tile.t-ride   { --tile-ink: #6d28d9; --tile-chip: rgba(109,40,217,0.13); --tile-wash: linear-gradient(160deg, rgba(109,40,217,0.09), transparent 70%); }
-.nx-tile.t-parcel { --tile-ink: #0369a1; --tile-chip: rgba(3,105,161,0.13);  --tile-wash: linear-gradient(160deg, rgba(3,105,161,0.09), transparent 70%); }
-.nx-tile.t-errand { --tile-ink: #047857; --tile-chip: rgba(4,120,87,0.13);   --tile-wash: linear-gradient(160deg, rgba(4,120,87,0.09), transparent 70%); }
-.nx-tile.t-food   { --tile-ink: #b45309; --tile-chip: rgba(180,83,9,0.13);   --tile-wash: linear-gradient(160deg, rgba(180,83,9,0.09), transparent 70%); }
-.nx-tile.t-reward { --tile-ink: #a16207; --tile-chip: rgba(161,98,7,0.13);   --tile-wash: linear-gradient(160deg, rgba(161,98,7,0.09), transparent 70%); }
-.nx-tile.t-refer  { --tile-ink: #be185d; --tile-chip: rgba(190,24,93,0.13);  --tile-wash: linear-gradient(160deg, rgba(190,24,93,0.09), transparent 70%); }
-.nx-tile.t-biz    { --tile-ink: #1d4ed8; --tile-chip: rgba(29,78,216,0.13);  --tile-wash: linear-gradient(160deg, rgba(29,78,216,0.09), transparent 70%); }
+/* COLOUR MEANS AVAILABLE, NOT CATEGORY.
+   There used to be seven hues here, one per service, each lifted to its
+   300-weight step for dark mode: violet, sky, mint, amber, yellow, pink,
+   blue. Those six pastels on near-black are not merely reminiscent of a
+   casino app, they are the same swatch set — and seven accents at equal
+   weight mean no service is primary, so the grid had no first read.
 
-/* Dark mode: the light-mode inks are 600-weight colours chosen against
-   white and go muddy on near-black, so each lifts to its 300/400 step. */
-:root[data-theme="dark"] .nx-tile.t-ride,
-:root[data-theme="dark"] .nx-tile.t-parcel,
-:root[data-theme="dark"] .nx-tile.t-errand,
-:root[data-theme="dark"] .nx-tile.t-food,
-:root[data-theme="dark"] .nx-tile.t-reward,
-:root[data-theme="dark"] .nx-tile.t-refer,
-:root[data-theme="dark"] .nx-tile.t-biz { --tile-wash: none; }
-:root[data-theme="dark"] .nx-tile.t-ride   { --tile-ink: #c4b5fd; --tile-chip: rgba(167,139,250,0.18); }
-:root[data-theme="dark"] .nx-tile.t-parcel { --tile-ink: #7dd3fc; --tile-chip: rgba(125,211,252,0.16); }
-:root[data-theme="dark"] .nx-tile.t-errand { --tile-ink: #6ee7b7; --tile-chip: rgba(110,231,183,0.16); }
-:root[data-theme="dark"] .nx-tile.t-food   { --tile-ink: #fcd34d; --tile-chip: rgba(252,211,77,0.16); }
-:root[data-theme="dark"] .nx-tile.t-reward { --tile-ink: #fde047; --tile-chip: rgba(253,224,71,0.16); }
-:root[data-theme="dark"] .nx-tile.t-refer  { --tile-ink: #f9a8d4; --tile-chip: rgba(249,168,212,0.16); }
-:root[data-theme="dark"] .nx-tile.t-biz    { --tile-ink: #93c5fd; --tile-chip: rgba(147,197,253,0.16); }
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .nx-tile { --tile-wash: none; }
-  :root:not([data-theme="light"]) .nx-tile.t-ride   { --tile-ink: #c4b5fd; --tile-chip: rgba(167,139,250,0.18); }
-  :root:not([data-theme="light"]) .nx-tile.t-parcel { --tile-ink: #7dd3fc; --tile-chip: rgba(125,211,252,0.16); }
-  :root:not([data-theme="light"]) .nx-tile.t-errand { --tile-ink: #6ee7b7; --tile-chip: rgba(110,231,183,0.16); }
-  :root:not([data-theme="light"]) .nx-tile.t-food   { --tile-ink: #fcd34d; --tile-chip: rgba(252,211,77,0.16); }
-  :root:not([data-theme="light"]) .nx-tile.t-reward { --tile-ink: #fde047; --tile-chip: rgba(253,224,71,0.16); }
-  :root:not([data-theme="light"]) .nx-tile.t-refer  { --tile-ink: #f9a8d4; --tile-chip: rgba(249,168,212,0.16); }
-  :root:not([data-theme="light"]) .nx-tile.t-biz    { --tile-ink: #93c5fd; --tile-chip: rgba(147,197,253,0.16); }
-}
+   One accent now, and it earns its place: violet marks what you can book
+   right now, neutral marks what is parked. The glyph already says which
+   service it is; the colour is free to say something the glyph cannot. */
+.nx-tile        { --tile-ink: var(--accent); --tile-chip: var(--surface-2); }
+.nx-tile.is-soon { --tile-ink: var(--text-muted); --tile-chip: var(--surface); }
 
 /* A tile for something not yet live. Legible, obviously inert, and still
    tappable — the tap is the demand signal that decides what launches next. */
 .nx-tile.is-soon { opacity: 0.72; }
+/* A FILLED SATURATED PILL IS A PROMO BADGE, and a promo badge is what a
+   discount app puts on a slot. NEW is information — this service did not
+   exist last month — so it is set as information: a dot and a word, in the
+   one accent, carrying no fill of its own. */
 .nx-tile-flag {
   position: absolute;
-  inset-block-start: 8px;
-  inset-inline-end: 8px;
+  inset-block-start: 9px;
+  inset-inline-end: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 3px 6px;
-  border-radius: var(--r-full);
-  background: var(--surface-2);
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
-.nx-tile-flag.hot { background: var(--error); color: #fff; }
-.nx-tile-flag.new { background: var(--success); color: #fff; }
+.nx-tile-flag::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.nx-tile-flag.new { color: var(--accent); }
+.nx-tile-flag.hot { color: var(--error); }
 
 /* ---------------------------------------------------------- promo ---- */
 /* The review's first question was "where do you announce First ride free?"

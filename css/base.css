@@ -122,7 +122,11 @@ img { max-width: 100%; display: block; }
   pointer-events: none;
   filter: blur(90px);
   opacity: 0.14;
-  animation: nx-aura-drift 26s ease-in-out infinite alternate;
+  /* THE AURA NO LONGER DRIFTS.
+     Two 60vmax blurred colour fields crawling behind every screen on a 26s
+     loop is the ambient motion that makes a dark UI read as a slot machine —
+     something is always moving and nothing ever happened. The colour is
+     untouched; it simply holds still now. */
 }
 #app-root::before {
   top: -20vmax;
@@ -133,15 +137,6 @@ img { max-width: 100%; display: block; }
   bottom: -22vmax;
   right: -18vmax;
   background: radial-gradient(circle, var(--accent-2) 0%, transparent 70%);
-  animation-delay: -9s;
-  animation-direction: alternate-reverse;
-}
-@keyframes nx-aura-drift {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(6%, 4%) scale(1.12); }
-}
-@media (prefers-reduced-motion: reduce) {
-  #app-root::before, #app-root::after { animation: none; }
 }
 
 #view-container {

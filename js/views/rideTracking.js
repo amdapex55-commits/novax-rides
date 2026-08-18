@@ -7,6 +7,7 @@
 import { api } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
+import { swapText, countTo } from "../motion.js";
 import { toast, trustCard, dockSheet, esc, confettiBurst, contactSheet } from "../ui.js";
 import { t } from "../i18n.js";
 import { navigate } from "../router.js";
@@ -77,14 +78,25 @@ export function renderRideTracking(root) {
     const matched = ["MATCHED", "ARRIVED", "IN_PROGRESS"].includes(currentStatus);
     const cancellable = ["REQUESTED", "MATCHING", "MATCHED"].includes(currentStatus);
 
+    /* THIS SHEET REDRAWS EVERY SIX SECONDS.
+       The poll rebuilds the node whether or not anything changed, so an
+       entrance animation applied unconditionally would replay forever and
+       turn a status line into a blinking sign. These two flags are what
+       separate "the ETA ticked" from "you now have a rider" — only the second
+       gets motion, and only the first time it is true. */
+    const statusChanged = currentStatus !== lastDrawnStatus;
+    lastDrawnStatus = currentStatus;
+    const driverJustFound = matched && !!trip?.driver && !driverRevealed;
+    if (driverJustFound) driverRevealed = true;
+
     const node = sheet.step(`
       <div class="flex justify-between items-start mb-1">
         <div>
-          <span class="badge ${matched ? "badge-accent" : "badge-warning"}">${esc(s.label)}</span>
-          <p class="text-lg font-bold mt-2">${esc(s.copy)}</p>
+          <span class="badge ${matched ? "badge-accent" : "badge-warning"}${statusChanged ? " nx-swap-in" : ""}">${esc(s.label)}</span>
+          <p class="text-lg font-bold mt-2${statusChanged ? " nx-swap-in" : ""}">${esc(s.copy)}</p>
           ${liveEtaMinutes != null && ["MATCHED", "IN_PROGRESS"].includes(currentStatus) ? `
             <p class="nx-track-eta">
-              <span class="nx-track-eta-num">${esc(formatEta(liveEtaMinutes))}</span>
+              <span class="nx-track-eta-num nx-count">${esc(formatEta(liveEtaMinutes))}</span>
               <span class="nx-track-eta-label">${currentStatus === "IN_PROGRESS" ? "to your destination" : "away from you"}</span>
             </p>` : ""}
         </div>
@@ -92,7 +104,7 @@ export function renderRideTracking(root) {
       </div>
 
       ${matched && trip?.driver ? `
-        <div style="border-top:1px solid var(--surface-border); margin-top:var(--sp-3);">
+        <div class="${driverJustFound ? "nx-found" : ""}" style="border-top:1px solid var(--surface-border); margin-top:var(--sp-3);">
           ${trustCard({
             name: trip.driver.name,
             subtitle: trip.vehicleType ? `${String(trip.vehicleType).toLowerCase()} · arriving now` : "",
@@ -517,6 +529,17 @@ export function renderRideTracking(root) {
      changed, and re-frame the map only once, when the route first arrives. */
   let lastSignature = null;
   let framedOnce = false;
+  let lastDrawnStatus = null;
+  let driverRevealed = false;
+
+  /* WHICH LEG THE CAMERA IS FRAMED ON.
+     framedOnce alone meant the map framed the first thing it saw and then
+     never moved again. That was fine while the socket was delivering
+     trip:started, because onStarted() re-frames by hand — but when the socket
+     drops and the 6s poll is what reports IN_PROGRESS, the leg silently
+     flipped from "rider coming to you" to "rider taking you there" and the
+     camera stayed pointed at the pickup the customer had already left. */
+  let framedLeg = null;
 
   function applyTrip(t) {
     trip = t;
@@ -554,7 +577,12 @@ export function renderRideTracking(root) {
         // The poll is also what recovers the map when socket pings go
         // missing — same reason it recovers the status.
         refreshLiveRoute(t.driverLocation);
-        if (!framedOnce) { mapHandle.frameLeg(t.driverLocation, legTarget()); framedOnce = true; }
+        const leg = currentStatus === "IN_PROGRESS" ? "to-dropoff" : "to-pickup";
+        if (!framedOnce || leg !== framedLeg) {
+          mapHandle.frameLeg(t.driverLocation, legTarget());
+          framedOnce = true;
+          framedLeg = leg;
+        }
       }
     }
   }
@@ -629,7 +657,11 @@ export function renderRideTracking(root) {
     // Force a re-route and re-frame rather than waiting for the throttle.
     lastRouteAt = 0;
     const d = trip?.driverLocation;
-    if (d?.lat != null) { refreshLiveRoute(d); mapHandle?.frameLeg(d, legTarget()); }
+    if (d?.lat != null) {
+      refreshLiveRoute(d);
+      mapHandle?.frameLeg(d, legTarget());
+      framedLeg = "to-dropoff";
+    }
   };
   /* THE LIVE LEG.
 

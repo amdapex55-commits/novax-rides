@@ -255,6 +255,19 @@ function renderBikeTab(panel, isGuest) {
      the demand signal that decides what launches next. */
   const soon = (key) => (SERVICES?.[key]?.live === false);
 
+  /* ONE "NEW" AT A TIME.
+     Parcel and errands launched together, so both tiles claimed the badge and
+     they cancelled each other out — if two of the three things on a grid are
+     new, the word has stopped selecting anything. It marks the one service we
+     most want tried, and the others simply carry no flag. */
+  let newBadgeSpent = false;
+  const flag = (key) => {
+    if (soon(key)) return `<span class="nx-tile-flag">${esc(t("Soon"))}</span>`;
+    if (newBadgeSpent || !SERVICES?.[key]?.isNew) return "";
+    newBadgeSpent = true;
+    return `<span class="nx-tile-flag new">${esc(t("New"))}</span>`;
+  };
+
   panel.innerHTML = `
     <!-- data-go rather than its own listener: the handler below already
          wires every element carrying it, so a CTA added here can never end up
@@ -283,13 +296,13 @@ function renderBikeTab(panel, isGuest) {
         <span class="nx-tile-sub">From Rs ${PRICING.BIKE.minimum}</span>
       </button>
       <button class="nx-tile t-parcel${soon("parcel") ? " is-soon" : ""}" data-go="/parcel/service">
-        ${soon("parcel") ? `<span class="nx-tile-flag">${esc(t("Soon"))}</span>` : `<span class="nx-tile-flag new">${esc(t("New"))}</span>`}
+        ${flag("parcel")}
         <span class="nx-tile-icon">${icon("package", 23)}</span>
         <span class="nx-tile-label">${esc(t("Send a Parcel"))}</span>
         <span class="nx-tile-sub">From Rs ${PRICING.PARCEL.minimum}</span>
       </button>
       <button class="nx-tile t-errand${soon("errand") ? " is-soon" : ""}" data-go="/errand/details">
-        ${soon("errand") ? `<span class="nx-tile-flag">${esc(t("Soon"))}</span>` : `<span class="nx-tile-flag new">${esc(t("New"))}</span>`}
+        ${flag("errand")}
         <span class="nx-tile-icon">${icon("basket", 23)}</span>
         <span class="nx-tile-label">${esc(t("Pick & Deliver"))}</span>
         <span class="nx-tile-sub">From Rs ${PRICING.ERRAND.minimum}</span>

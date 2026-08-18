@@ -22,7 +22,11 @@ function paintDay(root, e) {
 
   const set = (amountId, jobsId, bucket, fallbackAmount) => {
     const amount = bucket ? Number(bucket.amount || 0) : fallbackAmount;
-    root.querySelector(`#${amountId}`).textContent = fmtMoney(amount ?? 0);
+    /* Today and Yesterday used to swap in place while the week figure beside
+       them counted. Today's number is the one that moves during a shift — a
+       driver refreshing after a drop-off is looking for exactly this to go
+       up, and a silent replacement is the one presentation that hides it. */
+    countUp(root.querySelector(`#${amountId}`), Number(amount ?? 0), { prefix: "Rs. " });
     const jobs = bucket ? Number(bucket.jobs || 0) : null;
     root.querySelector(`#${jobsId}`).textContent =
       jobs == null ? "\u00a0" : jobs === 0 ? "No jobs" : `${jobs} job${jobs === 1 ? "" : "s"}`;

@@ -43,8 +43,12 @@ export const SERVICES = {
   //   ERRAND  — the driver fronts their OWN cash at the shop and is repaid at
   //     the door. Capped at Rs 2,000 so nobody is asked to lay out more than
   //     they carry.
-  parcel: { live: true,  label: "Parcel",  eta: null },
-  errand: { live: true,  label: "Errands", eta: null },
+  //
+  // `isNew` drives the one NEW flag the home grid is allowed to spend. Turn it
+  // off once a service stops being news — a permanent NEW badge is furniture,
+  // and furniture is invisible.
+  parcel: { live: true,  label: "Parcel",  eta: null, isNew: true },
+  errand: { live: true,  label: "Errands", eta: null, isNew: true },
 
   // Food stays parked: it needs restaurants onboarded and a kitchen actually
   // accepting orders — a supply problem the other two don't have.

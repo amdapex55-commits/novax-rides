@@ -6,6 +6,7 @@
 import { api, Token } from "../api.js";
 import { state } from "../state.js";
 import { icon } from "../icons.js";
+import { revealIn } from "../motion.js";
 import { toast, esc } from "../ui.js";
 import { navigate } from "../router.js";
 import { socketManager } from "../socket.js";
@@ -86,13 +87,26 @@ export function renderChatThread(root) {
     if (payload.contextType !== ctx.contextType || payload.contextId !== ctx.contextId) return;
     const bubbleEl = document.createElement("div");
     bubbleEl.innerHTML = bubble(payload.message);
-    listEl.appendChild(bubbleEl.firstElementChild);
+    const node = bubbleEl.firstElementChild;
+    listEl.appendChild(node);
+    // A message that materialises is easy to miss mid-conversation; one that
+    // rises in reads as having just arrived.
+    revealIn(node);
     markRead();
     listEl.scrollTop = listEl.scrollHeight;
   };
-  /* Their ticks turn without either side polling. */
+  /* Their ticks turn without either side polling.
+
+     THE MOMENT SOMEONE READS YOU IS THE POINT OF HAVING RECEIPTS, and it used
+     to arrive as a silent colour change on ticks the reader was probably not
+     looking at. Now the ticks that have just been earned pop once — only
+     those: re-animating every tick in the thread would say "all of these were
+     read just now", which is false for the ones read ten minutes ago. */
   function onRead() {
-    listEl.querySelectorAll(".nx-tick").forEach((t) => t.classList.add("read"));
+    listEl.querySelectorAll(".nx-tick:not(.read)").forEach((tick) => {
+      tick.classList.add("read", "nx-tick-earned");
+      tick.addEventListener("animationend", () => tick.classList.remove("nx-tick-earned"), { once: true });
+    });
   }
   socketManager.on("chat:message", onIncoming);
   socketManager.on("chat:read", onRead);
