@@ -1,6 +1,16 @@
 /* Nova Go Rides — base reset + layout scaffold. Mobile-first by construction
    (this is the #1 thing that was wrong before: Stitch screens had no fluid
    layout rules, so a fixed mobile mock stretched badly on real viewports). */
+
+/* HIDDEN MEANS HIDDEN.
+   A component class that sets `display:flex` silently beats the `hidden`
+   attribute, because both are author-level and the class comes later. That is
+   how an empty black pill sat on the driver's home screen under the earnings
+   card: the commission strip is created `hidden` and only unhidden when money
+   is actually owed, but .nx-owe-strip's own display re-showed it every time.
+   One rule here fixes that class of bug everywhere rather than per-component. */
+[hidden] { display: none !important; }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {

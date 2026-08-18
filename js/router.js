@@ -122,6 +122,10 @@ export const ROUTES = {
   "/restaurant/profile": { view: () => import("./views/restaurant.js"), fn: "renderRestaurantProfile", auth: "RESTAURANT", nav: true, tab: "profile" },
   "/driver/food-offer": { view: () => import("./views/driverFoodErrand.js"), fn: "renderFoodOfferIncoming", auth: "DRIVER", nav: false },
   "/driver/food-progress": { view: () => import("./views/driverFoodErrand.js"), fn: "renderFoodOrderProgress", auth: "DRIVER", nav: false },
+  /* Parcels. These two routes are why a delivery could never reach a driver:
+     the backend was offering them and there was nowhere to send the driver. */
+  "/driver/parcel-offer": { view: () => import("./views/driverParcel.js"), fn: "renderParcelOffer", auth: "DRIVER", nav: false },
+  "/driver/parcel-progress": { view: () => import("./views/driverParcel.js"), fn: "renderParcelProgress", auth: "DRIVER", nav: false },
   "/driver/errand-offer": { view: () => import("./views/driverFoodErrand.js"), fn: "renderErrandOfferIncoming", auth: "DRIVER", nav: false },
   "/driver/errand-progress": { view: () => import("./views/driverFoodErrand.js"), fn: "renderErrandProgress", auth: "DRIVER", nav: false },
   // "none" here (not "guest") — support should be reachable by anyone

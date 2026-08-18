@@ -107,6 +107,7 @@ const CONFIGS = {
       "/splash", "/welcome", "/signin", "/signup", "/forgot-password",
       "/driver/onboarding", "/driver/pending",
       "/driver/home", "/driver/offer", "/driver/progress",
+      "/driver/parcel-offer", "/driver/parcel-progress",
       "/driver/food-offer", "/driver/food-progress",
       "/driver/errand-offer", "/driver/errand-progress",
       "/driver/earnings", "/driver/profile", "/driver/vehicle",

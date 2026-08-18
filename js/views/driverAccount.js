@@ -7,6 +7,39 @@ import { SETTLEMENT, activeSettlementChannels } from "../settlement.config.js";
 import { COMMISSION_PCT } from "../launch.config.js";
 import { haptic } from "../haptics.js";
 import { reportHandled } from "../errors.js";
+import { navigate } from "../router.js";
+
+/** Today and yesterday, pulled out of the week the API already sent.
+ *  todayIndex is the server's own idea of which bucket is today, so this
+ *  never re-derives a week boundary in the phone's timezone and lands a day
+ *  out — which is exactly the kind of bug a driver reports as "it stole my
+ *  earnings". */
+function paintDay(root, e) {
+  const daily = Array.isArray(e.daily) ? e.daily : [];
+  const i = Number.isInteger(e.todayIndex) ? e.todayIndex : daily.length - 1;
+  const today = daily[i];
+  const yesterday = i > 0 ? daily[i - 1] : null;
+
+  const set = (amountId, jobsId, bucket, fallbackAmount) => {
+    const amount = bucket ? Number(bucket.amount || 0) : fallbackAmount;
+    root.querySelector(`#${amountId}`).textContent = fmtMoney(amount ?? 0);
+    const jobs = bucket ? Number(bucket.jobs || 0) : null;
+    root.querySelector(`#${jobsId}`).textContent =
+      jobs == null ? "\u00a0" : jobs === 0 ? "No jobs" : `${jobs} job${jobs === 1 ? "" : "s"}`;
+  };
+
+  // `today` from the API is authoritative for today; the bucket is the
+  // fallback if the array is shaped unexpectedly.
+  set("todayAmount", "todayJobs", today, Number(e.today || 0));
+  // Yesterday only exists inside this week. On a Sunday there is no bucket
+  // before today, and inventing one from last week's total would be a lie.
+  if (yesterday) {
+    set("yesterdayAmount", "yesterdayJobs", yesterday, 0);
+  } else {
+    root.querySelector("#yesterdayAmount").textContent = "—";
+    root.querySelector("#yesterdayJobs").textContent = "New week";
+  }
+}
 
 export function renderEarnings(root) {
   root.innerHTML = `
@@ -28,7 +61,27 @@ export function renderEarnings(root) {
         <div class="nx-bars" id="weekBars"></div>
       </div>
 
-      <div class="card mb-4 flex items-center justify-between">
+      <!-- TODAY IS THE NUMBER A DRIVER CHECKS MOST, and it was not on the
+           earnings screen at all — only the week, and a home-screen figure
+           they had to navigate away to see. Yesterday sits next to it because
+           "am I doing better than yesterday" is the actual question; a bare
+           number answers nothing without something to compare it to.
+           Both come from the daily[] array the API already returns, so this
+           costs no extra request. -->
+      <div class="nx-earn-pair mb-3">
+        <div class="card">
+          <p class="text-secondary text-xs">Today</p>
+          <p class="font-bold" id="todayAmount" style="font-size:22px;">Rs. —</p>
+          <p class="text-xs text-muted" id="todayJobs">&nbsp;</p>
+        </div>
+        <div class="card">
+          <p class="text-secondary text-xs">Yesterday</p>
+          <p class="font-bold" id="yesterdayAmount" style="font-size:22px;">Rs. —</p>
+          <p class="text-xs text-muted" id="yesterdayJobs">&nbsp;</p>
+        </div>
+      </div>
+
+      <div class="card mb-3 flex items-center justify-between">
         <div>
           <p class="text-secondary text-xs">Wallet balance</p>
           <p class="font-bold" id="balanceText" style="font-size:20px;">Rs. 0.00</p>
@@ -39,12 +92,24 @@ export function renderEarnings(root) {
         </div>
       </div>
 
+      <!-- Commission owed lived only on its own screen, which a driver reaches
+           by knowing it exists. It belongs next to the money it comes out of. -->
+      <button id="settleBtn" class="list-row mb-4" style="width:100%;text-align:start;">
+        <div class="list-row-icon">${icon("wallet", 18)}</div>
+        <div style="flex:1;">
+          <p class="font-bold text-sm">Commission &amp; settlement</p>
+          <p class="text-secondary text-xs">What you owe Nova Go, and how to pay it</p>
+        </div>
+        ${icon("arrow-forward", 16)}
+      </button>
+
       <h3 class="nx-sec-title mb-3">Payout history</h3>
       <div id="historyList">${skeletonRows(4)}</div>
     </div>
   `;
   const balanceText = root.querySelector("#balanceText");
   const historyList = root.querySelector("#historyList");
+  root.querySelector("#settleBtn").addEventListener("click", () => navigate("/driver/settle"));
 
   api.getDriverEarnings()
     .then((e) => {
@@ -53,6 +118,7 @@ export function renderEarnings(root) {
       root.querySelector("#jobsWeek").textContent = e.jobsThisWeek ?? 0;
       paintWeekBars(root.querySelector("#weekBars"), e);
       paintWeekDelta(root.querySelector("#weekDelta"), e);
+      paintDay(root, e);
     })
     .catch(() => {
       if (!root.isConnected) return;
@@ -244,10 +310,11 @@ export function renderDriverProfile(root) {
   root.querySelectorAll("[data-nav]").forEach((r) => r.addEventListener("click", () => (location.hash = r.dataset.nav)));
 }
 
+/* Bike only in the pilot. Offering rickshaw and car let a driver select a
+   vehicle Nova Go cannot dispatch to, which reads as "the app never gives me
+   jobs" — the same complaint the diagnostics screen exists to answer. */
 const VEHICLE_TYPES = [
   { value: "bike", label: "Bike" },
-  { value: "rickshaw", label: "Rickshaw" },
-  { value: "car", label: "Car" },
 ];
 
 export function renderVehicle(root) {

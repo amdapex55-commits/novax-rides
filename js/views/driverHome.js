@@ -50,20 +50,29 @@ export function renderDriverHome(root) {
               <h1 style="font-size:30px; line-height:1.15;" id="earnToday">Rs. —</h1>
               <p class="text-xs text-muted mt-1" id="earnSub">Loading...</p>
             </div>
-            <div class="avatar" style="width:44px;height:44px;">${esc((user?.name || "D").charAt(0).toUpperCase())}</div>
+            <div class="avatar" style="width:44px;height:44px;">${esc(initialOf(user))}</div>
           </div>
           <div class="flex gap-2 mt-3" style="border-top:1px solid var(--surface-border); padding-top:var(--sp-3);">
-            <div style="flex:1;">
-              <p class="text-xs text-muted">This week</p>
-              <p class="font-bold" id="earnWeek">Rs. —</p>
+            <!-- Four numbers, one row. Online time is here because it is the
+                 other half of the earnings figure: Rs 2,450 means something
+                 different after two hours than after nine, and a driver
+                 deciding whether to keep riding is doing that division in
+                 their head anyway. -->
+            <div style="flex:1;min-width:0;">
+              <p class="nx-stat-k">This week</p>
+              <p class="nx-stat-v" id="earnWeek">Rs. —</p>
             </div>
-            <div style="flex:1;">
-              <p class="text-xs text-muted">Jobs today</p>
-              <p class="font-bold" id="jobsToday">—</p>
+            <div style="flex:1;min-width:0;">
+              <p class="nx-stat-k">Jobs</p>
+              <p class="nx-stat-v" id="jobsToday">—</p>
             </div>
-            <div style="flex:1;">
-              <p class="text-xs text-muted">Rating</p>
-              <p class="font-bold">★ ${esc(user?.rating ?? "5.0")}</p>
+            <div style="flex:1;min-width:0;">
+              <p class="nx-stat-k">Online</p>
+              <p class="nx-stat-v" id="onlineFor">—</p>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <p class="nx-stat-k">Rating</p>
+              <p class="nx-stat-v">★ ${esc(user?.rating ?? "5.0")}</p>
             </div>
           </div>
 
@@ -164,9 +173,25 @@ export function renderDriverHome(root) {
     label.textContent = online ? "Go Offline" : "Go Online";
     dot.style.animation = online ? "" : "none";
     radarLabelEl.textContent = radarLabel(online, mode);
+    paintOnlineFor();
+  }
+
+  /* Ticks once a minute, not once a second: the number is read in glances and
+     a seconds counter on a screen you look at while riding is just motion. */
+  function paintOnlineFor() {
+    const el = root.querySelector("#onlineFor");
+    if (!el) return;
+    const since = online ? Number(state.onlineSince) || 0 : 0;
+    if (!since) { el.textContent = "—"; return; }
+    const mins = Math.max(0, Math.floor((Date.now() - since) / 60000));
+    el.textContent = mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
   }
 
   async function goOnline() {
+    // Only stamp a NEW shift. Coming back to this screen while already online
+    // must not restart the clock — that is the bug that makes the number
+    // useless, because a driver checks their earnings constantly.
+    if (!state.onlineSince) state.onlineSince = Date.now();
     const socket = await socketManager.connect();
     if (!socket) {
       // Two different failures, two different messages — telling a driver
@@ -183,6 +208,11 @@ export function renderDriverHome(root) {
     socketManager.on("trip:offer", onTripOffer);
     socketManager.on("foodOrder:offer", onFoodOffer);
     socketManager.on("errand:offer", onErrandOffer);
+    /* PARCELS. The backend has emitted this since the delivery module
+       shipped and nothing listened, so every parcel a customer booked was
+       offered to a driver who could not see it, timed out, and cascaded until
+       the delivery ran out of drivers and failed to match. */
+    socketManager.on("delivery:offer", onDeliveryOffer);
     socketManager.on("driver:notApproved", onNotApproved);
     socketManager.on("job:manuallyAssigned", onManualAssign);
 
@@ -302,6 +332,7 @@ export function renderDriverHome(root) {
   }
 
   function goOffline() {
+    state.onlineSince = null;
     tracker?.stop().catch(() => {});
     tracker = null;
     clearInterval(staleTimer);
@@ -315,6 +346,7 @@ export function renderDriverHome(root) {
     socketManager.off("trip:offer", onTripOffer);
     socketManager.off("foodOrder:offer", onFoodOffer);
     socketManager.off("errand:offer", onErrandOffer);
+    socketManager.off("delivery:offer", onDeliveryOffer);
     socketManager.off("driver:notApproved", onNotApproved);
     socketManager.off("job:manuallyAssigned", onManualAssign);
     online = false;
@@ -355,6 +387,17 @@ export function renderDriverHome(root) {
     state.offerFoodOrderId = payload.orderId;
     navigate("/driver/food-offer");
   }
+  /* Parcels ride in the same mode as trips — "Rides & Parcels" is one switch
+     because it is one kind of work on a bike. The job TYPE is what changes,
+     and that is carried on the offer screen, not in the mode. */
+  function onDeliveryOffer(payload) {
+    if (mode !== "RIDE") return;
+    track("driver_offer_received", { kind: "DELIVERY" });
+    state.offerDeliveryId = payload.deliveryId;
+    state.incomingDeliveryOffer = payload;
+    haptic.medium();
+    navigate("/driver/parcel-offer");
+  }
   function onErrandOffer(payload) {
     if (mode !== "FOOD_ERRAND") return;
     track("driver_offer_received", { kind: "ERRAND" });
@@ -364,6 +407,8 @@ export function renderDriverHome(root) {
 
   toggle.addEventListener("click", () => (online ? goOffline() : goOnline()));
   if (online) goOnline(); // resume if we navigated back while already online
+  paintOnlineFor();
+  const onlineTicker = setInterval(paintOnlineFor, 60000);
 
   modeSwitch.querySelectorAll("[data-mode]").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -401,14 +446,32 @@ export function renderDriverHome(root) {
 
   return () => {
     destroyed = true;
+    clearInterval(onlineTicker);
     socketManager.off("trip:offer", onTripOffer);
     socketManager.off("foodOrder:offer", onFoodOffer);
     socketManager.off("errand:offer", onErrandOffer);
+    socketManager.off("delivery:offer", onDeliveryOffer);
     socketManager.off("driver:notApproved", onNotApproved);
     socketManager.off("job:manuallyAssigned", onManualAssign);
     tracker?.stop().catch(() => {});
     if (mapHandle) mapHandle.destroy();
   };
+}
+
+/* Token.user is hydrated from the JWT and does not always carry `name` — a
+   driver who signed up seconds ago has firstName on the register response and
+   nothing else here. The avatar rendered as an empty purple ring for them,
+   which looks like a failed image rather than a person. */
+function initialOf(user) {
+  const source = user?.name || user?.firstName || user?.email || "D";
+  return String(source).trim().charAt(0).toUpperCase() || "D";
+}
+
+/* A full Karachi address does not fit on an offer card and is not what the
+   decision turns on — the area name is. */
+function shortPlace(label) {
+  if (!label) return "";
+  return String(label).split(",")[0].trim().slice(0, 22);
 }
 
 function radarLabel(online, mode) {
@@ -440,7 +503,10 @@ export function renderIncomingOffer(root) {
   root.innerHTML = `
     <div class="nx-offer${tip > 0 ? " has-tip" : ""}">
       <div class="nx-offer-head">
-        <span class="nx-offer-kind">${isBid ? "Rider's offer" : "New ride request"}</span>
+        <!-- Job type first, and in the same slot the parcel offer uses, so a
+             driver reading two different offers a minute apart is reading the
+             same shape twice rather than guessing which is which. -->
+        <span class="nx-offer-kind">${icon("bike", 14)} ${isBid ? "Ride · rider's offer" : "Ride request"}</span>
         ${tip > 0 ? `<span class="nx-offer-fast">${icon("bolt", 13)} Fast Match · +${fmtMoney(tip)} tip</span>` : ""}
       </div>
 
@@ -456,13 +522,21 @@ export function renderIncomingOffer(root) {
         }
 
         <div class="nx-offer-facts">
+          <!-- THIS SAID "3.2 km AWAY" AND MEANT SOMETHING ELSE.
+               offer.distanceKm is the LENGTH OF THE TRIP, straight off the
+               fare calculation — not the distance to the pickup. A driver
+               declining a "far" job was often declining a long, well-paid one
+               starting around the corner. Labelled for what it is.
+               Vehicle type is dropped: in a bike-only pilot, telling a driver
+               on a bike that the job wants a bike is a wasted line on the one
+               screen where every line has to earn its place. -->
           <div>
-            <span class="k">Pickup</span>
-            <span class="v">${offer.distanceKm != null ? `${Number(offer.distanceKm).toFixed(1)} km away` : "Nearby"}</span>
+            <span class="k">Trip length</span>
+            <span class="v">${offer.distanceKm != null ? `${Number(offer.distanceKm).toFixed(1)} km` : "—"}</span>
           </div>
           <div>
-            <span class="k">Vehicle</span>
-            <span class="v">${esc(String(offer.vehicleType || "—").toLowerCase())}</span>
+            <span class="k">Pickup</span>
+            <span class="v">${esc(shortPlace(offer.pickupLabel) || "Nearby")}</span>
           </div>
         </div>
       </div>

@@ -84,6 +84,28 @@ export const state = {
   get offerErrandId() { return read("offerErrandId"); },
   set offerErrandId(v) { write("offerErrandId", v); },
 
+  /* PARCELS WERE DISPATCHED TO NOBODY.
+     The backend has offered deliveries to drivers since the delivery module
+     shipped, and the driver app never listened for the event — no state, no
+     route, no screen. Every parcel a customer booked was offered to a rider
+     who could not see it, timed out, cascaded to the next rider, and
+     eventually failed to match. These are the missing halves. */
+  /* When this shift started. Persisted, because "online time" that resets
+     when Android kills the tab is worse than no number at all — it tells a
+     driver they have been working twenty minutes when they have been out
+     since dawn. */
+  get onlineSince() { return read("onlineSince"); },
+  set onlineSince(v) { write("onlineSince", v); },
+
+  get offerDeliveryId() { return read("offerDeliveryId"); },
+  set offerDeliveryId(v) { write("offerDeliveryId", v); },
+
+  get incomingDeliveryOffer() { return read("incomingDeliveryOffer"); },
+  set incomingDeliveryOffer(v) { write("incomingDeliveryOffer", v); },
+
+  get activeDeliveryId() { return read("activeDeliveryId"); },
+  set activeDeliveryId(v) { write("activeDeliveryId", v); },
+
   // Where to send the user after they sign in — set right before bouncing a
   // guest to /signin (either by the router's auth guard or by an action
   // button like "Request Ride"), consumed once on success.

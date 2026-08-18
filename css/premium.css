@@ -1682,6 +1682,52 @@
   .nx-doc-hint { display: none; }
 }
 
+/* ---------------------------------------------------------------------------
+   Driver parcel job
+   --------------------------------------------------------------------------- */
+
+/* Three dots, not a numbered wizard. The driver needs to know how much of the
+   job is left at a glance, from the saddle, without reading. */
+.nx-step-rail { display: flex; align-items: center; gap: 6px; }
+.nx-step-dot {
+  height: 4px; flex: 1;
+  border-radius: 99px;
+  background: var(--surface-border);
+  transition: background 200ms var(--ease-out);
+}
+.nx-step-dot.done { background: color-mix(in srgb, var(--success) 70%, transparent); }
+.nx-step-dot.now { background: var(--accent); }
+
+/* Cash the driver is carrying on Nova Go's behalf. Deliberately the loudest
+   thing in the sheet: it is their own money at risk until they settle, and
+   the single most expensive thing to discover late. */
+.nx-cod-strip {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 11px 13px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  background: color-mix(in srgb, var(--warning) 10%, var(--bg-elevated));
+  font-size: 12px; line-height: 1.45;
+  color: var(--text-primary);
+}
+.nx-cod-strip svg { flex: none; margin-top: 1px; color: var(--warning); }
+
+/* Four stats in a 375px row. The label shrinks, the number does not — the
+   number is the thing being read at a glance. */
+.nx-stat-k {
+  font-size: 10px; letter-spacing: 0.02em; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nx-stat-v {
+  font-size: 15px; font-weight: 800; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Today beside yesterday — the comparison is the point, so they share a row
+   and collapse only when there is genuinely no width for two. */
+.nx-earn-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 320px) { .nx-earn-pair { grid-template-columns: 1fr; } }
+
 .nx-link { color: var(--accent); }
 .nx-link-strong { color: var(--accent); font-weight: 800; }
 
