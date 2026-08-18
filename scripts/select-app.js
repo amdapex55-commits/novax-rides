@@ -224,6 +224,42 @@ function writeAndroidAppId(appKey, appId) {
   return appId;
 }
 
+/* ------------------------------------------------- android strings.xml ---
+
+   A THIRD PLACE THE IDENTITY LIVES, and it was stale in all three fields.
+
+   `cap sync` regenerates this from capacitor.config.json — but select-app.js
+   does not run cap sync, and Android Studio's Run button does not either. So
+   the first real APK this project ever produced was the DRIVER build,
+   correctly signed and correctly identified everywhere else, while carrying:
+
+     app_name          "Nova Go"        (the customer app's name)
+     package_name      "com.novago.app" (the bundle ID from before the rename)
+     custom_url_scheme "com.novago.app" (ditto)
+
+   The label matters because a rider with both apps installed cannot tell them
+   apart on the home screen. custom_url_scheme matters more: it is the scheme
+   deep links and OAuth callbacks come back on, so a stale value breaks the
+   return leg silently — the browser opens, the user approves, and nothing
+   comes back. */
+
+function writeAndroidStrings(appId, displayName) {
+  const stringsPath = p("android", "app", "src", "main", "res", "values", "strings.xml");
+  if (!fs.existsSync(stringsPath)) return null;
+
+  let xml = fs.readFileSync(stringsPath, "utf8");
+  const set = (name, value) => {
+    const re = new RegExp(`(<string name="${name}">)[^<]*(</string>)`);
+    if (re.test(xml)) xml = xml.replace(re, `$1${value}$2`);
+  };
+  set("app_name", displayName);
+  set("title_activity_main", displayName);
+  set("package_name", appId);
+  set("custom_url_scheme", appId);
+  fs.writeFileSync(stringsPath, xml);
+  return displayName;
+}
+
 /* --------------------------------------------------- android signing -----
 
    WITHOUT THIS, `gradlew bundleRelease` PRODUCES AN UNSIGNED AAB and the Play
@@ -392,6 +428,7 @@ const writtenPerms = writeAndroidManifest(target);
 const writtenAppId = writeAndroidAppId(target, app.appId);
 const writtenIos = writeIosPlist(target, app.appId, app.name);
 const writtenSigning = writeAndroidSigning();
+const writtenStrings = writeAndroidStrings(app.appId, app.name);
 
 console.log(`
   Built ${app.name}  (${app.appId})
@@ -404,6 +441,7 @@ ${writtenPerms
     writtenPerms.map((x) => `               ${x.replace("android.permission.", "")}`).join("\n")
   : "    android  : no native project yet (npx cap add android)"}
 ${writtenAppId ? `    android  : applicationId = ${writtenAppId}` : ""}
+${writtenStrings ? `    android  : app label = ${writtenStrings}` : ""}
 ${writtenSigning === "written" ? "    android  : release signing config injected"
   : writtenSigning === "already" ? "    android  : release signing already configured"
   : writtenSigning === "missing" ? "    android  : NO SIGNING — see IOS-SETUP.md / ANDROID-RELEASE.md"
