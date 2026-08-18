@@ -22,9 +22,11 @@
 
 const ALERT_TONES = { error: "error", warn: "warn", success: "success", info: "info" };
 let alertStack = [];
+// Lets the action button reach the entry that is created after the markup.
+const entryRef = { current: null };
 
 export function alertUser(problem, options = {}) {
-  const { suggestion = "", tone = "error", timeout } = options;
+  const { suggestion = "", tone = "error", timeout, action = null } = options;
   const key = `${tone}:${problem}:${suggestion}`;
 
   // Same message already up: restart its clock rather than stacking a copy.
@@ -49,14 +51,28 @@ export function alertUser(problem, options = {}) {
     <span class="nx-alert-body">
       <span class="nx-alert-problem"></span>
       ${suggestion ? '<span class="nx-alert-suggestion"></span>' : ""}
+      ${action ? '<button class="nx-alert-action"></button>' : ""}
     </span>
     <button class="nx-alert-close" aria-label="Dismiss">&times;</button>
   `;
   el.querySelector(".nx-alert-problem").textContent = problem;
   if (suggestion) el.querySelector(".nx-alert-suggestion").textContent = suggestion;
+  /* An alert that names a way out should offer it. Telling someone they
+     already have a ride in progress is only half the message — the half that
+     helps is the button that opens it. textContent, because the label is
+     caller-supplied. */
+  if (action) {
+    const btn = el.querySelector(".nx-alert-action");
+    btn.textContent = action.label || "Open";
+    btn.addEventListener("click", () => {
+      dismissAlert(entryRef.current);
+      try { action.onClick?.(); } catch (err) { console.warn("[NovaGo] alert action failed:", err); }
+    });
+  }
 
   host.appendChild(el);
   const entry = { key, el, timer: null };
+  entryRef.current = entry;
   alertStack.push(entry);
 
   el.querySelector(".nx-alert-close").addEventListener("click", () => dismissAlert(entry));

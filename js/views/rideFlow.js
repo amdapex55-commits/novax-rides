@@ -768,6 +768,36 @@ export function renderRideBooking(root) {
         if (!offeredFare || offeredFare <= 0) { toast("Enter an offer amount", true); return; }
       }
 
+      /* ONE RIDE AT A TIME.
+
+         Nothing stopped a customer booking a second ride while a rider was
+         already on the way to them. The first trip stays live on the server,
+         so they end up with two riders dispatched, two fares owed, and a
+         tracking screen that can only show one of them. The person who pays
+         for that confusion is the second rider, who arrives to find nobody
+         waiting.
+
+         Checked against the server rather than local state, because local
+         state is exactly what is missing after a reload — which is when this
+         is most likely to happen. */
+      try {
+        const mine = await api.listMyTrips();
+        const ACTIVE = ["REQUESTED", "MATCHING", "MATCHED", "ARRIVED", "IN_PROGRESS"];
+        const live = (Array.isArray(mine) ? mine : []).find((t) => ACTIVE.includes(t.status));
+        if (live) {
+          state.activeTripId = live.id;
+          alertUser("You already have a ride in progress.", {
+            suggestion: "Open it to see where your rider is, or cancel it before booking another.",
+            tone: "warn",
+            action: { label: "Open my ride", onClick: () => navigate("/tracking") },
+          });
+          return;
+        }
+      } catch {
+        /* Offline or the server is unhappy — do not block a booking on a
+           check that could not run. The server refuses a duplicate anyway. */
+      }
+
       submitting = true;
       haptic.medium();
       confirmBtn.disabled = true;

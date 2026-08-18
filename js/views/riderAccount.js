@@ -151,6 +151,16 @@ export function renderWallet(root) {
   });
 }
 
+/* What the customer is waiting for, in their words. "MATCHED" means nothing
+   to someone standing on a road; "Your rider is on the way" does. */
+const LIVE_LABEL = {
+  REQUESTED: "Finding you a rider…",
+  MATCHING: "Finding you a rider…",
+  MATCHED: "Your rider is on the way",
+  ARRIVED: "Your rider is here",
+  IN_PROGRESS: "On the way to your destination",
+};
+
 const TRIP_STATUS_BADGE = {
   COMPLETED: "badge-success",
   CANCELLED: "badge-error",
@@ -189,7 +199,34 @@ export function renderTripHistory(root) {
          answering it needs the route and what the fare was made of. A tip is
          broken out separately because it went to the rider in full and the
          customer should be able to see that. */
-      list.innerHTML = trips
+      /* A LIVE TRIP IS NOT A RECEIPT.
+
+         Every trip was rendered the same way — a status badge, a fare
+         breakdown and a "Ride again" button — including one happening right
+         now. So a customer whose driver was on the way saw "IN_PROGRESS"
+         next to a total they had not paid, with no way to open it. The
+         tracking screen existed and was unreachable from the one screen they
+         were looking at.
+
+         The live one is lifted out, put at the top, and made the obvious
+         thing to tap. */
+      const ACTIVE = ["REQUESTED", "MATCHING", "MATCHED", "ARRIVED", "IN_PROGRESS"];
+      const live = trips.find((t) => ACTIVE.includes(t.status));
+      const past = trips.filter((t) => !ACTIVE.includes(t.status));
+
+      const liveCard = live ? `
+        <button id="resumeTripBtn" class="nx-live-trip mb-4" data-trip="${esc(live.id)}">
+          <span class="nx-live-trip-pulse" aria-hidden="true"></span>
+          <span class="nx-live-trip-body">
+            <span class="nx-live-trip-label">${esc(LIVE_LABEL[live.status] || "Ride in progress")}</span>
+            <span class="nx-live-trip-route">
+              ${esc(live.pickupLabel || "Pickup")} → ${esc(live.dropoffLabel || "Drop-off")}
+            </span>
+          </span>
+          ${icon("arrow-forward", 18)}
+        </button>` : "";
+
+      list.innerHTML = liveCard + past
         .slice(0, 30)
         .map((t, i) => {
           const fare = Number(t.fare || 0);
@@ -242,9 +279,21 @@ export function renderTripHistory(root) {
       /* The trip list is the only place that has both ends of a past journey,
          so this is where repeating one belongs. Sets the same state the
          booking screen reads when a saved place is tapped — no new path. */
+      /* Back into the live trip. This is the path that did not exist: the
+         tracking screen was only ever reachable in the same breath as
+         booking, so a customer who backgrounded the app, or simply tapped
+         another tab, had no way back to their own ride. */
+      list.querySelector("#resumeTripBtn")?.addEventListener("click", (e) => {
+        haptic.light();
+        state.activeTripId = e.currentTarget.dataset.trip;
+        navigate("/tracking");
+      });
+
       list.querySelectorAll("[data-again]").forEach((btn) =>
         btn.addEventListener("click", () => {
-          const t = trips[Number(btn.dataset.again)];
+          // Indexes `past`, which is what the list is rendered from — the
+          // live trip is lifted out above, so `trips` no longer lines up.
+          const t = past[Number(btn.dataset.again)];
           if (!t) return;
           haptic.light();
           state.selectedVehicle = "BIKE";
