@@ -2417,47 +2417,54 @@
 .nx-wel-scene svg { width: 100%; height: 100%; display: block; }
 
 /* Blocks first, so the roads read as gaps between them. */
-.nx-wel-blocks rect { fill: #fff; opacity: .035; }
-.nx-wel-roads path { stroke: #fff; stroke-width: 1; opacity: .11; }
+/* City blocks. Brighter than before: at .035 they were indistinguishable from
+   the background gradient, so the grid had nothing to sit on and read as
+   noise. They sit in the cells BETWEEN the roads now, so the streets look
+   like streets. */
+.nx-wel-blocks rect { fill: #fff; opacity: .055; }
+.nx-wel-roads path { stroke: #fff; stroke-width: 1; opacity: .13; }
 
+/* The untravelled remainder. It was .13 — near-invisible — so the route
+   appeared to simply stop rather than continue ahead of the rider. */
 .nx-wel-route-bed {
-  fill: none; stroke: #fff; stroke-width: 4; opacity: .13;
-  stroke-linecap: round;
+  fill: none; stroke: #fff; stroke-width: 4; opacity: .22;
+  stroke-linecap: round; stroke-linejoin: round;
 }
+/* pathLength="1" means the dash maths is in 0–1 space and needs no measuring.
+   It stops at .38 remaining: the trip is still running, which is the whole
+   point of the picture. */
 .nx-wel-route {
-  fill: none; stroke: url(#wtravelled); stroke-width: 4.5; stroke-linecap: round;
-  stroke-dasharray: 300; stroke-dashoffset: 300;
-  animation: nx-wel-draw 1.5s cubic-bezier(.3,.7,.3,1) .15s forwards;
+  fill: none; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: nx-wel-draw 2.1s cubic-bezier(.25,.6,.25,1) .25s forwards;
 }
-@keyframes nx-wel-draw { to { stroke-dashoffset: 96; } } /* stops short: the trip is still running */
+@keyframes nx-wel-draw { to { stroke-dashoffset: .38; } }
 
 .nx-wel-halo { fill: var(--brand-400); opacity: 0; animation: nx-wel-halo 2.6s ease-out .5s infinite; }
 @keyframes nx-wel-halo {
-  0% { opacity: .5; transform: scale(.6); transform-origin: 64px 246px; }
-  70% { opacity: 0; transform: scale(1.9); transform-origin: 64px 246px; }
+  0% { opacity: .5; transform: scale(.6); transform-origin: 46px 250px; }
+  70% { opacity: 0; transform: scale(1.9); transform-origin: 46px 250px; }
   100% { opacity: 0; }
 }
 .nx-wel-dot-a { fill: #fff; opacity: 0; animation: nx-wel-pop .3s ease-out .2s forwards; }
 @keyframes nx-wel-pop { to { opacity: 1; } }
 
-/* The rider rides the same curve the route draws along. */
-.nx-wel-bike { opacity: 0; animation: nx-wel-ride 1.5s cubic-bezier(.3,.7,.3,1) .15s forwards; }
+/* The rider rides the path itself — see the animateMotion in auth.js. No
+   transform animation here: a translate between two endpoints is exactly the
+   bug this replaced, and a CSS transform would fight the motion path. */
+.nx-wel-bike { opacity: 0; animation: nx-wel-fadein .4s ease-out .3s forwards; }
 .nx-wel-bike > circle:first-child { fill: var(--brand-500); }
 .nx-wel-bike-g { stroke: #fff; }
-@keyframes nx-wel-ride {
-  0%   { opacity: 0; transform: translate(64px, 246px); }
-  12%  { opacity: 1; }
-  100% { opacity: 1; transform: translate(214px, 143px); }
-}
+@keyframes nx-wel-fadein { to { opacity: 1; } }
 
 .nx-wel-pin {
   fill: var(--brand-400); opacity: 0;
-  animation: nx-wel-drop .5s cubic-bezier(.2,1.45,.35,1) 1.5s forwards;
+  animation: nx-wel-drop .5s cubic-bezier(.2,1.45,.35,1) 2.1s forwards;
 }
 .nx-wel-pin-eye { fill: #0b0713; }
 @keyframes nx-wel-drop {
-  from { opacity: 0; transform: translate(262px, 78px) scale(.7); }
-  to   { opacity: 1; transform: translate(262px, 96px) scale(1); }
+  from { opacity: 0; transform: translate(282px, 34px) scale(.7); }
+  to   { opacity: 1; transform: translate(282px, 52px) scale(1); }
 }
 
 /* ---- The sheet --------------------------------------------------------- */
@@ -2537,12 +2544,14 @@
   .nx-wel-sheet { gap: 9px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nx-wel-route { animation: none; stroke-dashoffset: 96; }
+  /* The finished frame, immediately. auth.js also omits the animateMotion
+     element entirely under this setting and places the rider statically —
+     SMIL does not answer to `animation: none`. */
+  .nx-wel-route { animation: none; stroke-dashoffset: .38; }
   .nx-wel-halo { animation: none; opacity: 0; }
   .nx-wel-dot-a { animation: none; opacity: 1; }
-  .nx-wel-bike { animation: none; opacity: 1; transform: translate(214px, 143px); }
-  .nx-wel-pin { animation: none; opacity: 1; transform: translate(262px, 96px); }
-}
+  .nx-wel-bike { animation: none; opacity: 1; }
+  .nx-wel-pin { animation: none; opacity: 1; transform: translate(282px, 52px); }
 }
 
 /* ==========================================================================

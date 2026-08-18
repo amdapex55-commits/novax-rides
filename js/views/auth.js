@@ -84,82 +84,7 @@ function renderCustomerWelcome(root) {
 
   root.innerHTML = `
     <div class="page nx-wel">
-      <!-- The screen is a COMPOSITION, not a form with a button at the
-           bottom. This is the moment the product is actually about: a rider
-           already on the way to you, on a real street layout, at night.
-
-           Built rather than photographed because no photograph exists yet —
-           but built to be a SCENE, not a diagram. Blocks give the grid
-           depth, the route has a travelled half and an untravelled half, the
-           bike sits on the join, and the destination pin waits at the end.
-           All of it is one inline SVG: no images, no requests. -->
-      <div class="nx-wel-scene" aria-hidden="true">
-        <svg viewBox="0 0 375 300" preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <linearGradient id="wtravelled" x1="0" y1="1" x2="1" y2="0">
-              <stop offset="0%" stop-color="var(--brand-400)"/>
-              <stop offset="100%" stop-color="var(--brand-600)"/>
-            </linearGradient>
-            <radialGradient id="wglow" cx="50%" cy="42%">
-              <stop offset="0%" stop-color="var(--brand-500)" stop-opacity=".5"/>
-              <stop offset="100%" stop-color="var(--brand-900)" stop-opacity="0"/>
-            </radialGradient>
-            <filter id="wsoft" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur stdDeviation="5"/>
-            </filter>
-          </defs>
-
-          <rect width="375" height="300" fill="url(#wglow)"/>
-
-          <!-- City blocks. Rectangles between the roads are what turn a grid
-               into somewhere; a bare lattice reads as graph paper. -->
-          <g class="nx-wel-blocks">
-            <rect x="18"  y="34"  width="66" height="46" rx="4"/>
-            <rect x="104" y="18"  width="88" height="58" rx="4"/>
-            <rect x="212" y="34"  width="54" height="42" rx="4"/>
-            <rect x="286" y="12"  width="72" height="64" rx="4"/>
-            <rect x="10"  y="106" width="78" height="58" rx="4"/>
-            <rect x="108" y="100" width="62" height="50" rx="4"/>
-            <rect x="192" y="112" width="86" height="46" rx="4"/>
-            <rect x="298" y="104" width="64" height="60" rx="4"/>
-            <rect x="24"  y="196" width="70" height="54" rx="4"/>
-            <rect x="116" y="188" width="90" height="62" rx="4"/>
-            <rect x="228" y="200" width="58" height="48" rx="4"/>
-            <rect x="306" y="192" width="58" height="56" rx="4"/>
-          </g>
-
-          <!-- Roads. -->
-          <g class="nx-wel-roads">
-            <path d="M-10 92 H385 M-10 176 H385 M-10 262 H385"/>
-            <path d="M96 -10 V310 M180 -10 V310 M284 -10 V310"/>
-          </g>
-
-          <!-- The trip. One path drawn twice: the faint whole route, then
-               the travelled portion over it, so progress is legible at a
-               glance instead of implied. -->
-          <path class="nx-wel-route-bed"
-                d="M64 246 C 112 246 116 182 156 178 S 236 156 262 96"/>
-          <path class="nx-wel-route"
-                d="M64 246 C 112 246 116 182 156 178 S 236 156 262 96"/>
-
-          <circle class="nx-wel-halo" cx="64" cy="246" r="13" filter="url(#wsoft)"/>
-          <circle class="nx-wel-dot-a" cx="64" cy="246" r="6.5"/>
-
-          <!-- The rider, on the join between travelled and not. -->
-          <g class="nx-wel-bike">
-            <circle r="13"/>
-            <path class="nx-wel-bike-g" d="M-6.5 2.5 h4.2 l2-5.4 h4.6 l2 5.4 h1.6"
-                  fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle class="nx-wel-bike-g" cx="-5.6" cy="3.4" r="2.7" fill="none" stroke-width="1.6"/>
-            <circle class="nx-wel-bike-g" cx="5.6"  cy="3.4" r="2.7" fill="none" stroke-width="1.6"/>
-          </g>
-
-          <g class="nx-wel-pin" transform="translate(262 96)">
-            <path d="M0 9 C -8.5 -2 -12 -6.5 -12 -12 A 12 12 0 0 1 12 -12 C 12 -6.5 8.5 -2 0 9 Z"/>
-            <circle cx="0" cy="-12" r="4.2" class="nx-wel-pin-eye"/>
-          </g>
-        </svg>
-      </div>
+      ${welcomeScene("c")}
 
       <section class="nx-wel-sheet">
         <header class="nx-wel-brandline">
@@ -270,82 +195,7 @@ function renderPartnerWelcome(root) {
 
   root.innerHTML = `
     <div class="page nx-wel nx-wel-${accent}">
-      <!-- The screen is a COMPOSITION, not a form with a button at the
-           bottom. This is the moment the product is actually about: a rider
-           already on the way to you, on a real street layout, at night.
-
-           Built rather than photographed because no photograph exists yet —
-           but built to be a SCENE, not a diagram. Blocks give the grid
-           depth, the route has a travelled half and an untravelled half, the
-           bike sits on the join, and the destination pin waits at the end.
-           All of it is one inline SVG: no images, no requests. -->
-      <div class="nx-wel-scene" aria-hidden="true">
-        <svg viewBox="0 0 375 300" preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <linearGradient id="wtravelled" x1="0" y1="1" x2="1" y2="0">
-              <stop offset="0%" stop-color="var(--brand-400)"/>
-              <stop offset="100%" stop-color="var(--brand-600)"/>
-            </linearGradient>
-            <radialGradient id="wglow" cx="50%" cy="42%">
-              <stop offset="0%" stop-color="var(--brand-500)" stop-opacity=".5"/>
-              <stop offset="100%" stop-color="var(--brand-900)" stop-opacity="0"/>
-            </radialGradient>
-            <filter id="wsoft" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur stdDeviation="5"/>
-            </filter>
-          </defs>
-
-          <rect width="375" height="300" fill="url(#wglow)"/>
-
-          <!-- City blocks. Rectangles between the roads are what turn a grid
-               into somewhere; a bare lattice reads as graph paper. -->
-          <g class="nx-wel-blocks">
-            <rect x="18"  y="34"  width="66" height="46" rx="4"/>
-            <rect x="104" y="18"  width="88" height="58" rx="4"/>
-            <rect x="212" y="34"  width="54" height="42" rx="4"/>
-            <rect x="286" y="12"  width="72" height="64" rx="4"/>
-            <rect x="10"  y="106" width="78" height="58" rx="4"/>
-            <rect x="108" y="100" width="62" height="50" rx="4"/>
-            <rect x="192" y="112" width="86" height="46" rx="4"/>
-            <rect x="298" y="104" width="64" height="60" rx="4"/>
-            <rect x="24"  y="196" width="70" height="54" rx="4"/>
-            <rect x="116" y="188" width="90" height="62" rx="4"/>
-            <rect x="228" y="200" width="58" height="48" rx="4"/>
-            <rect x="306" y="192" width="58" height="56" rx="4"/>
-          </g>
-
-          <!-- Roads. -->
-          <g class="nx-wel-roads">
-            <path d="M-10 92 H385 M-10 176 H385 M-10 262 H385"/>
-            <path d="M96 -10 V310 M180 -10 V310 M284 -10 V310"/>
-          </g>
-
-          <!-- The trip. One path drawn twice: the faint whole route, then
-               the travelled portion over it, so progress is legible at a
-               glance instead of implied. -->
-          <path class="nx-wel-route-bed"
-                d="M64 246 C 112 246 116 182 156 178 S 236 156 262 96"/>
-          <path class="nx-wel-route"
-                d="M64 246 C 112 246 116 182 156 178 S 236 156 262 96"/>
-
-          <circle class="nx-wel-halo" cx="64" cy="246" r="13" filter="url(#wsoft)"/>
-          <circle class="nx-wel-dot-a" cx="64" cy="246" r="6.5"/>
-
-          <!-- The rider, on the join between travelled and not. -->
-          <g class="nx-wel-bike">
-            <circle r="13"/>
-            <path class="nx-wel-bike-g" d="M-6.5 2.5 h4.2 l2-5.4 h4.6 l2 5.4 h1.6"
-                  fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle class="nx-wel-bike-g" cx="-5.6" cy="3.4" r="2.7" fill="none" stroke-width="1.6"/>
-            <circle class="nx-wel-bike-g" cx="5.6"  cy="3.4" r="2.7" fill="none" stroke-width="1.6"/>
-          </g>
-
-          <g class="nx-wel-pin" transform="translate(262 96)">
-            <path d="M0 9 C -8.5 -2 -12 -6.5 -12 -12 A 12 12 0 0 1 12 -12 C 12 -6.5 8.5 -2 0 9 Z"/>
-            <circle cx="0" cy="-12" r="4.2" class="nx-wel-pin-eye"/>
-          </g>
-        </svg>
-      </div>
+      ${welcomeScene("d")}
 
       <section class="nx-wel-sheet">
         <header class="nx-wel-brandline">
@@ -394,6 +244,107 @@ function renderPartnerWelcome(root) {
 function shortPoint(label) {
   const rest = label.split(" ").slice(1).join(" ");
   return rest || label;
+}
+
+/**
+ * The scene at the top of both welcome screens.
+ *
+ * WHAT WAS WRONG WITH THE OLD ONE
+ *
+ * The route was a bezier curve and the bike was animated with a straight
+ * `translate` between its two endpoints — so the rider drifted across the
+ * buildings in a dead straight line while the road curved away underneath.
+ * That is the "unfinished" feeling: not a missing frame, a rider ignoring the
+ * road. Nothing short of following the actual path fixes it, so the bike now
+ * rides the path itself via animateMotion, and leans into the turns.
+ *
+ * The grid was the other half. Roads were drawn straight through the middle
+ * of the blocks, which is why it read as a lattice over noise rather than a
+ * city: the blocks now sit in the cells BETWEEN the roads, with a gutter, the
+ * way city blocks actually do. The route follows those streets instead of
+ * cutting across them — right, up, right, up — which is what a navigation
+ * line looks like to anyone who has used one.
+ *
+ * pathLength="1" normalises the path so the dash animation works without
+ * anyone measuring anything, and the same 0–1 space drives how far along the
+ * bike stops.
+ */
+function welcomeScene(idSuffix = "") {
+  const uid = (n) => `${n}${idSuffix}`;
+  // Roads: x = 96, 188, 282 · y = 88, 172, 250.
+  // Blocks are inset 14px from each road so the streets run between them.
+  const BLOCKS = [
+    [8, 10, 74, 64], [110, 10, 64, 64], [202, 10, 66, 40], [296, 10, 70, 64],
+    [8, 102, 74, 56], [110, 102, 64, 30], [110, 140, 64, 18], [202, 102, 66, 56], [296, 102, 70, 56],
+    [8, 186, 40, 50], [56, 186, 26, 50], [110, 186, 64, 50], [202, 186, 66, 50], [296, 186, 70, 50],
+    [8, 264, 74, 30], [110, 264, 64, 30], [202, 264, 66, 30], [296, 264, 70, 30],
+  ];
+  // Right, up, right, up — corners rounded so it reads as a drawn route.
+  const ROUTE = "M46 250 H82 Q96 250 96 236 V186 Q96 172 110 172 H174 Q188 172 188 158 V102 Q188 88 202 88 H282 V52";
+  const still = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  return `
+    <div class="nx-wel-scene" aria-hidden="true">
+      <svg viewBox="0 0 375 300" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="${uid("wtravelled")}" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0%" stop-color="var(--brand-400)"/>
+            <stop offset="100%" stop-color="var(--brand-600)"/>
+          </linearGradient>
+          <radialGradient id="${uid("wglow")}" cx="50%" cy="42%">
+            <stop offset="0%" stop-color="var(--brand-500)" stop-opacity=".45"/>
+            <stop offset="100%" stop-color="var(--brand-900)" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="${uid("wsoft")}" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="5"/>
+          </filter>
+        </defs>
+
+        <rect width="375" height="300" fill="url(#${uid("wglow")})"/>
+
+        <g class="nx-wel-blocks">
+          ${BLOCKS.map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/>`).join("")}
+        </g>
+
+        <g class="nx-wel-roads">
+          <path d="M-10 88 H385 M-10 172 H385 M-10 250 H385"/>
+          <path d="M96 -10 V310 M188 -10 V310 M282 -10 V310"/>
+        </g>
+
+        <!-- The whole route, faint, then the travelled part over it. Both are
+             the same path, so they cannot drift apart. -->
+        <path id="${uid("wroute")}" class="nx-wel-route-bed" d="${ROUTE}" pathLength="1"/>
+        <path class="nx-wel-route" d="${ROUTE}" pathLength="1" stroke="url(#${uid("wtravelled")})"/>
+
+        <circle class="nx-wel-halo" cx="46" cy="250" r="13" filter="url(#${uid("wsoft")})"/>
+        <circle class="nx-wel-dot-a" cx="46" cy="250" r="6"/>
+
+        <!-- The rider. A chip with a bike in it, not a second map pin — the
+             old scene used the same teardrop for the rider and the
+             destination, so the eye read two pins and no vehicle. -->
+        <g class="nx-wel-bike"${still ? ` transform="translate(188 158)"` : ""}>
+          <circle r="12.5"/>
+          <path class="nx-wel-bike-g" d="M-6.5 2.5 h4.2 l2-5.4 h4.6 l2 5.4 h1.6"
+                fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle class="nx-wel-bike-g" cx="-5.6" cy="3.4" r="2.7" fill="none" stroke-width="1.6"/>
+          <circle class="nx-wel-bike-g" cx="5.6"  cy="3.4" r="2.7" fill="none" stroke-width="1.6"/>
+          <!-- No rotate="auto": it turns the whole chip, so climbing a
+               vertical street left the bike lying on its side. A circular
+               marker reads as a marker and stays upright; it is the route
+               under it that shows the direction. -->
+          ${still ? "" : `<animateMotion dur="2.1s" begin="0.25s" fill="freeze"
+              keyPoints="0;0.62" keyTimes="0;1" calcMode="spline"
+              keySplines="0.25 0.6 0.25 1">
+            <mpath href="#${uid("wroute")}"/>
+          </animateMotion>`}
+        </g>
+
+        <g class="nx-wel-pin" transform="translate(282 52)">
+          <path d="M0 9 C -8.5 -2 -12 -6.5 -12 -12 A 12 12 0 0 1 12 -12 C 12 -6.5 8.5 -2 0 9 Z"/>
+          <circle cx="0" cy="-12" r="4.2" class="nx-wel-pin-eye"/>
+        </g>
+      </svg>
+    </div>`;
 }
 
 export function renderWelcome(root) {
