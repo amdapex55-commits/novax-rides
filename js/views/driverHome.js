@@ -644,6 +644,24 @@ export function renderTripProgress(root) {
 
   const body = root.querySelector("#sheetBody");
 
+  /* WHOSE PICKUP IS state.pickup? THE CUSTOMER'S.
+
+     This screen read state.pickup / state.dropoff — the booking draft the
+     RIDER app writes into its own sessionStorage while choosing a
+     destination. On a driver's phone those keys are empty, always. So the
+     addresses rendered as the placeholder strings "Pickup point" and
+     "Destination" on every real job, and the Navigate button and the ETA I
+     added on top of them could never have worked for anyone: there were no
+     coordinates there to navigate to.
+
+     The trip itself carries all four, and api.getTrip already returns them. */
+  function stop(which) {
+    if (!trip) return null;
+    return which === "dropoff"
+      ? { lat: trip.dropoffLat, lng: trip.dropoffLng, label: trip.dropoffLabel }
+      : { lat: trip.pickupLat, lng: trip.pickupLng, label: trip.pickupLabel };
+  }
+
   function draw() {
     const step = STEPS[stepIndex];
     body.innerHTML = `
@@ -656,9 +674,9 @@ export function renderTripProgress(root) {
            no nested boxes, no second card inside the card. -->
       <p class="nx-job-primary">${esc(trip?.rider?.name || "Your passenger")}</p>
       <p class="nx-job-secondary">
-        ${esc(shortPlace(state.pickup?.label) || "Pickup")}
+        ${esc(shortPlace(stop("pickup")?.label) || "Pickup")}
         <span class="nx-job-arrow">${icon("arrow-forward", 12)}</span>
-        ${esc(shortPlace(state.dropoff?.label) || "Destination")}
+        ${esc(shortPlace(stop("dropoff")?.label) || "Destination")}
       </p>
 
       <div class="nx-job-metrics" id="jobMetrics">
@@ -693,7 +711,7 @@ export function renderTripProgress(root) {
        our app. A geo: URL hands off to whatever they already use (Google
        Maps, Waze, Apple Maps) rather than betting on one being installed. */
     body.querySelector("#navBtn")?.addEventListener("click", () => {
-      const t = step.target === "dropoff" ? state.dropoff : state.pickup;
+      const t = stop(step.target);
       if (!t?.lat) { toast("No coordinates for that stop yet", true); return; }
       haptic.medium();
       track("driver_opened_navigation", { tripId, target: step.target });
@@ -781,7 +799,7 @@ export function renderTripProgress(root) {
      they're doing. */
   async function paintMetrics(step) {
     if (!step?.target) return;
-    const to = step.target === "dropoff" ? state.dropoff : state.pickup;
+    const to = stop(step.target);
     if (!to?.lat) return;
     try {
       const from = await getCurrentCoords();

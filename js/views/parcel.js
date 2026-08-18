@@ -234,6 +234,11 @@ export function renderParcelContact(root) {
         pickupLng: pickup.lng,
         dropoffLat: dropoff.lat,
         dropoffLng: dropoff.lng,
+        // The addresses the sender actually typed. These were collected on
+        // this screen and then thrown away, so the driver who accepted the
+        // job was handed two pairs of coordinates and no address at all.
+        pickupLabel: pickup.label || undefined,
+        dropoffLabel: dropoff.label || undefined,
         recipientName: name,
         recipientPhone: phoneParsed.e164,
         parcelNote: draft.note || undefined,
