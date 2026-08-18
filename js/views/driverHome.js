@@ -14,6 +14,7 @@ import { startDriverTracking, requestImmediateFix } from "../driverLocation.js";
 import { showLocationDisclosure } from "../locationDisclosure.js";
 import { createMap } from "../map.js";
 import { getCurrentCoords } from "../geocode.js";
+import { getRoute, straightLineKm, formatEta } from "../routing.js";
 import { track } from "../analytics.js";
 import { haptic } from "../haptics.js";
 import { APP_VERSION } from "../appMode.js";
@@ -605,10 +606,21 @@ export function renderIncomingOffer(root) {
 
 // ---------------- Trip in progress (driver side) ----------------
 
+/* ONE SHEET, FOUR STATES — not four screens.
+
+   The sheet answers three questions and nothing else: where am I going, how
+   long will it take, and what do I do next. Everything a rider does not need
+   at this exact moment (earnings, incentives, wallet, notifications) stays off
+   this screen, because the whole point of a map-first active job is that the
+   map is the environment and the sheet is only the current action.
+
+   `target` decides which end of the job the distance and ETA are measured to,
+   which is what makes the metrics mean anything: before pickup it counts down
+   to the passenger, after it counts down to the destination. */
 const STEPS = [
-  { key: "MATCHED", action: "arrive", btn: "I've Arrived" },
-  { key: "ARRIVED", action: "start", btn: "Start Trip" },
-  { key: "IN_PROGRESS", action: "complete", btn: "Complete Trip" },
+  { key: "MATCHED", action: "arrive", state: "Going to pickup", target: "pickup", btn: "I've arrived" },
+  { key: "ARRIVED", action: "start", state: "Arrived", target: null, btn: "Start trip" },
+  { key: "IN_PROGRESS", action: "complete", state: "On trip", target: "dropoff", btn: "Complete trip" },
 ];
 
 export function renderTripProgress(root) {
@@ -635,15 +647,30 @@ export function renderTripProgress(root) {
   function draw() {
     const step = STEPS[stepIndex];
     body.innerHTML = `
-      <div class="flex justify-between items-start mb-2">
-        <span class="badge badge-accent">Trip in progress</span>
+      <div class="nx-job-head">
+        <span class="nx-job-state">${icon("bike", 12)} ${esc(step.state)}</span>
         <span class="ref-id">#${esc(tripId.slice(0, 8).toUpperCase())}</span>
       </div>
-      ${trip?.rider ? trustCard({ name: trip.rider.name || "Rider", subtitle: "Your passenger", rating: trip.rider.rating, compact: true }) : ""}
-      <div class="flex-col gap-1 mb-3" style="border-top:1px solid var(--surface-border); padding-top:var(--sp-3);">
-        <p class="text-sm"><span class="text-muted text-xs">Pickup</span><br/>${esc(state.pickup?.label || "Pickup point")}</p>
-        <p class="text-sm mt-2"><span class="text-muted text-xs">Drop-off</span><br/>${esc(state.dropoff?.label || "Destination")}</p>
+
+      <!-- Primary information: who, then where. Spacing does the hierarchy —
+           no nested boxes, no second card inside the card. -->
+      <p class="nx-job-primary">${esc(trip?.rider?.name || "Your passenger")}</p>
+      <p class="nx-job-secondary">
+        ${esc(shortPlace(state.pickup?.label) || "Pickup")}
+        <span class="nx-job-arrow">${icon("arrow-forward", 12)}</span>
+        ${esc(shortPlace(state.dropoff?.label) || "Destination")}
+      </p>
+
+      <div class="nx-job-metrics" id="jobMetrics">
+        ${step.target ? `<span class="nx-job-metric" id="jobEta">—</span>
+        <span class="nx-job-metric muted" id="jobDist">—</span>` :
+        `<span class="nx-job-metric muted">Waiting for your passenger</span>`}
       </div>
+
+      ${step.target ? `
+        <button id="navBtn" class="btn btn-secondary btn-block mb-2">
+          ${icon("navigation", 18)} Navigate
+        </button>` : ""}
       <!-- Calling the passenger is how a rider actually finds a Karachi
            address. It's a full-width primary action, above Message, because
            it is the thing they reach for while stopped at the gate. -->
@@ -658,6 +685,22 @@ export function renderTripProgress(root) {
       </div>
       <button id="actionBtn" class="btn btn-primary btn-block" style="height:56px;">${step.btn}</button>
     `;
+
+    /* NAVIGATE WAS NOT ON THIS SCREEN AT ALL.
+       A rider's single most-used control mid-job was missing, so the only way
+       to actually get anywhere was to leave Nova Go, open Maps and type the
+       address off a card — which is exactly when a driver stops looking at
+       our app. A geo: URL hands off to whatever they already use (Google
+       Maps, Waze, Apple Maps) rather than betting on one being installed. */
+    body.querySelector("#navBtn")?.addEventListener("click", () => {
+      const t = step.target === "dropoff" ? state.dropoff : state.pickup;
+      if (!t?.lat) { toast("No coordinates for that stop yet", true); return; }
+      haptic.medium();
+      track("driver_opened_navigation", { tripId, target: step.target });
+      window.open(`geo:${t.lat},${t.lng}?q=${t.lat},${t.lng}`, "_blank");
+    });
+
+    paintMetrics(step);
 
     body.querySelector("#callRiderBtn")?.addEventListener("click", () => {
       haptic.medium();
@@ -686,7 +729,32 @@ export function renderTripProgress(root) {
           navigate("/driver/earnings");
           return;
         }
-        draw();
+        /* Distance and ETA to whichever end of the job is next, recomputed as the
+     driver actually moves. A number that never changes is worse than no
+     number: it teaches the rider to ignore the one place we tell them how
+     they're doing. */
+  async function paintMetrics(step) {
+    if (!step?.target) return;
+    const to = step.target === "dropoff" ? state.dropoff : state.pickup;
+    if (!to?.lat) return;
+    try {
+      const from = await getCurrentCoords();
+      if (destroyed) return;
+      const etaEl = root.querySelector("#jobEta");
+      const distEl = root.querySelector("#jobDist");
+      if (!etaEl || !distEl) return;
+      const route = await getRoute(from, to).catch(() => null);
+      if (destroyed) return;
+      const km = route?.km ?? straightLineKm(from, to);
+      // No route host? Fall back to straight-line at a Karachi bike's real
+      // average, and never dress the estimate up as a routed one.
+      const mins = route?.minutes ?? Math.max(1, Math.round((km / 18) * 60));
+      etaEl.textContent = formatEta(mins);
+      distEl.textContent = `${km.toFixed(1)} km`;
+    } catch { /* metrics are a nicety; the job works without them */ }
+  }
+
+  draw();
       } catch (err) {
         toast(err.message || "Action failed", true);
         btn.disabled = false;

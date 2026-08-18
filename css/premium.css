@@ -1728,6 +1728,38 @@
 .nx-earn-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 320px) { .nx-earn-pair { grid-template-columns: 1fr; } }
 
+/* ---------------------------------------------------------------------------
+   Active job sheet.
+
+   One surface, one hierarchy, one primary action. Spacing carries the
+   structure instead of borders — no nested rounded boxes, no badge soup. The
+   map is the environment; this is only the current action.
+   --------------------------------------------------------------------------- */
+.nx-job-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 12px;
+}
+.nx-job-state {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent);
+}
+.nx-job-primary {
+  font-size: 22px; font-weight: 800; line-height: 1.15;
+  color: var(--text-primary);
+}
+.nx-job-secondary {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-top: 4px; font-size: 13px; color: var(--text-secondary);
+}
+.nx-job-arrow { display: inline-flex; color: var(--text-muted); }
+.nx-job-metrics {
+  display: flex; align-items: baseline; gap: 14px;
+  margin: 16px 0 18px;
+}
+.nx-job-metric { font-size: 20px; font-weight: 800; color: var(--text-primary); }
+.nx-job-metric.muted { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+
 .nx-link { color: var(--accent); }
 .nx-link-strong { color: var(--accent); font-weight: 800; }
 
