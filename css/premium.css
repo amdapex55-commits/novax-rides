@@ -2007,6 +2007,90 @@
 .nx-track-eta-num { font-size: 26px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
 .nx-track-eta-label { font-size: 13px; color: var(--text-secondary); }
 
+/* ---------------------------------------------------------------------------
+   THE OFFER STACK.
+
+   Jobs arrive as cards over the rider's own home screen — the map stays
+   visible behind, so a pickup can be judged against where they already are.
+   Several can be live at once and each runs its own countdown, so the rider
+   chooses instead of being handed one job and given fifteen seconds.
+
+   Anchored to the phone column, above the sheet, below alerts.
+   --------------------------------------------------------------------------- */
+#nxOffers {
+  position: fixed;
+  left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--safe-bottom) + 12px);
+  width: min(calc(100% - 20px), calc(var(--max-w) - 20px));
+  z-index: 1100;
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
+  /* A long stack scrolls rather than climbing off the top of the screen. */
+  max-height: 78dvh; overflow-y: auto;
+}
+#nxOffers.has-offers { pointer-events: auto; }
+
+.nx-offer-card {
+  position: relative;
+  padding: 14px 15px 13px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.4);
+  animation: nx-offer-in 320ms var(--ease-spring) both;
+}
+@keyframes nx-offer-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The countdown as a hairline along the top edge — visible without reading,
+   and it does not steal space from the numbers that matter. */
+.nx-offer-card-ring {
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: 18px 18px 0 0; overflow: hidden;
+  background: linear-gradient(90deg, var(--accent), var(--brand-300));
+  transform-origin: left center;
+  animation: nx-offer-drain 15s linear forwards;
+}
+@keyframes nx-offer-drain { to { transform: scaleX(0); } }
+
+.nx-offer-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.nx-offer-card-kind {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.nx-offer-card-earn { font-size: 23px; font-weight: 800; letter-spacing: -0.02em; }
+
+.nx-offer-card-route {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin: 6px 0 2px; font-size: 13.5px; font-weight: 700;
+}
+.nx-offer-card-arrow { display: inline-flex; color: var(--text-muted); }
+.nx-offer-card-meta { font-size: 12px; color: var(--text-muted); }
+.nx-offer-card-dot { margin: 0 6px; }
+.nx-offer-card-meta em { font-style: normal; font-weight: 700; color: var(--text-secondary); }
+
+.nx-offer-card-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8px; margin-top: 12px; }
+.nx-offer-card-decline,
+.nx-offer-card-accept {
+  height: 46px; border-radius: var(--r-md);
+  font: inherit; font-size: 15px; font-weight: 800; cursor: pointer;
+}
+.nx-offer-card-decline {
+  border: 1px solid var(--surface-border); background: none; color: var(--text-secondary);
+}
+.nx-offer-card-accept { border: none; background: var(--accent); color: #fff; }
+.nx-offer-card-accept:active,
+.nx-offer-card-decline:active { transform: scale(0.98); }
+.nx-offer-card-accept:disabled { opacity: 0.7; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-offer-card { animation: none; }
+  .nx-offer-card-ring { animation-duration: 15s; }
+}
+
 .nx-link { color: var(--accent); }
 .nx-link-strong { color: var(--accent); font-weight: 800; }
 

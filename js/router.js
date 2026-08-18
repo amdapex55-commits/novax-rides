@@ -75,7 +75,10 @@ export const ROUTES = {
   "/driver/pending": { view: () => import("./views/driverAuth.js"), fn: "renderPendingApproval", auth: "DRIVER", nav: false },
   "/driver/onboarding": { view: () => import("./views/driverOnboarding.js"), fn: "renderDriverOnboarding", auth: "DRIVER", nav: false },
   "/driver/home": { view: () => import("./views/driverHome.js"), fn: "renderDriverHome", auth: "DRIVER", nav: true, tab: "home" },
-  "/driver/offer": { view: () => import("./views/driverHome.js"), fn: "renderIncomingOffer", auth: "DRIVER", nav: false },
+  /* The full-screen offer screen is gone — jobs arrive as cards over the
+     rider's own home screen (js/offerStack.js). Kept as a route only so an
+     old push notification deep-link lands somewhere sensible. */
+  "/driver/offer": { view: () => import("./views/driverHome.js"), fn: "renderDriverHome", auth: "DRIVER", nav: true, tab: "home" },
   "/driver/progress": { view: () => import("./views/driverHome.js"), fn: "renderTripProgress", auth: "DRIVER", nav: false },
   "/driver/earnings": { view: () => import("./views/driverAccount.js"), fn: "renderEarnings", auth: "DRIVER", nav: true, tab: "earnings" },
   "/driver/profile": { view: () => import("./views/driverAccount.js"), fn: "renderDriverProfile", auth: "DRIVER", nav: true, tab: "profile" },

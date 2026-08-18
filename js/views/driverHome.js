@@ -19,6 +19,7 @@ import { track } from "../analytics.js";
 import { haptic } from "../haptics.js";
 import { APP_VERSION } from "../appMode.js";
 import { reportHandled } from "../errors.js";
+import { pushOffer, removeOffer, clearOffers } from "../offerStack.js";
 
 export function renderDriverHome(root) {
   const user = Token.user;
@@ -229,6 +230,7 @@ export function renderDriverHome(root) {
        offered to a driver who could not see it, timed out, and cascaded until
        the delivery ran out of drivers and failed to match. */
     socketManager.on("delivery:offer", onDeliveryOffer);
+    socketManager.on("trip:offerTaken", onOfferTaken);
     socketManager.on("driver:notApproved", onNotApproved);
     socketManager.on("job:manuallyAssigned", onManualAssign);
 
@@ -361,6 +363,7 @@ export function renderDriverHome(root) {
 
   function goOffline() {
     state.onlineSince = null;
+    clearOffers();
     tracker?.stop().catch(() => {});
     tracker = null;
     clearInterval(staleTimer);
@@ -375,6 +378,7 @@ export function renderDriverHome(root) {
     socketManager.off("foodOrder:offer", onFoodOffer);
     socketManager.off("errand:offer", onErrandOffer);
     socketManager.off("delivery:offer", onDeliveryOffer);
+    socketManager.off("trip:offerTaken", onOfferTaken);
     socketManager.off("driver:notApproved", onNotApproved);
     socketManager.off("job:manuallyAssigned", onManualAssign);
     online = false;
@@ -402,12 +406,19 @@ export function renderDriverHome(root) {
     else if (payload.jobType === "ERRAND") { state.activeErrandId = payload.jobId; navigate("/driver/errand-progress"); }
   }
 
+  /* Jobs arrive as cards over this screen, not as a screen of their own.
+     Several can be on offer at once now, so the rider chooses instead of
+     being handed one and given fifteen seconds. */
   function onTripOffer(payload) {
     if (mode !== "RIDE") return; // stale event from before a mode switch
     track("driver_offer_received", { kind: "TRIP" });
-    state.offerTripId = payload.tripId;
-    state.incomingTripOffer = payload;
-    navigate("/driver/offer");
+    pushOffer(payload);
+  }
+  /* Somebody else claimed it. Pull the card before the rider taps a job that
+     is already gone — a stack containing a dead offer is how they learn to
+     stop trusting the stack. */
+  function onOfferTaken(payload) {
+    removeOffer(payload?.tripId);
   }
   function onFoodOffer(payload) {
     if (mode !== "FOOD_ERRAND") return;
@@ -479,6 +490,7 @@ export function renderDriverHome(root) {
     socketManager.off("foodOrder:offer", onFoodOffer);
     socketManager.off("errand:offer", onErrandOffer);
     socketManager.off("delivery:offer", onDeliveryOffer);
+    socketManager.off("trip:offerTaken", onOfferTaken);
     socketManager.off("driver:notApproved", onNotApproved);
     socketManager.off("job:manuallyAssigned", onManualAssign);
     tracker?.stop().catch(() => {});
