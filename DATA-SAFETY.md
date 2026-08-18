@@ -17,7 +17,7 @@ the passenger sheet into the rider listing.
 | | |
 |---|---|
 | Data encrypted in transit | **Yes** — HTTPS/WSS only, `upgrade-insecure-requests` in CSP |
-| Users can request deletion | **Yes** — in-app (Profile → Settings) and at `novago.pk/delete-account.html` |
+| Users can request deletion | **Yes** — in-app (Profile → Settings) and at `novagorides.com/delete-account.html` |
 | Committed to Play Families policy | Not applicable — not aimed at children |
 | Independent security review | **No** — answer honestly |
 
@@ -158,7 +158,7 @@ Contacts (emergency contact).
 
 1. The privacy policy must **name every item above** and be reachable without
    logging in. Ours is at `/legal/privacy` in-app and must also live at
-   `novago.pk/privacy`.
+   `novagorides.com/privacy`.
 2. It must name the legal entity — fill `COMPANY` in `js/launch.config.js`
    first, or the policy has a blank where your company name goes.
 3. Answer the passenger and rider forms **separately**. Copying the passenger

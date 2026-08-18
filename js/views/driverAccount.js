@@ -274,7 +274,7 @@ export function renderDriverProfile(root) {
       // force: they asked for it, so a previous dismissal is not a refusal.
       if (!offerInstall({ force: true })) {
         alertUser("This browser can't add apps to the home screen.", {
-          suggestion: "Open novago.pk in Chrome or Safari and try again.",
+          suggestion: "Open novagorides.com in Chrome or Safari and try again.",
           tone: "info",
         });
       }

@@ -86,9 +86,9 @@ list. ~19 backend modules and ~12k lines of views exist, and **not one real trip
 has ever gone `REQUESTED → COMPLETED`** with a real phone and a real ledger entry
 at the end. Whatever breaks there outranks everything below it.
 
-**10. Domain.** Buy `novago.pk` (PKNIC). Apex → GitHub Pages, `api.` → Railway.
+**10. Domain.** Buy `novagorides.com` (PKNIC). Apex → GitHub Pages, `api.` → Railway.
 Then set `CORS_ORIGINS` to the real domain. **The app already references
-`novago.pk` in legal pages and support config** — if you don't own it, that copy
+`novagorides.com` in legal pages and support config** — if you don't own it, that copy
 is currently wrong.
 
 **11. Play Store.** $25 one-time. Needs: privacy policy at a public URL (needs

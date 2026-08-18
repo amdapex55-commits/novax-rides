@@ -86,9 +86,9 @@ All of Karachi — Saddar to Malir, Gulshan to Baldia, North Karachi to Sea
 View. Bookings are taken during staffed hours; the app tells you when we are
 open.
 
-Support: <support@novago.pk>
-Privacy: <https://novago.pk/privacy>
-Terms: <https://novago.pk/terms>
+Support: <support@novagorides.com>
+Privacy: <https://novagorides.com/privacy>
+Terms: <https://novagorides.com/terms>
 ```
 `~2,050` — comfortably inside the limit with room for promotions later.
 
@@ -165,9 +165,9 @@ dispute about what happened is settled with a record rather than an argument.
 
 IN ENGLISH AND URDU
 
-Support: <support@novago.pk>
-Privacy: <https://novago.pk/privacy>
-Rider agreement: <https://novago.pk/driver-terms>
+Support: <support@novagorides.com>
+Privacy: <https://novagorides.com/privacy>
+Rider agreement: <https://novagorides.com/driver-terms>
 ```
 
 ### Category

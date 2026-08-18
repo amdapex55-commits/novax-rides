@@ -23,7 +23,7 @@ export const SUPPORT = {
   // line does more damage than no number at all.
   phone: "+92 300 0000000",       // TODO: display format for tel: links
 
-  email: "support@novago.pk",      // TODO: your real support inbox
+  email: "support@novagorides.com",      // TODO: your real support inbox
 
   // Escalation: the number ops staff call when a ride goes badly wrong —
   // an accident, a safety incident, a driver who won't respond. NOT shown

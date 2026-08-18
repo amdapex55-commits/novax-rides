@@ -26,7 +26,7 @@ function resolve() {
      the console and stay there.
 
      Hard-gated on the hostname actually being localhost. It is not a
-     mechanism a page on novago.pk can be talked into using, which matters:
+     mechanism a page on novagorides.com can be talked into using, which matters:
      an attacker-settable API base is an attacker-readable access token. */
   if (typeof location !== "undefined" &&
       (location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
@@ -73,7 +73,7 @@ function resolve() {
  * The token below is a PUBLIC token (pk.*). Mapbox designs these to ship in
  * client code, so it being visible here is expected and not a leak — but it
  * is still your quota. RESTRICT IT BY URL in Mapbox → Tokens → your token →
- * URL restrictions, to your Pages domain and novago.pk. Without that, anyone
+ * URL restrictions, to your Pages domain and novagorides.com. Without that, anyone
  * who views source can spend your free tier.
  *
  * Style: navigation-day-v1 is built for exactly this use — road hierarchy and

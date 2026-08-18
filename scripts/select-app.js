@@ -28,10 +28,10 @@ const fs = require("fs");
 const path = require("path");
 
 const APPS = {
-  customer: { entry: "customer.html", config: "capacitor.customer.json", name: "Nova Go",          appId: "com.novago.app" },
-  driver:   { entry: "driver.html",   config: "capacitor.driver.json",   name: "Nova Go Rider",    appId: "com.novago.driver" },
-  merchant: { entry: "merchant.html", config: "capacitor.merchant.json", name: "Nova Go Merchant",  appId: "com.novago.merchant" },
-  ops:      { entry: "ops.html",      config: "capacitor.ops.json",      name: "Nova Go Ops",       appId: "com.novago.ops" },
+  customer: { entry: "customer.html", config: "capacitor.customer.json", name: "Nova Go",          appId: "com.novagorides.customer" },
+  driver:   { entry: "driver.html",   config: "capacitor.driver.json",   name: "Nova Go Rider",    appId: "com.novagorides.driver" },
+  merchant: { entry: "merchant.html", config: "capacitor.merchant.json", name: "Nova Go Merchant",  appId: "com.novagorides.merchant" },
+  ops:      { entry: "ops.html",      config: "capacitor.ops.json",      name: "Nova Go Ops",       appId: "com.novagorides.ops" },
 };
 
 // Everything the apps need at runtime. Deliberately an allowlist, not a
@@ -200,7 +200,136 @@ function writeAndroidManifest(appKey) {
   return perms;
 }
 
+/* ------------------------------------------ android application id ------
+
+   THE MANIFEST FOLLOWED THE APP AND THE APPLICATION ID DID NOT.
+
+   `cap add android` writes applicationId once, from whichever appId was in
+   capacitor.config.json at the time, and nothing has rewritten it since —
+   not cap sync, and until now not this script. So every AAB this project
+   could produce carried the customer's identity, including the driver one.
+
+   The comment forty lines above says shipping the driver app under the
+   customer's appId is unrecoverable once it is live. It was true, and the
+   build did it. The verify step did not catch it because it checks
+   NOVAGO_APP in index.html, which is the web layer, not the store identity. */
+
+function writeAndroidAppId(appKey, appId) {
+  const gradlePath = p("android", "app", "build.gradle");
+  if (!fs.existsSync(gradlePath)) return null;
+  let g = fs.readFileSync(gradlePath, "utf8");
+  if (!/applicationId\s+"[^"]*"/.test(g)) return null;
+  g = g.replace(/applicationId\s+"[^"]*"/, `applicationId "${appId}"`);
+  fs.writeFileSync(gradlePath, g);
+  return appId;
+}
+
+/* ------------------------------------------------------ ios Info.plist ---
+
+   SAME TRAP AS THE MANIFEST, WITH A WORSE FAILURE MODE.
+
+   There is one ios/ project shared by all four builds, so the usage strings
+   have to be rewritten per build for the same reason the permissions do. But
+   on iOS a MISSING usage string is not a rejection — the process is killed
+   the instant it asks for the permission. An app with no
+   NSLocationWhenInUseUsageDescription does not degrade; it crashes on the
+   screen where the customer sets their pickup.
+
+   Apple also reads these strings. "Required for app functionality" is a
+   documented rejection reason; the string has to say what the app does with
+   the data, in words a person would use. These do.                          */
+
+const IOS_USAGE = {
+  customer: {
+    NSLocationWhenInUseUsageDescription:
+      "Nova Go uses your location to set your pickup point and show your rider approaching on the map. We only use it while the app is open.",
+    NSCameraUsageDescription:
+      "Nova Go uses the camera so you can add a photo to a support request about a trip.",
+    NSPhotoLibraryUsageDescription:
+      "Nova Go needs access to your photos so you can attach one to a support request.",
+  },
+
+  /* The rider is the only build that asks for Always, and it is the only one
+     that can justify it: a rider is dispatched, tracked and held accountable
+     for a passenger's safety across a whole shift, with the phone in a pocket
+     or the screen off behind Google Maps. */
+  driver: {
+    NSLocationWhenInUseUsageDescription:
+      "Nova Go uses your location to send you jobs nearby and to show your customer where you are.",
+    NSLocationAlwaysAndWhenInUseUsageDescription:
+      "Nova Go needs your location while you are online, including when the app is in the background or your screen is off, so we can send you jobs and so your passenger can see you approaching. Location is never collected while you are offline.",
+    NSLocationAlwaysUsageDescription:
+      "Nova Go needs your location while you are online, including in the background, so we can dispatch jobs to you and your passenger can track the ride. Location is never collected while you are offline.",
+    NSCameraUsageDescription:
+      "Nova Go uses the camera to photograph your CNIC, licence and vehicle for verification, and to capture proof of delivery.",
+    NSPhotoLibraryUsageDescription:
+      "Nova Go needs access to your photos so you can upload your CNIC, licence and vehicle photos for verification.",
+  },
+
+  merchant: {
+    NSCameraUsageDescription:
+      "Nova Go uses the camera to photograph your menu items and storefront.",
+    NSPhotoLibraryUsageDescription:
+      "Nova Go needs access to your photos so you can upload menu and storefront images.",
+  },
+
+  ops: {},
+};
+
+// Only the rider build runs location with the app backgrounded. Declaring
+// this on any other build invites the reviewer to ask which feature uses it.
+const IOS_BACKGROUND_MODES = { driver: ["location"] };
+
+function writeIosPlist(appKey, appId, displayName) {
+  const plist = p("ios", "App", "App", "Info.plist");
+  if (!fs.existsSync(plist)) return null;
+  if (process.platform !== "darwin") return null; // PlistBuddy is macOS-only
+
+  const { execFileSync } = require("child_process");
+  const PB = "/usr/libexec/PlistBuddy";
+  if (!fs.existsSync(PB)) return null;
+
+  const run = (cmd) => {
+    try { execFileSync(PB, ["-c", cmd, plist], { stdio: "pipe" }); return true; }
+    catch { return false; }
+  };
+
+  // Clear every usage string first, so switching from driver to customer
+  // actually REMOVES the Always-location string rather than leaving it
+  // behind on a build that cannot justify it.
+  const allKeys = new Set();
+  Object.values(IOS_USAGE).forEach((set) => Object.keys(set).forEach((k) => allKeys.add(k)));
+  allKeys.forEach((k) => run(`Delete :${k}`));
+  run("Delete :UIBackgroundModes");
+
+  const usage = IOS_USAGE[appKey] || {};
+  Object.entries(usage).forEach(([k, v]) => {
+    run(`Add :${k} string ${JSON.stringify(v)}`);
+  });
+
+  const modes = IOS_BACKGROUND_MODES[appKey] || [];
+  if (modes.length) {
+    run("Add :UIBackgroundModes array");
+    modes.forEach((m) => run(`Add :UIBackgroundModes: string ${m}`));
+  }
+
+  run(`Set :CFBundleDisplayName ${JSON.stringify(displayName)}`);
+
+  // The bundle identifier lives in the pbxproj, not the plist — the plist
+  // just references $(PRODUCT_BUNDLE_IDENTIFIER).
+  const pbx = p("ios", "App", "App.xcodeproj", "project.pbxproj");
+  if (fs.existsSync(pbx)) {
+    let x = fs.readFileSync(pbx, "utf8");
+    x = x.replace(/PRODUCT_BUNDLE_IDENTIFIER = [^;]*;/g, `PRODUCT_BUNDLE_IDENTIFIER = ${appId};`);
+    fs.writeFileSync(pbx, x);
+  }
+
+  return { usage: Object.keys(usage), modes };
+}
+
 const writtenPerms = writeAndroidManifest(target);
+const writtenAppId = writeAndroidAppId(target, app.appId);
+const writtenIos = writeIosPlist(target, app.appId, app.name);
 
 console.log(`
   Built ${app.name}  (${app.appId})
@@ -212,6 +341,12 @@ ${writtenPerms
   ? `    android  : manifest rewritten — ${writtenPerms.length} permissions\n` +
     writtenPerms.map((x) => `               ${x.replace("android.permission.", "")}`).join("\n")
   : "    android  : no native project yet (npx cap add android)"}
+${writtenAppId ? `    android  : applicationId = ${writtenAppId}` : ""}
+${writtenIos
+  ? `    ios      : bundle id = ${app.appId}\n` +
+    `               ${writtenIos.usage.length} usage string(s)` +
+    (writtenIos.modes.length ? `, background modes: ${writtenIos.modes.join(", ")}` : ", no background modes")
+  : "    ios      : no native project yet (npx cap add ios)"}
 
   Next:
     npx cap sync android

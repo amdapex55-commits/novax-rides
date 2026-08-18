@@ -30,7 +30,7 @@ legalName: "Nova Go Logistics (Private) Limited",
 registrationNumber: "0123456",     // SECP
 ntn: "1234567-8",                  // FBR
 address: "Office 4, Zamzama Boulevard, DHA Phase 5",
-website: "https://novago.pk",
+website: "https://novagorides.com",
 effectiveDate: "1 September 2026",
 ```
 

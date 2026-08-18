@@ -280,7 +280,7 @@ export const COMPANY = {
   city: "Karachi",
   country: "Pakistan",
   jurisdiction: "the courts of Karachi, Sindh, Pakistan",
-  website: "",                // e.g. "https://novago.pk"
+  website: "",                // e.g. "https://novagorides.com"
   effectiveDate: "",          // e.g. "1 September 2026"
 };
 

@@ -40,7 +40,7 @@ APNs key, no device-token storage, no send path. This is a real build (item
 1. **[YOU] Promote an ADMIN account.** Nothing in the codebase could create
    one; I wrote `scripts/make-admin.js`. Until this runs, no driver can be
    approved, so no driver can go online, so **no trip can ever complete**.
-   `railway run node scripts/make-admin.js ops@novago.pk`
+   `railway run node scripts/make-admin.js ops@novagorides.com`
 2. **[YOU] Fill `js/support.config.js`** — WhatsApp, phone, email, ops
    escalation. Four of the six launch blockers the app logs on every boot.
 3. **[YOU] Fill `COMPANY` in `js/launch.config.js`** — legal name, SECP
@@ -48,8 +48,12 @@ APNs key, no device-token storage, no send path. This is a real build (item
    Privacy and both agreements. A reviewer must never find a blank.
 4. **[YOU] Fill `js/settlement.config.js`** — Easypaisa / JazzCash / Raast /
    bank. Without it a blocked driver is told they owe money and not how to pay.
-5. **[YOU] Buy `novago.pk`** and point it at Pages. The app already references
-   it; every store listing needs a real domain.
+5. **[YOU] Buy `novagorides.com`** and point it at Pages. In the cart as of
+   2026-08-18, checkout next session. The domain CHANGED from `novago.pk` —
+   every reference in both repos now points at `novagorides.com`, and the
+   bundle IDs derive from it (item 15). Two addresses were deliberately NOT
+   renamed because they are live accounts in the production database:
+   `ops-bot@novago.pk` and `admin@novago.com`.
 6. **[DONE 2026-08-17] Run one complete trip end to end.** Request → match →
    accept → arrive → start → complete → rate. **This has now happened**, driven
    in two browsers side by side with the two screens correlated at every
@@ -84,10 +88,14 @@ APNs key, no device-token storage, no send path. This is a real build (item
     **Organization** enrolment over a personal one for a transport company.
     Organization needs a D-U-N-S number, which can itself take **1–2 weeks**.
     Start this before you need it.
-15. **[YOU] Reserve bundle IDs**: `pk.novago.customer`, `pk.novago.driver`.
-    Note our Capacitor configs currently say `com.novago.*` — pick one scheme
-    and make it consistent before the first upload, because it cannot be
-    changed afterwards.
+15. **[DONE 2026-08-18] Bundle IDs settled and made consistent**:
+    `com.novagorides.customer`, `com.novagorides.driver`,
+    `com.novagorides.merchant`, `com.novagorides.ops` — reverse-DNS of
+    `novagorides.com`, the domain being bought. Applied in all six places
+    (`capacitor.config.json`, the four `capacitor/*.json`, `select-app.js`)
+    plus the Android `namespace`, `applicationId` and Java package.
+    **[YOU] Still to do:** reserve them in App Store Connect and the Play
+    Console when those accounts exist. They cannot change after first upload.
 
 ## Stage 3 — Native builds
 
@@ -102,8 +110,25 @@ APNs key, no device-token storage, no send path. This is a real build (item
     backs up the keystore by definition. *(This is the answer to "should we use
     Expo" — no; Expo is React Native and we are Capacitor. EAS's appeal was
     cloud builds, and Actions gives that without a rewrite.)*
-19. **[YOU] A Mac with Xcode** for the iOS builds. There is no way around this.
-20. **[TODO] `npx cap add ios`** + Info.plist usage strings, once 19 exists.
+19. **[DONE] A Mac with Xcode.** Verified 2026-08-18: **Xcode 26.6** with the
+    **iOS 26.5 SDK**, plus CocoaPods 1.17.0 installed via Homebrew. This was
+    listed as a hard blocker and it is simply satisfied.
+20. **[DONE 2026-08-18] `npx cap add ios` + Info.plist usage strings.**
+    Project generated at `ios/`, pods installed, all five Capacitor plugins
+    linked. Usage strings are written **per build** by `scripts/select-app.js`
+    (`IOS_USAGE`), which also clears the other builds' strings first — only the
+    driver build carries the Always-location strings and
+    `UIBackgroundModes: location`. Capacitor generates the project with ZERO
+    usage strings, and on iOS a missing one is a crash rather than a
+    rejection. See `IOS-SETUP.md`.
+
+    While wiring this I found that `select-app.js` never rewrote the Android
+    `applicationId` — `cap add android` set it once from the customer config
+    and nothing changed it since, so **every AAB this project could build
+    carried the customer's identity, including the driver one.** The verify
+    step missed it because it checks `NOVAGO_APP` in `index.html`, which is the
+    web layer, not the store identity. Both platforms' identities are now
+    written on every build.
 
 ## Stage 4 — The native capabilities reviewers look for
 
@@ -135,7 +160,7 @@ APNs key, no device-token storage, no send path. This is a real build (item
     relevance; asking early is a common rejection.
 24. **[TODO] Secure token storage.** Tokens are in `localStorage` today. Move to
     Keychain / EncryptedSharedPreferences in the native shells.
-25. **[TODO] Deep links** — `novago.pk/ride/NX123456` opens the app, falls back
+25. **[TODO] Deep links** — `novagorides.com/ride/NX123456` opens the app, falls back
     to the store. Also referral and shared-trip links.
 26. **[TODO] Native states for no internet / expired session / permission
     denied / location unavailable.** Partly done (`js/net.js`, offline queue).
@@ -217,7 +242,7 @@ APNs key, no device-token storage, no send path. This is a real build (item
   see correction A.
 - "Hardcoded reviewer OTP" — see correction B.
 - "Instant approval" framing — no such thing exists for either store.
-- The `track.novago.pk` / `api.novago.pk` subdomain split — real, but it is
+- The `track.novagorides.com` / `api.novagorides.com` subdomain split — real, but it is
   infrastructure polish and nothing here is blocked on it.
 
 ---

@@ -20,7 +20,7 @@ not appear in any driver's earnings.
 
 | | |
 |---|---|
-| **Email** | `<demo.customer@novago.pk>` |
+| **Email** | `<demo.customer@novagorides.com>` |
 | **Password** | `<supplied in App Store Connect / Play Console — never in the repo>` |
 | **Country** | Any. Location permission can be granted or denied. |
 
@@ -52,7 +52,7 @@ its password can be rotated with one command.
 
 **Account deletion** — Profile → Settings → **Delete my account**. Requires
 typing DELETE. Also available without installing the app at
-`https://novago.pk/delete-account.html`, which is the URL given in the Play
+`https://novagorides.com/delete-account.html`, which is the URL given in the Play
 listing's data-deletion field.
 
 **Payments** — Nova Go is **cash only**. The passenger pays the rider directly
@@ -86,4 +86,4 @@ If you see an hours message, contact us and we will confirm it is disabled.
 
 ## Contact
 
-<support@novago.pk> · <+92 …> — we respond within one working day.
+<support@novagorides.com> · <+92 …> — we respond within one working day.

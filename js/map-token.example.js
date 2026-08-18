@@ -9,6 +9,6 @@
 // This is a PUBLIC token (pk.*). It ships in the deployed files and anyone can
 // read it there; that's how Mapbox intends browser tokens to work. The control
 // that matters is URL RESTRICTIONS — set them in Mapbox > Tokens > your token,
-// to your Pages domain and novago.pk. Without them, anyone who views source
+// to your Pages domain and novagorides.com. Without them, anyone who views source
 // can spend your free tier.
 window.NOVAGO_MAP_TOKEN = "pk.your_token_here";

@@ -594,7 +594,7 @@ export function initOpsFeed(root) {
    /ops route and every admin API. This handler only stops the console from
    being one visible click away from the front page — it is obscurity, and it
    is worth exactly what obscurity is worth. The real fix is a separate
-   private host (ops.novago.pk behind Cloudflare Access); see DEPLOY.md.
+   private host (ops.novagorides.com behind Cloudflare Access); see DEPLOY.md.
 
    Three taps because two happen by accident on a logo that is also a
    "back to top" anchor, and four is a puzzle nobody solves by accident.
