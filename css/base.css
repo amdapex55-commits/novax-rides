@@ -54,6 +54,36 @@ img { max-width: 100%; display: block; }
 
 /* App shell: a phone-width column that fills the viewport, works full-bleed
    on an actual phone and centers gracefully on desktop for testing. */
+/* FIXED CHROME MUST OBEY THE PHONE COLUMN.
+
+   #app-root is a centred, 480px-capped column, but `position: fixed` resolves
+   against the VIEWPORT, not that column. So on anything wider than 480px —
+   a tablet, a desktop browser, a side panel — every fixed overlay spanned the
+   full window while the app it belongs to sat in the middle. Measured at
+   900px: app-root at left 210 width 480, the live-ride pill at left 0 width
+   900, hanging 210px past the app on both sides.
+
+   .bottom-nav already did this correctly — left:50%, translateX(-50%),
+   max-width:var(--max-w) — so the convention existed and the live-ride widget
+   simply did not follow it. This makes it a named rule instead of a pattern
+   each new overlay has to remember, so it lines up at every width rather than
+   only at exactly 375px, which is the width that hid the bug.
+
+   Deliberately not applied to full-bleed overlays that SHOULD cover the whole
+   window — the location disclosure and the offer screen own the viewport by
+   design, and they opt out with .nx-fullbleed. */
+.nx-app-fixed,
+#nxLive {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(100%, var(--max-w));
+  max-width: var(--max-w);
+}
+.nx-fullbleed {
+  left: 0; right: 0; transform: none; width: 100%; max-width: none;
+}
+
 #app-root {
   max-width: var(--max-w);
   margin: 0 auto;
