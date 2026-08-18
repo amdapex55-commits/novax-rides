@@ -498,20 +498,43 @@ export function renderRideTracking(root) {
   // their rider is actually two streets away. So we degrade to polling the
   // REST API instead. Slower, but it always works.
   let pollTimer = 0;
-  socketManager.connect().then((socket) => {
-    if (destroyed) return;
-    if (socket) {
-      socket.emit("trip:subscribe", { tripId });
-      return;
-    }
-    console.warn("[NovaGo] no live socket — polling trip status every 8s");
+
+  /* THE SOCKET IS AN OPTIMISATION, NOT THE SOURCE OF TRUTH.
+
+     This used to poll ONLY when the socket failed to connect. That treats a
+     connected socket as a guarantee that every event will arrive, which it
+     is not: a reconnect drops the room membership, a backgrounded tab on iOS
+     suspends the connection, a server restart re-creates the namespace, and
+     emitToUser simply finds nobody. Any one of those loses a single message
+     — and losing one message left the customer on "Finding a driver" while
+     their rider was already outside, with no way to recover short of killing
+     the app.
+
+     Observed exactly that: the driver accepted at 05:17:03 and the customer
+     screen never moved.
+
+     So the poll now runs ALWAYS, alongside the socket. The socket makes it
+     feel instant; the poll makes it correct. applyTrip() is idempotent, so a
+     poll arriving after the event it duplicates costs one comparison. */
+  const POLL_MS = 6000;
+  function startPolling(reason) {
+    if (pollTimer) return;
+    console.info(`[NovaGo] tracking poll every ${POLL_MS / 1000}s (${reason})`);
     pollTimer = setInterval(async () => {
       if (destroyed) return;
       try {
         const t = await api.getTrip(tripId);
         if (!destroyed) applyTrip(t);
       } catch { /* transient — the next tick retries */ }
-    }, 8000);
+    }, POLL_MS);
+  }
+
+  socketManager.connect().then((socket) => {
+    if (destroyed) return;
+    if (socket) socket.emit("trip:subscribe", { tripId });
+    // Either way. With a socket this is the safety net that catches a missed
+    // event; without one it is the only thing keeping the screen honest.
+    startPolling(socket ? "backstop alongside the live socket" : "no live socket");
   });
 
   const setStatus = (s) => {
