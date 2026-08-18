@@ -69,9 +69,16 @@ function host() {
 
 function etaText(t) {
   const mins = t?.etaMinutes ?? t?.pickupEtaMinutes ?? null;
-  if (t?.status === "ARRIVED") return "Waiting for you";
-  if (mins == null) return t?.status === "IN_PROGRESS" ? "On the move" : "Finding a rider";
-  return `${Math.max(1, Math.round(mins))} min away`;
+  if (mins != null) return `${Math.max(1, Math.round(mins))} min away`;
+  /* Without a number, say something that agrees with the headline. It read
+     "Your Nova is on the way" above "Finding a rider" — two different
+     answers to the same question, stacked. */
+  switch (t?.status) {
+    case "ARRIVED": return "Waiting for you outside";
+    case "IN_PROGRESS": return "On the move";
+    case "MATCHED": return "Heading to your pickup";
+    default: return "Contacting riders nearby";
+  }
 }
 
 function render() {

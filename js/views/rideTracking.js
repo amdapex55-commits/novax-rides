@@ -473,17 +473,46 @@ export function renderRideTracking(root) {
   });
 
   // ---------- Data + live updates ----------
+  /* IDEMPOTENT, BECAUSE THIS NOW RUNS EVERY SIX SECONDS.
+
+     The poll that keeps the screen honest called this unconditionally, and
+     this redrew the sheet and re-fitted the map every time — so the drawer
+     visibly flashed on a timer and the map jumped back to its default framing
+     even while the customer was panning it. A backstop that makes the screen
+     twitch is worse than the gap it closes.
+
+     So: redraw only when something a person would notice has actually
+     changed, and re-frame the map only once, when the route first arrives. */
+  let lastSignature = null;
+  let framedOnce = false;
+
   function applyTrip(t) {
     trip = t;
-    currentStatus = t.status;
-    drawSheet();
+    const signature = [
+      t.status,
+      t.driverId || "",
+      t.fare ?? "",
+      t.tipAmount ?? "",
+      (t.driver && t.driver.name) || "",
+    ].join("|");
+
+    if (signature !== lastSignature) {
+      lastSignature = signature;
+      // setStatus handles the haptic-on-transition rule and calls drawSheet.
+      setStatus(t.status);
+    }
+
     if (mapHandle) {
       const p = { lat: t.pickupLat, lng: t.pickupLng };
       const d = { lat: t.dropoffLat, lng: t.dropoffLng };
       mapHandle.setPickup(p);
       mapHandle.setDropoff(d);
       mapHandle.setRoute([p, d]);
-      mapHandle.fit([p, d], [70, 300]);
+      // Fit once. Repeating it fights the customer every time they pan.
+      if (!framedOnce) { mapHandle.fit([p, d], [70, 300]); framedOnce = true; }
+      // The driver's own position, whenever the server knows it — this is
+      // what the poll contributes when a socket ping goes missing.
+      if (t.driverLocation?.lat != null) mapHandle.setDriver(t.driverLocation);
     }
   }
 

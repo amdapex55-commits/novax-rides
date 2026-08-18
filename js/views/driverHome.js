@@ -254,7 +254,13 @@ export function renderDriverHome(root) {
     tracker = await startDriverTracking({
       onFix: ({ lat, lng }) => {
         lastFixAt = Date.now();
-        socketManager.emit("driver:location", { lat, lng });
+        /* THE TRIP ID IS WHY THE CUSTOMER'S MAP NEVER MOVED.
+           The gateway only broadcasts into the rider's trip room when the ping
+           carries the trip it belongs to — `if (body.tripId)`. This sent bare
+           coordinates, so that branch was never taken and the rider watched a
+           stationary pin for the whole journey while their driver was three
+           streets away and closing. */
+        socketManager.emit("driver:location", { lat, lng, tripId: state.activeTripId || undefined });
         if (mapHandle) mapHandle.setDriver({ lat, lng });
       },
       onError: ({ code, message }) => {
@@ -336,7 +342,13 @@ export function renderDriverHome(root) {
       if (document.visibilityState === "visible" && online) {
         requestImmediateFix(({ lat, lng }) => {
           lastFixAt = Date.now();
-          socketManager.emit("driver:location", { lat, lng });
+          /* THE TRIP ID IS WHY THE CUSTOMER'S MAP NEVER MOVED.
+           The gateway only broadcasts into the rider's trip room when the ping
+           carries the trip it belongs to — `if (body.tripId)`. This sent bare
+           coordinates, so that branch was never taken and the rider watched a
+           stationary pin for the whole journey while their driver was three
+           streets away and closing. */
+        socketManager.emit("driver:location", { lat, lng, tripId: state.activeTripId || undefined });
         });
       }
     };
