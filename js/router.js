@@ -333,6 +333,28 @@ async function renderRoute(path) {
   wrap.className = "view-enter";
   container.appendChild(wrap);
 
+  /* DROP THE CLASS THE MOMENT THE ANIMATION IS DONE.
+     `forwards` leaves the final keyframe applied, and that keyframe's
+     `transform: none` still computes to a matrix — which makes this wrapper a
+     containing block for every `position: fixed` descendant inside it. The
+     wrapper is a zero-height static div, so any full-screen fixed overlay
+     collapsed to the height of its own content instead of filling the
+     viewport.
+
+     That is not a cosmetic bug. It hit the incoming-offer screen — the most
+     time-critical surface in the product — where the enormous Accept button
+     is deliberately pinned to the bottom of the screen because it is pressed
+     one-handed, outdoors, in fifteen seconds. Instead it sat halfway up,
+     inside a sheet squashed to the top, with dead space below it.
+
+     Removing the class after the animation ends costs nothing visually (the
+     end state is the natural state) and restores the viewport as the
+     containing block. The timeout is the fallback for a browser that never
+     fires animationend, e.g. under prefers-reduced-motion. */
+  const settle = () => wrap.classList.remove("view-enter");
+  wrap.addEventListener("animationend", settle, { once: true });
+  setTimeout(settle, 400);
+
   nav.classList.toggle("hidden", !route.nav);
   if (route.nav) renderNavActive(route.navTab || route.tab);
 
