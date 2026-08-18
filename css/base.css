@@ -63,6 +63,11 @@ img { max-width: 100%; display: block; }
    900px: app-root at left 210 width 480, the live-ride pill at left 0 width
    900, hanging 210px past the app on both sides.
 
+   Applied to the element that is actually positioned, not to a full-bleed
+   host — putting it on #nxLive fought that host's own `inset: 0` from a
+   later stylesheet, which won on `left` while this rule's transform still
+   applied, and shoved the pill half a viewport off the left edge.
+
    .bottom-nav already did this correctly — left:50%, translateX(-50%),
    max-width:var(--max-w) — so the convention existed and the live-ride widget
    simply did not follow it. This makes it a named rule instead of a pattern
@@ -72,8 +77,7 @@ img { max-width: 100%; display: block; }
    Deliberately not applied to full-bleed overlays that SHOULD cover the whole
    window — the location disclosure and the offer screen own the viewport by
    design, and they opt out with .nx-fullbleed. */
-.nx-app-fixed,
-#nxLive {
+.nx-app-fixed {
   left: 50%;
   right: auto;
   transform: translateX(-50%);

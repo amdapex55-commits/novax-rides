@@ -1895,7 +1895,13 @@
 
 .nx-live {
   position: absolute;
-  left: 12px; right: 12px;
+  /* Centred and capped to the phone column. The host spans the viewport so
+     the dim can cover everything, but the card itself belongs to the app, and
+     at any width past 480px an edge-anchored card floats away from the screen
+     it is describing. */
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100% - 24px), calc(var(--max-w) - 24px));
   bottom: calc(var(--safe-bottom) + 84px);   /* clears the nav bar */
   display: flex; flex-direction: column; gap: 10px;
   padding: 12px 14px;
@@ -1907,6 +1913,7 @@
 }
 .nx-live.expanded {
   bottom: calc(var(--safe-bottom) + 96px);
+  transform: translateX(-50%);
   border-radius: 24px;
   padding: 16px 18px 18px;
 }
