@@ -68,7 +68,7 @@ function host() {
 }
 
 function etaText(t) {
-  const mins = t?.etaMinutes ?? t?.pickupEtaMinutes ?? null;
+  const mins = t?.etaMinutes ?? t?.pickupEtaMinutes ?? t?.liveEtaMinutes ?? null;
   if (mins != null) return `${Math.max(1, Math.round(mins))} min away`;
   /* Without a number, say something that agrees with the headline. It read
      "Your Nova is on the way" above "Finding a rider" — two different
@@ -145,9 +145,20 @@ function render() {
 async function refresh() {
   try {
     const mine = await api.listMyTrips();
-    const live = (Array.isArray(mine) ? mine : []).find((t) => ACTIVE.includes(t.status));
-    const changed = (live?.id !== trip?.id) || (live?.status !== trip?.status);
-    trip = live || null;
+    const summary = (Array.isArray(mine) ? mine : []).find((t) => ACTIVE.includes(t.status));
+    const changed = (summary?.id !== trip?.id) || (summary?.status !== trip?.status);
+
+    /* THE LIST ENDPOINT HAS NO DRIVER ON IT.
+       /trips returns trip rows; the driver's name, rating and plate live on
+       the detail endpoint. So the expanded card rendered a route and a fare
+       and then simply stopped where the person should have been — which is
+       the one thing a waiting customer most wants to see. One extra request,
+       only while a ride is actually live. */
+    let live = summary || null;
+    if (live) {
+      try { live = { ...live, ...(await api.getTrip(live.id)) }; } catch { /* summary is enough */ }
+    }
+    trip = live;
     if (!trip) expanded = false;
     if (changed || !el) render();
   } catch {

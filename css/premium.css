@@ -1949,14 +1949,26 @@
   background: linear-gradient(90deg, var(--brand-500), var(--brand-300));
   transition: width 600ms var(--ease-out);
   position: relative;
+  /* THE SHEEN WAS ESCAPING. It translates 220% of the fill's own width, and
+     without this it slid straight out of the fill and smeared across the grey
+     remainder — a light band floating in the untravelled part of the bar,
+     which read as a rendering fault rather than a highlight. Clipped to the
+     fill, it now reads as light moving along the distance already covered. */
+  overflow: hidden;
 }
 .nx-live-fill::after {
   content: ""; position: absolute; inset: 0;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
   transform: translateX(-100%);
-  animation: nx-live-sheen 1.9s ease-in-out infinite;
+  /* Slower, and with a long rest between passes. At 1.9s on a loop it was a
+     strobe; a ride is calm, and the bar should be too. */
+  animation: nx-live-sheen 3.4s ease-in-out infinite;
 }
-@keyframes nx-live-sheen { to { transform: translateX(220%); } }
+@keyframes nx-live-sheen {
+  0%   { transform: translateX(-110%); }
+  55%  { transform: translateX(210%); }
+  100% { transform: translateX(210%); }   /* rest, rather than snapping back */
+}
 
 .nx-live-route {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
