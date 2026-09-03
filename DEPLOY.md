@@ -61,10 +61,23 @@ Save both files.
 
 ---
 
-## STEP 1 — Get a Twilio account (15 min, needed for OTP)
+## STEP 1 — Twilio / OTP: NOT needed, skip this
 
-**Without this nobody can log in.** OTP codes would go to your server logs
-instead of people's phones.
+**This step used to say "without this nobody can log in." That is wrong, and
+following it wastes an afternoon.**
+
+Password signup and login is the live path — `POST /auth/login` in
+`auth.controller.ts`. OTP is opt-in and **refused at the controller** unless
+`ENABLE_OTP_LOGIN=true`, so there is no half-alive state writing login codes
+into the server log. Off means off.
+
+`config.validation.ts` will in fact refuse to boot if you set
+`SMS_PROVIDER=twilio` without `ENABLE_OTP_LOGIN`, on the grounds that a
+provider configured while the feature is off means somebody meant to enable it
+and didn't.
+
+Come back to this only when SMS login is actually wanted; provisioning a local
+aggregator mask takes weeks and nothing at launch is blocked on it.
 
 1. Sign up at twilio.com — free trial gives you credit to test with
 2. Console home page shows **Account SID** and **Auth Token** — copy both

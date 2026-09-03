@@ -9,9 +9,11 @@ Anything in `<…>` needs your real details before submission.
 
 # 1 · Nova Go (passenger app)
 
-**Package / bundle:** `pk.novago.customer`
-*(Capacitor currently says `com.novago.app` — pick one before first upload.
-It can never be changed afterwards.)*
+**Package / bundle:** `com.novagorides.customer`
+*(Settled 2026-08-18 and consistent across `capacitor.config.json`, the four
+`capacitor/*.json`, `select-app.js`, the Android `applicationId`/`namespace`
+and `strings.xml`. Reverse-DNS of `novagorides.com`. It can never be changed
+after the first upload — reserve exactly this string.)*
 
 ### App name — 30 char limit
 ```
@@ -105,7 +107,7 @@ Primary **Travel**. Secondary **Navigation**.
 
 # 2 · Nova Go Rider (driver app)
 
-**Package / bundle:** `pk.novago.driver`
+**Package / bundle:** `com.novagorides.driver`
 
 ### App name — 30 char limit
 ```
