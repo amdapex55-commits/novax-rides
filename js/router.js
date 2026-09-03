@@ -440,7 +440,13 @@ async function renderRoute(path) {
     // and this is exactly the path where nothing should be trusted.
     const codeEl = wrap.querySelector(".nx-errscreen-detail code");
     if (codeEl) codeEl.textContent = detail;
-    wrap.querySelector("#errRetry")?.addEventListener("click", () => render(path));
+    /* THIS BUTTON THREW.
+       `render` is declared with const inside the try block above, so it does
+       not exist in this catch — block scoping, not a typo, which is why it
+       reads as correct. Every "Try again" tap raised
+       ReferenceError: render is not defined, on the one screen whose entire
+       job is recovering from an error. */
+    wrap.querySelector("#errRetry")?.addEventListener("click", () => renderRoute(path));
     wrap.querySelector("#errHome")?.addEventListener("click", () => navigate("/home"));
   }
   currentRoute = path;

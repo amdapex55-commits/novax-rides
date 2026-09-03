@@ -27,6 +27,14 @@ export function renderChat(root) {
         <label class="field-label">Message</label>
         <textarea id="messageInput" class="input mb-6" style="min-height:140px;" placeholder="Tell us what happened..."></textarea>
         <button id="sendTicketBtn" class="btn btn-primary btn-block">${icon("send", 18)} Send Message</button>
+
+        <!-- loadMyTickets() has been querying for this element since it was
+             written, finding nothing, and returning at its own guard clause.
+             So a customer who had already written in saw a blank compose box
+             and no sign their message existed — the exact moment someone
+             decides whether anyone read it, and writes again. Empty until
+             there is history, so it costs nothing on a first visit. -->
+        <div id="myTickets" class="mt-6"></div>
       `}
     </div>
   `;
