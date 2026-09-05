@@ -219,6 +219,11 @@
   font-size: 12px;
   font-weight: 700;
 }
+/* A 26px dismiss button is a 26px target, and a thumb is about 44. Missing it
+   taps the promo card underneath instead — so trying to get rid of an ad
+   navigates you into it, which is the single most irritating thing a mobile
+   UI can do. The visible circle stays 26px; the touch area is grown past it
+   with a transparent pseudo-element, so nothing about the design changes. */
 .nx-promo-close {
   position: absolute;
   inset-block-start: 8px;
@@ -232,6 +237,12 @@
   color: #fff;
   border: 0;
   cursor: pointer;
+}
+.nx-promo-close::after {
+  content: "";
+  position: absolute;
+  inset: -9px;              /* 26 + 18 = 44px touch target */
+  border-radius: 50%;
 }
 
 /* -------------------------------------------------------- loyalty ---- */

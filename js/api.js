@@ -109,11 +109,40 @@ async function request(path, opts = {}, isRetry = false) {
   const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
   if (Token.access) headers.Authorization = `Bearer ${Token.access}`;
 
-  const res = await fetch(`${BASE}${path}`, {
-    method: opts.method || "GET",
-    headers,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-  });
+  /* A REQUEST THAT NEVER LANDS IS NOT AN ERROR MESSAGE ANYONE CAN READ.
+
+     fetch() rejects with `TypeError: Failed to fetch` when the server is
+     unreachable — offline, DNS gone, connection refused, or the API simply
+     not deployed. Nothing caught that here, so the browser's own string went
+     straight to the screen: sign-in said "Failed to fetch", and so did
+     booking, support and every other call. It is not English, it names
+     nothing the customer can act on, and it reads like the app is broken
+     rather than the network.
+
+     The refresh path twenty lines below has said the right sentence for this
+     exact case all along — it just only covered the retry, never the first
+     attempt. Same message, same retryable flag, so the offline queue and the
+     retry UI treat it identically wherever it happens. */
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method: opts.method || "GET",
+      headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+  } catch (err) {
+    // An AbortError is a caller cancelling on purpose — a newer keystroke,
+    // a screen being left. Surfacing that as a failure would put an error
+    // under someone who did nothing wrong.
+    if (err?.name === "AbortError") throw err;
+    throw new ApiError(
+      navigator.onLine === false
+        ? "You're offline. We'll send this as soon as you're back."
+        : "Couldn't reach Nova Go. Check your connection and try again.",
+      0,
+      { retryable: true, cause: String(err?.message || err) },
+    );
+  }
 
   if (res.status === 401 && !isRetry && Token.refresh) {
     /* A 401 IS NOT AUTOMATICALLY A SIGN-OUT.

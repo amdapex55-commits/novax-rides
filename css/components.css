@@ -648,10 +648,14 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
 .dock-sheet { touch-action: pan-y; }
 .dock-sheet.is-expanded { touch-action: pan-y; }
 /* The handle is a real control, so it gets a real touch target: 40x4 is the
-   visible bar, but the button around it is 44px tall like everything else. */
+   visible bar, but the button around it is 44px tall like everything else.
+   It said 44 and measured 28 — the number below had drifted from the comment
+   above it, which is the failure mode of writing the intent in prose and the
+   value in a property. 44 is the figure both Apple and Google publish as the
+   minimum, and this is the control that opens the sheet holding the fare. */
 .dock-sheet .sheet-handle {
   display: block;
-  width: 100%; height: 28px; padding: 0;
+  width: 100%; height: 44px; padding: 0;
   border: none; background: transparent;
   margin-bottom: var(--sp-2);
   cursor: grab;
