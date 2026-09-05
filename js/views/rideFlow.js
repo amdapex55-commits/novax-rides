@@ -212,7 +212,16 @@ export function renderRideBooking(root) {
         </div>
       </div>
 
-      <button id="routeNextBtn" class="btn btn-primary btn-block">Continue ${icon("arrow-forward", 18)}</button>
+      <!-- The CTA is pinned to the foot of the sheet rather than sitting after
+           the fields. Inside the sheet the suggestion list joins the flow (it
+           has to — an overflow container clips absolutely-positioned children),
+           so it pushes everything below it down, and "everything below it" used
+           to include the only button on the screen. A customer picking a
+           destination watched Continue slide out of reach at the exact moment
+           they wanted it. -->
+      <div class="nx-sheet-cta">
+        <button id="routeNextBtn" class="btn btn-primary btn-block">Continue ${icon("arrow-forward", 18)}</button>
+      </div>
     `);
 
     const dropInput = node.querySelector("#dropoffInput");
@@ -892,6 +901,45 @@ export function renderRideBooking(root) {
       }
       root.querySelector("#recenterBtn").addEventListener("click", () =>
         mapHandle.center(pickup || here, 16, { animate: true }));
+
+      /* DRAGGING A PIN HAS TO CHANGE THE BOOKING, NOT JUST THE PICTURE.
+         The coordinates are what actually get dispatched, so they are applied
+         immediately; the human-readable label catches up when the reverse
+         lookup returns. Doing it in that order means a customer who drags and
+         taps Continue straight away still gets a ride to the right place,
+         even if the geocoder is slow or down — which, with the API currently
+         404ing, is not hypothetical. */
+      const applyDraggedPin = async (kind, coords) => {
+        haptic.light();
+        const input = root.querySelector(kind === "pickup" ? "#pickupInput" : "#dropoffInput");
+        if (kind === "pickup") {
+          pickup = { ...coords, label: pickup?.label || "Dropped pin" };
+          // A dragged pin is a deliberate human choice, so the GPS accuracy
+          // reading that belonged to the old point no longer describes it.
+          pickupAccuracy = null;
+          state.pickup = { ...pickup, verified: true };
+        } else {
+          dropoff = { ...coords, label: dropoff?.label || "Dropped pin" };
+          state.dropoff = { ...dropoff };
+        }
+        if (input) input.value = "Finding that place…";
+
+        let name = "";
+        try { name = await reverseGeocode(coords); } catch { /* coordinates still stand */ }
+        if (destroyed) return;
+        const label = name || "Dropped pin";
+        if (kind === "pickup") {
+          pickup = { ...coords, label };
+          state.pickup = { ...pickup, verified: true };
+        } else {
+          dropoff = { ...coords, label };
+          state.dropoff = { ...dropoff };
+        }
+        if (input) input.value = label;
+      };
+
+      mapHandle.onPinMove("pickup", (c) => applyDraggedPin("pickup", c));
+      mapHandle.onPinMove("dropoff", (c) => applyDraggedPin("dropoff", c));
 
       /* LIVE SUPPLY — real riders, not decorative ones.
          Every ride-hailing app in this market draws vehicles on the booking

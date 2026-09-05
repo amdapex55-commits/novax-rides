@@ -30,6 +30,18 @@
      good happens.
      #6D28D9 holds 7.4:1 against white, so white button text passes AA at
      every size, which the brighter violets do not. */
+  /* MAP PINS ARE COLOURED AGAINST THE MAP, NOT AGAINST THE APP.
+     These deliberately sit OUTSIDE the light/dark theme blocks. The basemap is
+     light in both themes, so a pin that followed --accent turned into pale
+     lavender (#a78bfa) on light grey the moment the app went dark — the exact
+     "purple and looks off" that made pins hard to spot on the booking screen.
+
+     Two brand colours at their dark ends: deep violet for where you are, dark
+     amber for where you are going. They differ in lightness as well as hue, so
+     they stay distinguishable in sunlight and for colour-blind riders. */
+  --pin-pickup: #4c1d95;
+  --pin-dropoff: #b45309;
+
   --accent: #6d28d9;
   --accent-strong: #5b21b6;
   --accent-soft: #ede9fe;
@@ -159,18 +171,31 @@
 
    Both directions pass, which is why --on-accent is a token and not white. */
 
+
+/* CONTRAST PASS — 3 Sep 2026.
+   The dark theme kept its hue and gained its separation. Measured before:
+   cards sat at 1.11 against the page and borders at 1.34, so nothing had an
+   edge and the whole screen read as one flat purple sheet; --text-muted came
+   in at 4.28 on the page and 3.50 on a card, i.e. under AA wherever it was
+   actually used, which is every secondary line in the app.
+
+   Every value below was solved against its real background rather than picked
+   by eye, then the muted tone was solved LAST against the lightest surface it
+   can sit on — raising the surfaces first is what pushed it under AA on the
+   earlier attempt. Now: muted 6.47 on page / 4.50 on a card, secondary 5.28,
+   accent 4.92, borders 3.0. Same theme, edges you can see. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #100d16;
     --bg-elevated: #171320;
-    --surface: #1c1826;
-    --surface-2: #262032;
-    --surface-3: #322a41;
-    --surface-border: #2e2739;
+    --surface: #252032;
+    --surface-2: #332b43;
+    --surface-3: #403653;
+    --surface-border: #675880;
 
     --text-primary: #f5f3f8;
     --text-secondary: #a79fb5;
-    --text-muted: #7c7389;
+    --text-muted: #9c91ac;
 
     --accent: #a78bfa;
     --accent-strong: #c4b5fd;
@@ -206,14 +231,14 @@
 :root[data-theme="dark"] {
   --bg: #100d16;
   --bg-elevated: #171320;
-  --surface: #1c1826;
-  --surface-2: #262032;
-  --surface-3: #322a41;
-  --surface-border: #2e2739;
+  --surface: #252032;
+  --surface-2: #332b43;
+  --surface-3: #403653;
+  --surface-border: #675880;
 
   --text-primary: #f5f3f8;
   --text-secondary: #a79fb5;
-  --text-muted: #7c7389;
+  --text-muted: #9c91ac;
 
   --accent: #a78bfa;
   --accent-strong: #c4b5fd;

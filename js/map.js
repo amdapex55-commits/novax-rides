@@ -124,6 +124,18 @@ export async function createMap(container, opts = {}) {
     scrollWheelZoom: !!opts.scrollWheelZoom,
     // Touch-first: the map is usually behind a bottom sheet.
     tap: true,
+    /* FADE OFF, DELIBERATELY.
+       Leaflet fades each tile in by transitioning opacity 0 -> 1 on a frame
+       timer it owns. Resizing the map mid-fade cancels that frame and the
+       tiles never get their opacity back — they sit fully loaded, correctly
+       positioned, and invisible, which looks exactly like tiles that failed
+       to download.
+
+       That was always possible; the size-correction below makes it likely,
+       because the sheet animating open resizes the map at precisely the
+       moment the first tiles are arriving. A 200ms fade is not worth a class
+       of bug whose symptom is a blank map. */
+    fadeAnimation: false,
   });
 
   const tiles = basemap();
@@ -154,7 +166,19 @@ export async function createMap(container, opts = {}) {
   let userMarker = null;
   let userHalo = null;
 
-  function setMarker(existing, coords, icon) {
+  /* PINS YOU CANNOT MOVE.
+     Pickup and dropoff were plain, undraggable markers. A customer who could
+     see their pin was on the wrong side of the road had no way to say so —
+     the only correction was retyping an address for a place that, in a lot of
+     Karachi, has no address to type. Dragging the pin is the gesture people
+     already expect from every other map they use, and it is exact.
+
+     The crosshair pin-picker stays: it is better for placing a point far from
+     where the map opens, and it keeps the target out from under the thumb.
+     Two ways in, because the two do different jobs. */
+  const moveHandlers = { pickup: null, dropoff: null };
+
+  function setMarker(existing, coords, icon, kind) {
     if (!coords) {
       if (existing) map.removeLayer(existing);
       return null;
@@ -163,14 +187,37 @@ export async function createMap(container, opts = {}) {
       existing.setLatLng([coords.lat, coords.lng]);
       return existing;
     }
-    return L.marker([coords.lat, coords.lng], { icon }).addTo(map);
+    const marker = L.marker([coords.lat, coords.lng], {
+      icon,
+      draggable: !!kind,
+      autoPan: true,          // drag near the edge and the map follows
+      autoPanPadding: [40, 40],
+    }).addTo(map);
+
+    if (kind) {
+      marker.on("dragstart", () => container.classList.add("nx-pin-dragging"));
+      marker.on("dragend", () => {
+        container.classList.remove("nx-pin-dragging");
+        const p = marker.getLatLng();
+        moveHandlers[kind]?.({ lat: p.lat, lng: p.lng });
+      });
+    }
+    return marker;
   }
 
   const handle = {
     raw: map,
 
+    /** Told when the customer drags a pin. Coordinates only — the caller
+     *  decides whether to reverse-geocode, because on the tracking screen
+     *  there is nothing to rename. */
+    onPinMove(kind, cb) {
+      moveHandlers[kind] = cb;
+      return () => { if (moveHandlers[kind] === cb) moveHandlers[kind] = null; };
+    },
+
     setPickup(coords) {
-      pickupMarker = setMarker(pickupMarker, coords, pinIcon(L, { color: "var(--accent)" }));
+      pickupMarker = setMarker(pickupMarker, coords, pinIcon(L, { color: "var(--pin-pickup)" }), "pickup");
     },
 
     /**
@@ -228,7 +275,7 @@ export async function createMap(container, opts = {}) {
         );
     },
     setDropoff(coords) {
-      dropoffMarker = setMarker(dropoffMarker, coords, pinIcon(L, { color: "var(--accent-2)" }));
+      dropoffMarker = setMarker(dropoffMarker, coords, pinIcon(L, { color: "var(--pin-dropoff)" }), "dropoff");
     },
     /** Move the driver marker. Leaflet snaps by default, which looks like
      * teleporting between GPS pings; we interpolate so the vehicle glides
@@ -473,6 +520,7 @@ export async function createMap(container, opts = {}) {
     },
 
     destroy() {
+      handle._stopSizeWatch?.();
       cancelAnimationFrame(driverAnim);
       nearbyMarkers.forEach((m) => { try { map.removeLayer(m); } catch {} });
       try { if (userMarker) map.removeLayer(userMarker); } catch {}
@@ -482,6 +530,49 @@ export async function createMap(container, opts = {}) {
   };
 
   handle.refresh();
+  /* THE MAP SIZED ITSELF AGAINST A CONTAINER THAT WAS NOT THERE YET.
+
+     Leaflet measures its container once, at construction. On every
+     sheet-over-map screen the container is still 0×0 at that moment — the
+     bottom sheet has not laid out, the view has just been swapped in — so
+     Leaflet computed a zero viewport, requested the four tiles that covers,
+     and translated its pane by half the container. What the customer saw was
+     a postage stamp of Karachi floating in grey, with markers placed off
+     screen. It looked like the tiles had failed to load. They had not; the
+     map simply believed it was 0 pixels wide.
+
+     There has been a `refresh()` on the handle for exactly this, with a
+     comment saying every sheet-over-map screen needs it — which is the
+     problem. A correction each caller has to remember is one each caller
+     eventually forgets, and the failure is silent and total.
+
+     So the map corrects itself. One pass on the next frame for the common
+     case, then a ResizeObserver for the rest: the sheet animating open, an
+     orientation change, the keyboard pushing the viewport around. Leaflet
+     ignores an invalidateSize that changes nothing, so this is cheap. */
+  let lastW = 0;
+  let lastH = 0;
+  const resize = () => {
+    const r = container.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return;        // still collapsed
+    if (Math.abs(r.width - lastW) < 1 && Math.abs(r.height - lastH) < 1) return;
+    lastW = r.width;
+    lastH = r.height;
+    map.invalidateSize({ animate: false });
+  };
+
+  requestAnimationFrame(resize);
+
+  let sizeObserver = null;
+  if (typeof ResizeObserver === "function") {
+    sizeObserver = new ResizeObserver(resize);
+    sizeObserver.observe(container);
+  }
+  handle._stopSizeWatch = () => {
+    try { sizeObserver?.disconnect(); } catch {}
+    sizeObserver = null;
+  };
+
   return handle;
 }
 

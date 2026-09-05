@@ -679,8 +679,26 @@
   margin-top: 6px;
   box-shadow: none;
   animation: none;
-  max-height: 46vh;
+  /* 46vh was nearly half the phone. With the list in the flow that pushed the
+     whole sheet past the viewport, so the results themselves were the thing
+     burying the button. Roughly four rows, then it scrolls internally — enough
+     to choose from, small enough that the sheet still fits. */
+  max-height: 240px;
   overflow-y: auto;
+  overscroll-behavior: contain;   /* stop the sheet scrolling once the list ends */
+}
+
+/* The CTA sits on the floor of the sheet whatever grows above it. */
+.nx-sheet-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding-top: 10px;
+  margin-top: 4px;
+  background: var(--bg-elevated, var(--bg));
+  /* A short fade so list rows scrolling under the button read as passing
+     beneath it rather than being clipped by a hard edge. */
+  box-shadow: 0 -12px 14px -8px var(--bg-elevated, var(--bg));
 }
 /* The inputs were styled inline with padding-left:0 and background:none,
    which is why the placeholder sat flush against the dot column and jumped
@@ -2661,12 +2679,20 @@
   box-shadow: 0 -14px 18px -6px var(--bg);
 }
 
-/* ...but not while a suggestion list is open. Pinned to the bottom it then
-   floats over the results the person is scrolling, and covers the last two
-   every time. Choosing a place is the action at that moment; Continue is
-   what happens afterwards, so it drops back into the flow below the list. */
-.dock-sheet.is-suggesting #routeNextBtn {
-  position: static;
+/* THIS USED TO UNPIN CONTINUE WHILE A LIST WAS OPEN, and the reasoning was
+   sound as far as it went: a button pinned to the floor covers the last rows
+   of the list you are reading. But the cure was worse. Dropping it back into
+   the flow put it BELOW a list that was allowed to grow to 46vh, so choosing a
+   destination pushed the only button on the screen out of the sheet entirely —
+   it vanished at precisely the moment it was wanted.
+
+   Both problems came from the list being too tall. It is capped at 240px now
+   and scrolls internally, so it no longer reaches the floor of the sheet and
+   the pinned button covers nothing. Continue stays put.
+
+   Kept as a rule rather than deleted, because the class is still the right
+   hook if the CTA ever needs to stand down for a different reason. */
+.dock-sheet.is-suggesting .nx-sheet-cta {
   box-shadow: none;
 }
 

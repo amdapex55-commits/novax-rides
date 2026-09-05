@@ -1168,3 +1168,39 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   .nx-install-scrim, .nx-install-card { transition: none; }
   .nx-install-card { transform: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   DRAGGABLE MAP PINS
+   The pin is now the control, so it has to look like one: bigger than a plain
+   marker, a grab cursor, and a lift while it is being moved so the customer
+   can see the map under the point they are placing.
+   ------------------------------------------------------------------------ */
+.leaflet-marker-draggable .nx-pin {
+  cursor: grab;
+  width: 30px;
+  height: 30px;
+  /* A heavier ring and shadow: this sits on photographic-ish map tiles whose
+     local contrast is unknown, so the pin carries its own separation. */
+  border-width: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+.leaflet-marker-draggable:active .nx-pin { cursor: grabbing; }
+
+/* While dragging: lift the pin off the map so the drop point is visible under
+   it, and quieten the rest of the map chrome. */
+.nx-pin-dragging .leaflet-marker-dragging .nx-pin,
+.leaflet-marker-dragging .nx-pin {
+  transform: rotate(-45deg) scale(1.14) translate(-2px, -2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.36);
+}
+.nx-pin-dragging .leaflet-control-container { opacity: 0.35; }
+.nx-pin-dragging { cursor: grabbing; }
+
+@media (prefers-reduced-motion: reduce) {
+  .leaflet-marker-dragging .nx-pin { transform: rotate(-45deg); }
+}
+
+/* Belt and braces for the tile-fade race: whatever Leaflet's opacity timer
+   does, a tile that has finished loading is visible. Costs nothing when the
+   fade is off and rescues the map if it is ever turned back on. */
+.leaflet-tile-loaded { opacity: 1 !important; }
