@@ -206,7 +206,22 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
   transition: background var(--dur-fast), transform var(--dur-fast) var(--ease-bounce);
 }
 .list-row:last-child { border-bottom: none; }
-.list-row:active { background: rgba(14,29,22,0.04); transform: scale(0.99); }
+/* PRESS FEEDBACK THAT ONLY WORKED IN LIGHT MODE.
+   This was a near-black wash at 4% — visible on a white row, and completely
+   invisible on the dark surface the app actually ships. Combined with
+   -webkit-tap-highlight-color: transparent a few rules up, a tapped list row
+   in dark mode gave the scale nudge and no colour change at all, which is a
+   small part of why taps have felt unregistered.
+
+   currentColor tracks the text, so it darkens a light row and lightens a dark
+   one without needing a second rule or a theme override to keep in sync. */
+.list-row:active {
+  background: color-mix(in srgb, currentColor 7%, transparent);
+  transform: scale(0.99);
+}
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .list-row:active { background: var(--surface-2); }
+}
 .list-row-icon {
   width: 44px; height: 44px; border-radius: var(--r-full);
   background: linear-gradient(160deg, var(--surface-3), var(--surface-2));
@@ -1208,3 +1223,31 @@ textarea.input { height: auto; min-height: 90px; padding-top: var(--sp-3); resiz
    does, a tile that has finished loading is visible. Costs nothing when the
    fade is off and rescues the map if it is ever turned back on. */
 .leaflet-tile-loaded { opacity: 1 !important; }
+
+/* ---------------------------------------------------------------------------
+   KEYBOARD FOCUS
+   Buttons and links had no focus styling of their own, so they fell back to
+   whatever the browser draws — which on a saturated violet button is close to
+   invisible. :focus-visible only fires for keyboard and assistive navigation,
+   so nothing changes for a thumb or a mouse.
+
+   This matters more here than on an ordinary site: riders and ops staff use
+   this app on cheap Android tablets with Bluetooth keyboards, and the ops
+   console is driven almost entirely by keyboard during a busy shift.
+   ------------------------------------------------------------------------ */
+.btn:focus-visible,
+a:focus-visible,
+.btn-icon:focus-visible,
+[role="button"]:focus-visible,
+.nx-pw-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+/* On the accent-filled primary button the accent ring would disappear into
+   the fill, so that one gets a light ring plus a dark halo to separate it
+   from whatever is behind. */
+.btn-primary:focus-visible {
+  outline-color: var(--text-primary);
+  box-shadow: 0 0 0 4px var(--bg);
+}

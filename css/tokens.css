@@ -17,7 +17,7 @@
   /* Text */
   --text-primary: #16121f;
   --text-secondary: #635c6f;
-  --text-muted: #948fa1;
+  --text-muted: #706980;   /* was #948fa1 — 2.71 on a card, under AA */
 
   /* BRAND — Nova violet.
      Every ride-hailing brand in this market is green: Bykea, Careem, and
@@ -46,6 +46,12 @@
   --accent-strong: #5b21b6;
   --accent-soft: #ede9fe;
   --accent-2: #f59e0b;
+  /* THE GOLD IS A FILL, NOT AN INK. #f59e0b is 2.15:1 on white — fine behind a
+     dot or a badge, unreadable as words. The three places it was used as text
+     included the Urdu line on the welcome screen, at 17px and dulled further
+     by opacity .9. This is the same gold taken down to AA so it can be read;
+     the brand fill above is untouched. */
+  --accent-2-ink: #a76900;
   --accent-gradient: var(--brand-gradient);
   --accent-gradient-3: linear-gradient(135deg, #5b21b6 0%, #7c3aed 55%, #a78bfa 100%);
   --accent-glow: 0 0 14px rgba(109, 40, 217, 0.24);
@@ -61,7 +67,7 @@
   /* Semantic — deliberately NOT the brand colour. Green means "this worked"
      to everyone; making success violet would make every confirmation look
      like a branded banner instead of a result. */
-  --success: #059669;
+  --success: #01875d;      /* was #059669 — 3.77 on white, under AA */
   --warning: #d97706;
   --error: #e11d48;
   --on-accent: #ffffff;
@@ -201,6 +207,8 @@
     --accent-strong: #c4b5fd;
     --accent-soft: rgba(167, 139, 250, 0.16);
     --accent-2: #fbbf24;
+    /* On a dark ground the bright gold is already 11.5:1 — no separate ink. */
+    --accent-2-ink: #fbbf24;
     --accent-gradient: var(--brand-gradient);
     --accent-gradient-3: linear-gradient(135deg, #7c3aed 0%, #a78bfa 55%, #c4b5fd 100%);
     --accent-glow: 0 0 18px rgba(167, 139, 250, 0.28);
@@ -244,6 +252,7 @@
   --accent-strong: #c4b5fd;
   --accent-soft: rgba(167, 139, 250, 0.16);
   --accent-2: #fbbf24;
+  --accent-2-ink: #fbbf24;
   --accent-gradient: var(--brand-gradient);
   --accent-gradient-3: linear-gradient(135deg, #7c3aed 0%, #a78bfa 55%, #c4b5fd 100%);
   --accent-glow: 0 0 18px rgba(167, 139, 250, 0.28);

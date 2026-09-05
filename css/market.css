@@ -482,7 +482,7 @@
   line-height: 1.35;
   color: var(--text-primary);
 }
-.nx-petrol svg { flex: none; color: var(--accent-2); }
+.nx-petrol svg { flex: none; color: var(--accent-2-ink); }
 
 /* Change warning. Nobody carries change in Karachi; being told at booking
    is a different experience from finding out at the kerb. */

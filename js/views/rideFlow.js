@@ -733,17 +733,37 @@ export function renderRideBooking(root) {
 
     confirmBtn.addEventListener("click", async () => {
       if (submitting) return;
+      /* LATCH FIRST, VALIDATE SECOND.
+
+         The comment above is right that the disabled attribute alone loses
+         the race — but the latch was set seventy lines below this point, on
+         the far side of `await api.listMyTrips()`. That await is a network
+         round trip; on a Karachi connection it is comfortably long enough to
+         tap again, and a second tap sailed straight through a guard that was
+         still false. Both calls then reached createTrip, which is two riders
+         dispatched to one customer and two fares owed.
+
+         So it latches here, before anything can yield, and every path that
+         gives up releases it. `release()` rather than a bare assignment
+         because the button state has to come back too — a latched flag with
+         a dead-looking button is the other way this screen loses a tap. */
+      submitting = true;
+      const release = () => {
+        submitting = false;
+        confirmBtn.disabled = false;
+      };
 
       // OTP is required at the point of booking, not before — guest browsing
       // stays open right up until the action that genuinely needs an account.
       if (!Token.access) {
+        release();
         state.postAuthRedirect = "/ride";
         navigate("/signin");
         return;
       }
 
       // Re-check the things that can change while someone deliberates.
-      if (!isOpenNow()) { toast(HOURS.closedMessage, true); return; }
+      if (!isOpenNow()) { release(); toast(HOURS.closedMessage, true); return; }
       if (!pickup || pickup.lat == null) {
         /* THE SILENT TAP.
 
@@ -756,6 +776,7 @@ export function renderRideBooking(root) {
            The toast now sits above the sheet, and this uses alertUser so the
            message is dismissible and cannot be missed, and it puts the cursor
            in the field that needs filling. */
+        release();
         alertUser("We still don't know where to pick you up.", {
           suggestion: "Allow location, or type your pickup address at the top of this sheet.",
           tone: "warn",
@@ -774,7 +795,7 @@ export function renderRideBooking(root) {
       let offeredFare;
       if (fareMode === "BID") {
         offeredFare = Number(node.querySelector("#bidInput").value);
-        if (!offeredFare || offeredFare <= 0) { toast("Enter an offer amount", true); return; }
+        if (!offeredFare || offeredFare <= 0) { release(); toast("Enter an offer amount", true); return; }
       }
 
       /* ONE RIDE AT A TIME.
@@ -794,6 +815,7 @@ export function renderRideBooking(root) {
         const ACTIVE = ["REQUESTED", "MATCHING", "MATCHED", "ARRIVED", "IN_PROGRESS"];
         const live = (Array.isArray(mine) ? mine : []).find((t) => ACTIVE.includes(t.status));
         if (live) {
+          release();
           state.activeTripId = live.id;
           alertUser("You already have a ride in progress.", {
             suggestion: "Open it to see where your rider is, or cancel it before booking another.",
@@ -807,7 +829,7 @@ export function renderRideBooking(root) {
            check that could not run. The server refuses a duplicate anyway. */
       }
 
-      submitting = true;
+      // Already latched at the top of the handler; this is the visible half.
       haptic.medium();
       confirmBtn.disabled = true;
       confirmBtn.innerHTML = `<span class="spinner"></span>`;

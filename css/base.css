@@ -215,14 +215,28 @@ img { max-width: 100%; display: block; }
 
 /* Above phone width (desktop testing): give the column a frame so it reads
    intentionally, not just a stranded strip of content. */
-@media (min-width: 640px) {
+/* A PHONE IN LANDSCAPE IS NOT A DESKTOP.
+
+   This framed the app as a centred phone column on anything 640px or wider,
+   which is right for a laptop and wrong for the device the app is actually
+   for: rotate a phone and it reports 844x390, matches on width alone, and
+   gets the desktop treatment. The 24px margins then push every full-height
+   child 24px past the bottom of the screen — the booking sheet ends at 414
+   on a 390px viewport, so Continue sits below the fold with nothing to
+   scroll. The customer sees a sheet with no way to finish.
+
+   Height is what separates the two cases. A real desktop or tablet has room
+   for the frame; a landscape phone does not, and should just fill the screen
+   like it does in portrait. 640 on both axes, and dvh so mobile browser
+   chrome is accounted for. */
+@media (min-width: 640px) and (min-height: 640px) {
   body {
     background: #eef1ef;
   }
   #app-root {
     margin-top: 24px;
     margin-bottom: 24px;
-    min-height: calc(100vh - 48px);
+    min-height: calc(100dvh - 48px);
     border-radius: var(--r-xl);
     box-shadow: var(--shadow-lg), 0 0 0 1px var(--surface-border);
     overflow: hidden;
